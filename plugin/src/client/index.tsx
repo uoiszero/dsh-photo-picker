@@ -53,9 +53,16 @@ const zh = {
   filterKeep: 'keep',
   filterMaybe: 'maybe',
   filterReject: 'reject',
-  sortScore: '按分数',
+  sortScore: '按分数（高→低）',
+  sortScoreAsc: '按分数（低→高）',
   sortTaken: '按拍摄时间',
   sortPath: '按路径',
+  sortGroup: '按分组',
+  autoRun: '自动跑（扫描→精评）',
+  pipelineDone: '自动跑完成',
+  pipelinePaused: '自动跑已暂停',
+  pipelineFailed: '自动跑失败',
+  revealInFinder: '在 Finder 中显示',
   selectedCount: '已选',
   undoAction: '撤销',
   export: '导出',
@@ -182,9 +189,16 @@ const en = {
   filterKeep: 'keep',
   filterMaybe: 'maybe',
   filterReject: 'reject',
-  sortScore: 'By score',
+  sortScore: 'By score (high→low)',
+  sortScoreAsc: 'By score (low→high)',
   sortTaken: 'By time',
   sortPath: 'By path',
+  sortGroup: 'By group',
+  autoRun: 'Auto run (scan→score)',
+  pipelineDone: 'Auto run finished',
+  pipelinePaused: 'Auto run paused',
+  pipelineFailed: 'Auto run failed',
+  revealInFinder: 'Reveal in Finder',
   selectedCount: 'Selected',
   undoAction: 'Undo',
   export: 'Export',
@@ -602,6 +616,8 @@ function ReviewSection({ t, projectId, version, onChanged }: {
         ))}
         <select value={sort} onChange={event => setSort(event.target.value)} style={{ ...input, padding: '4px 8px', fontSize: 12 }}>
           <option value="score">{t('sortScore')}</option>
+          <option value="score_asc">{t('sortScoreAsc')}</option>
+          <option value="group">{t('sortGroup')}</option>
           <option value="taken_at">{t('sortTaken')}</option>
           <option value="rel_path">{t('sortPath')}</option>
         </select>
@@ -857,6 +873,18 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
           <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
             <span>{t('exportResult')}: {Object.entries(result.counts).map(([bucket, count]) => `${bucket} ${count}`).join(' · ')}</span>
             <span style={muted}>{t('manifest')}: {result.manifestPath}</span>
+            <div>
+              <button
+                type="button"
+                style={btn}
+                onClick={() => api('/photo-picker/api/fs/reveal', {
+                  method: 'POST',
+                  body: JSON.stringify({ path: result.manifestPath ?? dest }),
+                }).catch(cause => setError(String(cause)))}
+              >
+                {t('revealInFinder')}
+              </button>
+            </div>
             {result.failureCount > 0 && (
               <span style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)' }}>{t('exportConflict')}: {result.failureCount}</span>
             )}
@@ -1384,6 +1412,7 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
   const [detail, setDetail] = useState<any>(null)
   const [progress, setProgress] = useState<any>(null)
   const [checkpoints, setCheckpoints] = useState<any[]>([])
+  const [pipelineEvent, setPipelineEvent] = useState<any>(null)
   const [exporting, setExporting] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1407,7 +1436,8 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
     const events = new EventSource(`/photo-picker/api/projects/${id}/events`)
     events.onmessage = message => {
       const event = JSON.parse(message.data)
-      if (event.stage !== undefined) setProgress(event)
+      if (event.pipeline === true) setPipelineEvent(event)
+      else if (event.stage !== undefined) setProgress(event)
       if (event.done === true) refresh()
     }
     return () => events.close()
@@ -1418,6 +1448,18 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
       await api(`/photo-picker/api/projects/${id}/actions`, {
         method: 'POST',
         body: JSON.stringify({ stage, action }),
+      })
+    } catch (cause) {
+      setError(String(cause))
+    }
+  }
+
+  const runAll = async () => {
+    try {
+      setPipelineEvent({ stage: 'pipeline', phase: 'start' })
+      await api(`/photo-picker/api/projects/${id}/actions`, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'run_all' }),
       })
     } catch (cause) {
       setError(String(cause))
@@ -1460,6 +1502,7 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
         {detail.running !== null && (
           <button type="button" style={btn} onClick={() => run(detail.running, 'pause')}>{t('pause')}</button>
         )}
+        <button type="button" style={btnPrimary} disabled={detail.running !== null} onClick={runAll}>{t('autoRun')}</button>
         <button type="button" style={btn} onClick={() => setExporting(true)}>{t('export')}</button>
         <button type="button" style={btn} onClick={() => setSettingsOpen(true)}>{t('settings')}</button>
       </div>
@@ -1484,6 +1527,15 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
           <div style={{ height: 4, borderRadius: 2, background: 'var(--dsw-alias-bg-layer-2)', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${percent}%`, background: 'var(--dsw-alias-brand-primary)' }} />
           </div>
+        </div>
+      )}
+      {pipelineEvent !== null && (
+        <div style={muted}>
+          {pipelineEvent.error !== undefined
+            ? `${t('pipelineFailed')}: ${pipelineEvent.error}`
+            : pipelineEvent.stage === 'pipeline' && pipelineEvent.result !== undefined
+              ? `${pipelineEvent.result.reason === 'paused' ? t('pipelinePaused') : t('pipelineDone')}: ${(pipelineEvent.result.completed ?? []).join(' → ')}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== undefined ? ` · 下一阶段 ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ''}`
+              : `${t('autoRun')}: ${stageLabel(t, pipelineEvent.stage)} · ${pipelineEvent.phase}`}
         </div>
       )}
       {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}

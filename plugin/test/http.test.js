@@ -30,6 +30,8 @@ function stub() {
     async calibrate(id, labels) { return { id: 'cal1', sampleSize: (labels ?? []).length } },
     async calibrationReport(id) { return { id: 'cal1', sampleSize: 3 } },
     async updateSettings(id, patch) { return { id, thresholdKeep: patch.thresholdKeep } },
+    async startPipeline(id, options) { return { started: 'pipeline', id, options } },
+    async reveal(path) { return { revealed: path } },
     async promptInfo(projectId) { return { version: 'v1', project: projectId ?? null, prompts: { gridUser: 'x' } } },
     async models(route) { return { route, models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }] } },
     async previewFile() { return undefined },
@@ -187,5 +189,25 @@ test('prompt and model catalog routes answer JSON', async () => {
     const modelsBody = await models.json()
     assert.equal(modelsBody.route, 'deepseek-official')
     assert.equal(modelsBody.models[0].id, 'deepseek-flash')
+  })
+})
+
+test('run_all starts the pipeline and reveal opens Finder', async () => {
+  await withServer(async origin => {
+    const pipeline = await fetch(`${origin}/photo-picker/api/projects/p1/actions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'run_all' }),
+    })
+    const pipelineBody = await pipeline.json()
+    assert.equal(pipelineBody.started, 'pipeline')
+    assert.equal(pipelineBody.id, 'p1')
+
+    const reveal = await fetch(`${origin}/photo-picker/api/fs/reveal`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path: '/tmp/out' }),
+    })
+    assert.deepEqual(await reveal.json(), { revealed: '/tmp/out' })
   })
 })

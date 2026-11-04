@@ -2,7 +2,7 @@ import { Service } from '@deepseek-ai/cordis'
 import { EventEmitter } from 'node:events'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile, readdir, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { createHttpHandler } from './http.js'
@@ -10,6 +10,7 @@ import { dshHome } from './paths.js'
 import { isPeakHour } from './cost.js'
 import { previewExport, runExport } from './export.js'
 import { renderPreview } from './images.js'
+import { runPipeline } from './orchestrator.js'
 import { runGridStage, runRankStage, runScoreStage } from './pipeline.js'
 import { ProjectStore, toProject } from './projects.js'
 import {
@@ -69,6 +70,14 @@ export class PhotoPickerService extends Service {
   async createProject(input) {
     const project = await this.store.create(input)
     return this.getProjectDetail(project.id)
+  }
+
+  /** 每次启动阶段前重读项目行，避免用到打开时的旧设置。 */
+  async freshProject(id) {
+    const { db } = await this.store.open(id)
+    const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
+    if (row === undefined) throw new Error(`unknown project: ${id}`)
+    return toProject(row)
   }
 
   async resolveProject(ref) {
@@ -207,7 +216,8 @@ export class PhotoPickerService extends Service {
     }
 
     if (current !== undefined) throw new Error(`a stage is already running for project ${id}`)
-    const { db, project } = await this.store.open(id)
+    const { db } = await this.store.open(id)
+    const project = await this.freshProject(id)
     if (AI_STAGES.has(stage)) {
       const capable = await this.imageCapable(project)
       if (!capable) throw stageError(`model ${project.modelId} does not accept image input`, 'MODEL_NO_IMAGE_INPUT', 400)
@@ -217,36 +227,7 @@ export class PhotoPickerService extends Service {
     }
 
     const controller = new AbortController()
-    const onProgress = progress => this.events.emit('event', { projectId: id, ...progress })
-    let task
-    if (stage === 'scan') {
-      task = scanProject({ db, projectId: id, source: new LocalSource(project.sourcePath), onProgress })
-    } else if (stage === 'preprocess') {
-      task = preprocessProject({
-        db,
-        projectId: id,
-        sourceRoot: project.sourcePath,
-        workspaceDir: project.workspaceDir,
-        onProgress,
-      })
-    } else {
-      const deps = {
-        db,
-        projectId: id,
-        project,
-        llm: this.ctx.llm,
-        attachments: this.ctx.attachments,
-        workspaceDir: project.workspaceDir,
-        signal: controller.signal,
-        onEvent: onProgress,
-        thumbFor: photo => readFile(path.join(project.workspaceDir, photo.thumb_path)).catch(() => undefined),
-        loadPhoto: photo => path.join(project.sourcePath, photo.rel_path),
-      }
-      task = stage === 'grid' ? runGridStage(deps)
-        : stage === 'rank' ? runRankStage(deps)
-          : runScoreStage(deps)
-    }
-
+    const task = this.stageTask(stage, { db, project, controller })
     this.running.set(id, { stage, controller })
     task
       .then(result => this.events.emit('event', { projectId: id, stage, done: true, result }))
@@ -257,6 +238,98 @@ export class PhotoPickerService extends Service {
         if (this.running.get(id)?.stage === stage) this.running.delete(id)
       })
     return { started: stage }
+  }
+
+  /** 构造单个阶段的实际任务；startStage 与自动串联共用。 */
+  stageTask(stage, { db, project, controller }) {
+    const id = project.id
+    const onProgress = progress => this.events.emit('event', { projectId: id, ...progress })
+    if (stage === 'scan') {
+      return scanProject({ db, projectId: id, source: new LocalSource(project.sourcePath), onProgress })
+    }
+    if (stage === 'preprocess') {
+      return preprocessProject({
+        db,
+        projectId: id,
+        sourceRoot: project.sourcePath,
+        workspaceDir: project.workspaceDir,
+        onProgress,
+      })
+    }
+    const deps = {
+      db,
+      projectId: id,
+      project,
+      llm: this.ctx.llm,
+      attachments: this.ctx.attachments,
+      workspaceDir: project.workspaceDir,
+      signal: controller.signal,
+      onEvent: onProgress,
+      thumbFor: photo => readFile(path.join(project.workspaceDir, photo.thumb_path)).catch(() => undefined),
+      loadPhoto: photo => path.join(project.sourcePath, photo.rel_path),
+    }
+    return stage === 'grid' ? runGridStage(deps)
+      : stage === 'rank' ? runRankStage(deps)
+        : runScoreStage(deps)
+  }
+
+  /** 自动串联阶段；stage_pause=1 时每阶段结束停下，预算暂停也会停下。 */
+  async startPipeline(id, { stages = ['scan', 'preprocess', 'grid', 'rank', 'score'] } = {}) {
+    if (!Array.isArray(stages) || stages.length === 0) throw stageError('pipeline needs stages', 'BAD_STAGE', 400)
+    for (const stage of stages) {
+      if (!STAGES.has(stage)) throw stageError(`unsupported stage: ${stage}`, 'BAD_STAGE', 400)
+    }
+    if (this.running.has(id)) throw new Error(`a stage is already running for project ${id}`)
+    const { db } = await this.store.open(id)
+    const project = await this.freshProject(id)
+    if (stages.some(stage => AI_STAGES.has(stage))) {
+      const capable = await this.imageCapable(project)
+      if (!capable) throw stageError(`model ${project.modelId} does not accept image input`, 'MODEL_NO_IMAGE_INPUT', 400)
+      if (project.offpeakOnly && isPeakHour(new Date())) {
+        throw stageError('off-peak only is enabled; retry after 18:00', 'OFFPEAK_BLOCKED', 409)
+      }
+    }
+    const controller = new AbortController()
+    this.running.set(id, { stage: 'pipeline', controller })
+    const task = runPipeline({
+      stages,
+      signal: controller.signal,
+      pauseBetween: project.stagePause === true,
+      onStage: event => this.events.emit('event', {
+        projectId: id,
+        pipeline: true,
+        stage: event.stage,
+        phase: event.phase,
+        ...(event.phase === 'done' ? { done: true, result: event.result } : {}),
+      }),
+      runStage: stage => this.stageTask(stage, { db, project, controller }),
+    })
+    task
+      .then(result => this.events.emit('event', {
+        projectId: id, pipeline: true, stage: 'pipeline', done: true, result,
+      }))
+      .catch(error => this.events.emit('event', {
+        projectId: id, pipeline: true, stage: 'pipeline', error: String(error?.message ?? error), code: error?.code,
+      }))
+      .finally(() => {
+        if (this.running.get(id)?.stage === 'pipeline') this.running.delete(id)
+      })
+    return { started: 'pipeline', stages }
+  }
+
+  /** 在 Finder 中显示（macOS）：目录直接打开，文件则 -R 定位。 */
+  async reveal(target) {
+    if (typeof target !== 'string' || !path.isAbsolute(target)) {
+      throw stageError('target must be an absolute path', 'BAD_PATH', 400)
+    }
+    let info
+    try {
+      info = await stat(target)
+    } catch {
+      throw stageError(`path not found: ${target}`, 'NOT_FOUND', 404)
+    }
+    await execFileAsync('open', info.isDirectory() ? [target] : ['-R', target], { timeout: 30_000 })
+    return { revealed: target }
   }
 
   async reviewPhotos(id, options = {}) {

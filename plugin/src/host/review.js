@@ -18,6 +18,7 @@ const SORTS = {
   score_asc: 'a.score IS NULL, a.score ASC, p.rel_path ASC',
   taken_at: 'COALESCE(p.taken_at, p.mtime_ms) ASC, p.rel_path ASC',
   rel_path: 'p.rel_path ASC',
+  group: 'p.group_id IS NULL, p.group_id, COALESCE(p.taken_at, p.mtime_ms), p.rel_path',
 }
 
 export function assertVerdict(verdict) {

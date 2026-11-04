@@ -89,9 +89,16 @@ var zh = {
   filterKeep: "keep",
   filterMaybe: "maybe",
   filterReject: "reject",
-  sortScore: "\u6309\u5206\u6570",
+  sortScore: "\u6309\u5206\u6570\uFF08\u9AD8\u2192\u4F4E\uFF09",
+  sortScoreAsc: "\u6309\u5206\u6570\uFF08\u4F4E\u2192\u9AD8\uFF09",
   sortTaken: "\u6309\u62CD\u6444\u65F6\u95F4",
   sortPath: "\u6309\u8DEF\u5F84",
+  sortGroup: "\u6309\u5206\u7EC4",
+  autoRun: "\u81EA\u52A8\u8DD1\uFF08\u626B\u63CF\u2192\u7CBE\u8BC4\uFF09",
+  pipelineDone: "\u81EA\u52A8\u8DD1\u5B8C\u6210",
+  pipelinePaused: "\u81EA\u52A8\u8DD1\u5DF2\u6682\u505C",
+  pipelineFailed: "\u81EA\u52A8\u8DD1\u5931\u8D25",
+  revealInFinder: "\u5728 Finder \u4E2D\u663E\u793A",
   selectedCount: "\u5DF2\u9009",
   undoAction: "\u64A4\u9500",
   export: "\u5BFC\u51FA",
@@ -217,9 +224,16 @@ var en = {
   filterKeep: "keep",
   filterMaybe: "maybe",
   filterReject: "reject",
-  sortScore: "By score",
+  sortScore: "By score (high\u2192low)",
+  sortScoreAsc: "By score (low\u2192high)",
   sortTaken: "By time",
   sortPath: "By path",
+  sortGroup: "By group",
+  autoRun: "Auto run (scan\u2192score)",
+  pipelineDone: "Auto run finished",
+  pipelinePaused: "Auto run paused",
+  pipelineFailed: "Auto run failed",
+  revealInFinder: "Reveal in Finder",
   selectedCount: "Selected",
   undoAction: "Undo",
   export: "Export",
@@ -562,7 +576,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
       }
     },
     label
-  )), /* @__PURE__ */ h("select", { value: sort, onChange: (event) => setSort(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h("option", { value: "rel_path" }, t("sortPath"))), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, items.length, " / ", t("photos"))), /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("selectedCount"), ": ", selected.length), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: undo.length === 0, onClick: undoLast }, t("undoAction"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), items.length === 0 ? /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("noPhotos")) : /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(132px, 1fr))", gap: 8 } }, items.map((item) => /* @__PURE__ */ h("div", { key: item.id, style: { position: "relative" } }, /* @__PURE__ */ h(
+  )), /* @__PURE__ */ h("select", { value: sort, onChange: (event) => setSort(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h("option", { value: "rel_path" }, t("sortPath"))), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, items.length, " / ", t("photos"))), /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("selectedCount"), ": ", selected.length), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: undo.length === 0, onClick: undoLast }, t("undoAction"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), items.length === 0 ? /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("noPhotos")) : /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(132px, 1fr))", gap: 8 } }, items.map((item) => /* @__PURE__ */ h("div", { key: item.id, style: { position: "relative" } }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
@@ -692,7 +706,18 @@ function ExportDialog({ t, projectId, onClose }) {
       placeholder: "/Volumes/\u2026/\u7CBE\u9009",
       style: { ...input, flex: 1 }
     }
-  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("exportChoose")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, style: { display: "flex", gap: 4, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), bucket)), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), preview !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, Object.entries(preview.counts).map(([bucket, count]) => `${bucket} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("span", { style: muted }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${bucket} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("span", { style: muted }, t("manifest"), ": ", result.manifestPath), result.failureCount > 0 && /* @__PURE__ */ h("span", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)" } }, t("exportConflict"), ": ", result.failureCount))));
+  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("exportChoose")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, style: { display: "flex", gap: 4, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), bucket)), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), preview !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, Object.entries(preview.counts).map(([bucket, count]) => `${bucket} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("span", { style: muted }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${bucket} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("span", { style: muted }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", null, /* @__PURE__ */ h(
+    "button",
+    {
+      type: "button",
+      style: btn,
+      onClick: () => api("/photo-picker/api/fs/reveal", {
+        method: "POST",
+        body: JSON.stringify({ path: result.manifestPath ?? dest })
+      }).catch((cause) => setError(String(cause)))
+    },
+    t("revealInFinder")
+  )), result.failureCount > 0 && /* @__PURE__ */ h("span", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)" } }, t("exportConflict"), ": ", result.failureCount))));
 }
 function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onDecided }) {
   const [groups, setGroups] = (0, import_react.useState)([]);
@@ -1019,6 +1044,7 @@ function ProjectDetail({ t, id }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
   const [progress, setProgress] = (0, import_react.useState)(null);
   const [checkpoints, setCheckpoints] = (0, import_react.useState)([]);
+  const [pipelineEvent, setPipelineEvent] = (0, import_react.useState)(null);
   const [exporting, setExporting] = (0, import_react.useState)(false);
   const [settingsOpen, setSettingsOpen] = (0, import_react.useState)(false);
   const [error, setError] = (0, import_react.useState)(null);
@@ -1040,7 +1066,8 @@ function ProjectDetail({ t, id }) {
     const events = new EventSource(`/photo-picker/api/projects/${id}/events`);
     events.onmessage = (message) => {
       const event = JSON.parse(message.data);
-      if (event.stage !== void 0) setProgress(event);
+      if (event.pipeline === true) setPipelineEvent(event);
+      else if (event.stage !== void 0) setProgress(event);
       if (event.done === true) refresh();
     };
     return () => events.close();
@@ -1055,12 +1082,23 @@ function ProjectDetail({ t, id }) {
       setError(String(cause));
     }
   };
+  const runAll = async () => {
+    try {
+      setPipelineEvent({ stage: "pipeline", phase: "start" });
+      await api(`/photo-picker/api/projects/${id}/actions`, {
+        method: "POST",
+        body: JSON.stringify({ action: "run_all" })
+      });
+    } catch (cause) {
+      setError(String(cause));
+    }
+  };
   if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
   const counts = detail.counts ?? {};
   const version = detail.updatedAt ?? 0;
   const aiDisabled = detail.ai?.hasImageModel === false;
   const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0;
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, state, ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("grid") }, t("stageGrid")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("rank") }, t("stageRank")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("score") }, t("stageScore")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && detail !== null && /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, state, ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("grid") }, t("stageGrid")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("rank") }, t("stageRank")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("score") }, t("stageScore")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: detail.running !== null, onClick: runAll }, t("autoRun")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && detail !== null && /* @__PURE__ */ h(
     SettingsDrawer,
     {
       t,
@@ -1069,7 +1107,7 @@ function ProjectDetail({ t, id }) {
       onSaved: refresh,
       onRunStage: (stage) => run(stage)
     }
-  ), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
+  ), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), pipelineEvent !== null && /* @__PURE__ */ h("div", { style: muted }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 \u4E0B\u4E00\u9636\u6BB5 ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${pipelineEvent.phase}`), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
     border: "1px solid var(--dsw-alias-border-l1)",
     borderRadius: 10,
     padding: 12,

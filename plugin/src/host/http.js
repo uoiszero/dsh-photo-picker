@@ -154,6 +154,9 @@ export function createHttpHandler(service) {
       const actionsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/actions$/)
       if (actionsMatch !== null && req.method === 'POST') {
         const body = await readJson(req)
+        if (body.action === 'run_all') {
+          return send(res, 200, await service.startPipeline(actionsMatch[1], { stages: body.stages }))
+        }
         return send(res, 200, await service.startStage(actionsMatch[1], body.stage, {
           action: body.action ?? 'start',
         }))
@@ -174,6 +177,10 @@ export function createHttpHandler(service) {
       }
       if (pathname === '/photo-picker/api/fs/choose' && req.method === 'POST') {
         return send(res, 200, { path: await service.chooseFolder() })
+      }
+      if (pathname === '/photo-picker/api/fs/reveal' && req.method === 'POST') {
+        const body = await readJson(req)
+        return send(res, 200, await service.reveal(body.path))
       }
 
       const previewMatch = pathname.match(/^\/photo-picker\/media\/preview\/([^/]+)\/([^/]+)$/)
