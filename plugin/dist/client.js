@@ -70,7 +70,18 @@ var zh = {
   themeEvent: "\u6D3B\u52A8",
   statusCreated: "\u65B0\u5EFA",
   statusScanned: "\u5DF2\u626B\u63CF",
-  statusPreprocessed: "\u5DF2\u9884\u5904\u7406"
+  statusPreprocessed: "\u5DF2\u9884\u5904\u7406",
+  statusGridded: "\u5DF2\u7C97\u7B5B",
+  statusScored: "\u5DF2\u8BC4\u5206",
+  statusPaused: "\u5DF2\u6682\u505C",
+  statusFailed: "\u5931\u8D25",
+  stageGrid: "\u7F51\u683C\u7C97\u7B5B",
+  stageRank: "\u7EC4\u5185\u6392\u5E8F",
+  stageScore: "\u5355\u5F20\u7CBE\u8BC4",
+  pause: "\u6682\u505C",
+  spent: "\u5DF2\u82B1\u8D39",
+  checkpoint: "\u68C0\u67E5\u70B9",
+  aiDisabled: "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u7247\u8F93\u5165\uFF0CAI \u9636\u6BB5\u5DF2\u7981\u7528\u3002"
 };
 var en = {
   title: "Photo Picker",
@@ -99,7 +110,18 @@ var en = {
   themeEvent: "Event",
   statusCreated: "New",
   statusScanned: "Scanned",
-  statusPreprocessed: "Preprocessed"
+  statusPreprocessed: "Preprocessed",
+  statusGridded: "Gridded",
+  statusScored: "Scored",
+  statusPaused: "Paused",
+  statusFailed: "Failed",
+  stageGrid: "Grid triage",
+  stageRank: "Rank group",
+  stageScore: "Score photo",
+  pause: "Pause",
+  spent: "Spent",
+  checkpoint: "Checkpoints",
+  aiDisabled: "The current model does not accept image input, so AI stages are disabled."
 };
 var btn = {
   background: "var(--dsw-alias-bg-layer-1)",
@@ -149,7 +171,30 @@ function statusLabel(t, status) {
   if (status === "created") return t("statusCreated");
   if (status === "scanned") return t("statusScanned");
   if (status === "preprocessed") return t("statusPreprocessed");
+  if (status === "gridded") return t("statusGridded");
+  if (status === "scored") return t("statusScored");
+  if (status === "paused") return t("statusPaused");
+  if (status === "failed") return t("statusFailed");
   return status;
+}
+function stageLabel(t, stage) {
+  const keys = {
+    scan: "scan",
+    preprocess: "preprocess",
+    grid: "stageGrid",
+    rank: "stageRank",
+    score: "stageScore"
+  };
+  return keys[stage] === void 0 ? stage : t(keys[stage]);
+}
+function summarizeStats(stats) {
+  if (stats === null || stats === void 0) return "";
+  const parts = [];
+  for (const key of ["photos", "selected", "rejected", "failed", "groups", "kept", "scored", "done", "errors"]) {
+    if (typeof stats[key] === "number") parts.push(`${key} ${stats[key]}`);
+  }
+  if (typeof stats.durationMs === "number") parts.push(`${Math.round(stats.durationMs / 1e3)}s`);
+  return parts.join(" \xB7 ");
 }
 function CreateForm({ t, onCreated, onCancel }) {
   const [folder, setFolder] = (0, import_react.useState)("");
@@ -219,11 +264,18 @@ function ProjectDetail({ t, id }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
   const [photos, setPhotos] = (0, import_react.useState)([]);
   const [progress, setProgress] = (0, import_react.useState)(null);
+  const [checkpoints, setCheckpoints] = (0, import_react.useState)([]);
   const [error, setError] = (0, import_react.useState)(null);
   const refresh = async () => {
     try {
-      setDetail(await api(`/photo-picker/api/projects/${id}`));
-      setPhotos(await api(`/photo-picker/api/projects/${id}/photos?limit=120`));
+      const [project, photos2, points] = await Promise.all([
+        api(`/photo-picker/api/projects/${id}`),
+        api(`/photo-picker/api/projects/${id}/photos?limit=120`),
+        api(`/photo-picker/api/projects/${id}/checkpoints`)
+      ]);
+      setDetail(project);
+      setPhotos(photos2);
+      setCheckpoints(points);
       setError(null);
     } catch (cause) {
       setError(String(cause));
@@ -239,11 +291,11 @@ function ProjectDetail({ t, id }) {
     };
     return () => events.close();
   }, [id]);
-  const run = async (stage) => {
+  const run = async (stage, action = "start") => {
     try {
       await api(`/photo-picker/api/projects/${id}/actions`, {
         method: "POST",
-        body: JSON.stringify({ stage })
+        body: JSON.stringify({ stage, action })
       });
     } catch (cause) {
       setError(String(cause));
@@ -252,7 +304,23 @@ function ProjectDetail({ t, id }) {
   if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
   const counts = detail.counts ?? {};
   const version = detail.updatedAt ?? 0;
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, state, ": ", String(count))), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess"))), progress !== null && /* @__PURE__ */ h("div", { style: muted }, progress.stage, " ", progress.done ?? 0, "/", progress.total ?? "?", " ", progress.error ?? ""), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), photos.length === 0 ? /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("noPhotos")) : /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 8 } }, photos.map((photo) => photo.hasThumb ? /* @__PURE__ */ h(
+  const aiDisabled = detail.ai?.hasImageModel === false;
+  const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0;
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, state, ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("grid") }, t("stageGrid")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("rank") }, t("stageRank")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("score") }, t("stageScore")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause"))), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
+    border: "1px solid var(--dsw-alias-border-l1)",
+    borderRadius: 10,
+    padding: 12,
+    display: "grid",
+    gap: 8
+  } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", null, stageLabel(t, cp.stage)), /* @__PURE__ */ h("span", { style: chip }, cp.status), /* @__PURE__ */ h("span", { style: chip }, "\xA5", Number(cp.costCny ?? 0).toFixed(4)), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, summarizeStats(cp.stats))), (cp.sampleIds ?? []).length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 6 } }, cp.sampleIds.map((pid) => /* @__PURE__ */ h(
+    "img",
+    {
+      key: pid,
+      src: `/photo-picker/media/thumb/${id}/${pid}?v=${version}`,
+      alt: pid,
+      style: { width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 6, background: "var(--dsw-alias-bg-layer-2)" }
+    }
+  )))))), photos.length === 0 ? /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("noPhotos")) : /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 8 } }, photos.map((photo) => photo.hasThumb ? /* @__PURE__ */ h(
     "img",
     {
       key: photo.id,

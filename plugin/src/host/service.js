@@ -2,11 +2,12 @@ import { Service } from '@deepseek-ai/cordis'
 import { EventEmitter } from 'node:events'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { readdir } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { createHttpHandler } from './http.js'
 import { dshHome } from './paths.js'
+import { runGridStage, runRankStage, runScoreStage } from './pipeline.js'
 import { ProjectStore, toProject } from './projects.js'
 import { preprocessProject } from './preprocess.js'
 import { scanProject } from './scan.js'
@@ -14,10 +15,19 @@ import { LocalSource } from './source.js'
 import { createPhotoPickerTool } from './tools.js'
 
 const execFileAsync = promisify(execFile)
+const STAGES = new Set(['scan', 'preprocess', 'grid', 'rank', 'score'])
+const AI_STAGES = new Set(['grid', 'rank', 'score'])
+
+function stageError(message, code, statusCode) {
+  const error = new Error(message)
+  error.code = code
+  error.statusCode = statusCode
+  return error
+}
 
 /** 照片工作台的 Host 服务；Client 与 agent 工具共用这一份状态。 */
 export class PhotoPickerService extends Service {
-  static inject = ['tools', 'webServer']
+  static inject = ['tools', 'webServer', 'llm', 'attachments']
 
   constructor(ctx) {
     super(ctx, 'photoPicker')
@@ -25,6 +35,7 @@ export class PhotoPickerService extends Service {
     this.store = new ProjectStore({ dshHome: dshHome() })
     this.events = new EventEmitter()
     this.running = new Map()
+    this.imageModelCache = new Map()
     ctx.effect(
       () => ctx.webServer.register({
         kind: 'prefix',
@@ -54,6 +65,24 @@ export class PhotoPickerService extends Service {
     return match.id
   }
 
+  /** 检查路由是否声明了图片输入；缓存结果，避免每次详情都查模型目录。 */
+  async imageCapable(project) {
+    const key = `${project.modelRoute}/${project.modelId}`
+    if (this.imageModelCache.has(key)) return this.imageModelCache.get(key)
+    let capable = true
+    try {
+      const models = await this.ctx.llm.listModels(project.modelRoute)
+      const model = models.find(entry => entry.id === project.modelId)
+      if (model !== undefined && Array.isArray(model.inputModalities)) {
+        capable = model.inputModalities.includes('image')
+      }
+    } catch {
+      capable = true
+    }
+    this.imageModelCache.set(key, capable)
+    return capable
+  }
+
   async getProjectDetail(id) {
     const { db } = await this.store.open(id)
     // 阶段会直接改 projects 行，句柄里的快照可能已过期，这里每次重新读。
@@ -65,14 +94,25 @@ export class PhotoPickerService extends Service {
         .all(id).map(row => [row.state, row.n]),
     )
     const stages = db.prepare(`
-      SELECT stage, status, stats_json, started_at, finished_at FROM stage_runs
+      SELECT stage, status, stats_json, cost_cny, started_at, finished_at FROM stage_runs
       WHERE project_id = ? ORDER BY started_at DESC LIMIT 8
     `).all(id).map(row => {
       let stats = null
       try { stats = row.stats_json === null ? null : JSON.parse(row.stats_json) } catch { stats = null }
-      return { stage: row.stage, status: row.status, stats, startedAt: row.started_at, finishedAt: row.finished_at }
+      return {
+        stage: row.stage, status: row.status, stats, costCny: row.cost_cny,
+        startedAt: row.started_at, finishedAt: row.finished_at,
+      }
     })
-    return { ...project, counts, stages, running: this.running.get(id) ?? null }
+    const spent = db.prepare('SELECT COALESCE(SUM(cost_cny), 0) AS spent FROM stage_runs WHERE project_id = ?').get(id).spent
+    return {
+      ...project,
+      counts,
+      stages,
+      cost: { spentCny: spent, budgetCny: project.budgetCny },
+      ai: { hasImageModel: await this.imageCapable(project), model: project.modelId },
+      running: this.running.get(id)?.stage ?? null,
+    }
   }
 
   async listPhotos(id, { state, limit = 60, offset = 0 } = {}) {
@@ -108,26 +148,97 @@ export class PhotoPickerService extends Service {
     return path.join(project.workspaceDir, row.thumb_path)
   }
 
-  async startStage(id, stage) {
-    if (stage !== 'scan' && stage !== 'preprocess') throw new Error(`unsupported stage: ${stage}`)
-    if (this.running.has(id)) throw new Error(`a stage is already running for project ${id}`)
+  /** 阶段统计与抽样（检查点卡片）。 */
+  async checkpoints(id) {
+    const { db } = await this.store.open(id)
+    const result = []
+    for (const stage of ['scan', 'preprocess', 'grid', 'rank', 'score']) {
+      const row = db.prepare(`
+        SELECT * FROM stage_runs WHERE project_id = ? AND stage = ?
+        ORDER BY started_at DESC LIMIT 1
+      `).get(id, stage)
+      if (row === undefined) continue
+      let stats = null
+      try { stats = row.stats_json === null ? null : JSON.parse(row.stats_json) } catch { stats = null }
+      const samples = db.prepare(`
+        SELECT id FROM photos WHERE project_id = ? AND thumb_path IS NOT NULL
+        ORDER BY RANDOM() LIMIT 8
+      `).all(id)
+      result.push({
+        stage, status: row.status, stats, costCny: row.cost_cny, cursor: row.cursor,
+        sampleIds: samples.map(sample => sample.id),
+        startedAt: row.started_at, finishedAt: row.finished_at,
+      })
+    }
+    return result
+  }
+
+  async startStage(id, stage, { action = 'start' } = {}) {
+    if (!STAGES.has(stage)) throw stageError(`unsupported stage: ${stage}`, 'BAD_STAGE', 400)
+    const current = this.running.get(id)
+
+    if (action === 'pause' || action === 'cancel') {
+      if (current === undefined) return { [action]: stage, running: false }
+      current.controller.abort()
+      if (action === 'cancel') {
+        const { db } = await this.store.open(id)
+        const finishedAt = Date.now()
+        db.prepare(`UPDATE stage_runs SET status = 'cancelled', finished_at = ?
+                    WHERE project_id = ? AND status = 'running'`).run(finishedAt, id)
+        db.prepare('UPDATE projects SET status = ?, updated_at = ? WHERE id = ?')
+          .run('failed', finishedAt, id)
+      }
+      this.events.emit('event', { projectId: id, stage: current.stage, [action]: true })
+      return { [action]: stage }
+    }
+
+    if (current !== undefined) throw new Error(`a stage is already running for project ${id}`)
     const { db, project } = await this.store.open(id)
-    const source = new LocalSource(project.sourcePath)
+    if (AI_STAGES.has(stage)) {
+      const capable = await this.imageCapable(project)
+      if (!capable) throw stageError(`model ${project.modelId} does not accept image input`, 'MODEL_NO_IMAGE_INPUT', 400)
+    }
+
+    const controller = new AbortController()
     const onProgress = progress => this.events.emit('event', { projectId: id, ...progress })
-    const task = stage === 'scan'
-      ? scanProject({ db, projectId: id, source, onProgress })
-      : preprocessProject({
-          db,
-          projectId: id,
-          sourceRoot: project.sourcePath,
-          workspaceDir: project.workspaceDir,
-          onProgress,
-        })
-    this.running.set(id, stage)
+    let task
+    if (stage === 'scan') {
+      task = scanProject({ db, projectId: id, source: new LocalSource(project.sourcePath), onProgress })
+    } else if (stage === 'preprocess') {
+      task = preprocessProject({
+        db,
+        projectId: id,
+        sourceRoot: project.sourcePath,
+        workspaceDir: project.workspaceDir,
+        onProgress,
+      })
+    } else {
+      const deps = {
+        db,
+        projectId: id,
+        project,
+        llm: this.ctx.llm,
+        attachments: this.ctx.attachments,
+        workspaceDir: project.workspaceDir,
+        signal: controller.signal,
+        onEvent: onProgress,
+        thumbFor: photo => readFile(path.join(project.workspaceDir, photo.thumb_path)).catch(() => undefined),
+        loadPhoto: photo => path.join(project.sourcePath, photo.rel_path),
+      }
+      task = stage === 'grid' ? runGridStage(deps)
+        : stage === 'rank' ? runRankStage(deps)
+          : runScoreStage(deps)
+    }
+
+    this.running.set(id, { stage, controller })
     task
-      .then(() => this.events.emit('event', { projectId: id, stage, done: true }))
-      .catch(error => this.events.emit('event', { projectId: id, stage, error: String(error?.message ?? error) }))
-      .finally(() => this.running.delete(id))
+      .then(result => this.events.emit('event', { projectId: id, stage, done: true, result }))
+      .catch(error => this.events.emit('event', {
+        projectId: id, stage, error: String(error?.message ?? error), code: error?.code,
+      }))
+      .finally(() => {
+        if (this.running.get(id)?.stage === stage) this.running.delete(id)
+      })
     return { started: stage }
   }
 

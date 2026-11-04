@@ -10,7 +10,16 @@ function stub() {
     async createProject(body) { return { id: 'p2', name: body.name } },
     async getProjectDetail(id) { return { id, counts: {} } },
     async listPhotos() { return [] },
-    async startStage(id, stage) { return { started: stage } },
+    async startStage(id, stage, options = {}) {
+      if (!['scan', 'preprocess', 'grid', 'rank', 'score'].includes(stage)) {
+        const error = new Error(`unsupported stage: ${stage}`)
+        error.code = 'BAD_STAGE'
+        error.statusCode = 400
+        throw error
+      }
+      return options.action === 'pause' ? { paused: stage } : { started: stage }
+    },
+    async checkpoints(id) { return [{ stage: 'grid', status: 'done', id }] },
     async listDir() { return [{ name: 'Pictures', path: '/Users/x/Pictures' }] },
     async chooseFolder() { return '/Users/x/Pictures' },
     async thumbFile() { return undefined },
@@ -52,5 +61,39 @@ test('unknown route returns a structured 404', async () => {
     const response = await fetch(`${origin}/photo-picker/nope`)
     assert.equal(response.status, 404)
     assert.equal((await response.json()).error.code, 'NOT_FOUND')
+  })
+})
+
+test('actions pass the requested operation and expose checkpoints', async () => {
+  await withServer(async origin => {
+    const started = await fetch(`${origin}/photo-picker/api/projects/p1/actions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'start', stage: 'grid' }),
+    })
+    assert.equal(started.status, 200)
+    assert.deepEqual(await started.json(), { started: 'grid' })
+
+    const paused = await fetch(`${origin}/photo-picker/api/projects/p1/actions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'pause', stage: 'grid' }),
+    })
+    assert.deepEqual(await paused.json(), { paused: 'grid' })
+
+    const checkpoints = await fetch(`${origin}/photo-picker/api/projects/p1/checkpoints`)
+    assert.deepEqual(await checkpoints.json(), [{ stage: 'grid', status: 'done', id: 'p1' }])
+  })
+})
+
+test('an invalid stage returns 400 with a structured code', async () => {
+  await withServer(async origin => {
+    const response = await fetch(`${origin}/photo-picker/api/projects/p1/actions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'start', stage: 'nope' }),
+    })
+    assert.equal(response.status, 400)
+    assert.equal((await response.json()).error.code, 'BAD_STAGE')
   })
 })

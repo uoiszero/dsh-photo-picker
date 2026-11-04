@@ -77,7 +77,14 @@ export function createHttpHandler(service) {
       const actionsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/actions$/)
       if (actionsMatch !== null && req.method === 'POST') {
         const body = await readJson(req)
-        return send(res, 200, await service.startStage(actionsMatch[1], body.stage))
+        return send(res, 200, await service.startStage(actionsMatch[1], body.stage, {
+          action: body.action ?? 'start',
+        }))
+      }
+
+      const checkpointsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/checkpoints$/)
+      if (checkpointsMatch !== null && req.method === 'GET') {
+        return send(res, 200, await service.checkpoints(checkpointsMatch[1]))
       }
 
       const eventsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/events$/)

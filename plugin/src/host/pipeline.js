@@ -214,18 +214,20 @@ export async function runGridStage({
     if (overBudget()) paused = true
   })
 
+  const aborted = signal?.aborted === true
+  const stopped = paused || aborted
   const stats = {
     done, total: packed.length, selected, rejected, failed, errors,
     durationMs: Date.now() - startedAt,
   }
   finishStageRun(db, projectId, stageRunId, {
-    status: paused ? 'paused' : 'done',
+    status: stopped ? 'paused' : 'done',
     stats,
     costCny: round6(spentCny),
     cursor,
-    projectStatus: paused ? 'paused' : 'gridded',
+    projectStatus: stopped ? 'paused' : 'gridded',
   })
-  return { paused, spentCny: round6(spentCny), selected, rejected, failed, grids: packed.length, errors }
+  return { paused: stopped, spentCny: round6(spentCny), selected, rejected, failed, grids: packed.length, errors }
 }
 
 /**
@@ -312,14 +314,15 @@ export async function runRankStage({
     if (budgetCny !== undefined && budgetCny > 0 && spentCny >= budgetCny) paused = true
   })
 
+  const stopped = paused || signal?.aborted === true
   const stats = { done, total: groups.length, kept, durationMs: Date.now() - startedAt }
   finishStageRun(db, projectId, stageRunId, {
-    status: paused ? 'paused' : 'done',
+    status: stopped ? 'paused' : 'done',
     stats,
     costCny: round6(spentCny),
-    projectStatus: paused ? 'paused' : 'scored',
+    projectStatus: stopped ? 'paused' : 'scored',
   })
-  return { paused, spentCny: round6(spentCny), groups: groups.length, kept }
+  return { paused: stopped, spentCny: round6(spentCny), groups: groups.length, kept }
 }
 
 async function rankOnce({ llm, project, items, signal }) {
@@ -443,14 +446,15 @@ export async function runScoreStage({
     if (budgetCny !== undefined && budgetCny > 0 && spentCny >= budgetCny) paused = true
   })
 
+  const stopped = paused || signal?.aborted === true
   const stats = { done, total: targets.length, scored, failed, durationMs: Date.now() - startedAt }
   finishStageRun(db, projectId, stageRunId, {
-    status: paused ? 'paused' : 'done',
+    status: stopped ? 'paused' : 'done',
     stats,
     costCny: round6(spentCny),
-    projectStatus: paused ? 'paused' : 'scored',
+    projectStatus: stopped ? 'paused' : 'scored',
   })
-  return { paused, spentCny: round6(spentCny), scored, failed }
+  return { paused: stopped, spentCny: round6(spentCny), scored, failed }
 }
 
 function chunk(items, size) {

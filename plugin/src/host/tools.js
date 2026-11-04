@@ -11,8 +11,8 @@ export function createPhotoPickerTool(service) {
       action: {
         type: 'string',
         required: true,
-        enum: ['create', 'list', 'get', 'run_stage', 'status'],
-        description: 'create / list / get / run_stage / status',
+        enum: ['create', 'list', 'get', 'run_stage', 'status', 'pause', 'cancel'],
+        description: 'create / list / get / run_stage / status / pause / cancel',
       },
       project: { type: 'string', description: '项目 id 或名称（get / run_stage / status 必填）' },
       source: {
@@ -27,7 +27,7 @@ export function createPhotoPickerTool(service) {
       name: { type: 'string', description: '项目名；省略时取文件夹名' },
       theme: { type: 'string', enum: ['portrait', 'landscape', 'event', 'mixed'] },
       budgetCny: { type: 'number' },
-      stage: { type: 'string', enum: ['scan', 'preprocess'] },
+      stage: { type: 'string', enum: ['scan', 'preprocess', 'grid', 'rank', 'score'] },
     },
     output: {
       schema: {
@@ -61,6 +61,15 @@ export function createPhotoPickerTool(service) {
           payload = await service.startStage(
             await service.resolveProject(args.project),
             args.stage,
+            { action: 'start' },
+          )
+          break
+        case 'pause':
+        case 'cancel':
+          payload = await service.startStage(
+            await service.resolveProject(args.project),
+            args.stage,
+            { action: args.action },
           )
           break
         default:

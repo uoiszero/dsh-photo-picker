@@ -35,6 +35,17 @@ const zh = {
   statusCreated: '新建',
   statusScanned: '已扫描',
   statusPreprocessed: '已预处理',
+  statusGridded: '已粗筛',
+  statusScored: '已评分',
+  statusPaused: '已暂停',
+  statusFailed: '失败',
+  stageGrid: '网格粗筛',
+  stageRank: '组内排序',
+  stageScore: '单张精评',
+  pause: '暂停',
+  spent: '已花费',
+  checkpoint: '检查点',
+  aiDisabled: '当前模型不支持图片输入，AI 阶段已禁用。',
 }
 
 const en = {
@@ -65,6 +76,17 @@ const en = {
   statusCreated: 'New',
   statusScanned: 'Scanned',
   statusPreprocessed: 'Preprocessed',
+  statusGridded: 'Gridded',
+  statusScored: 'Scored',
+  statusPaused: 'Paused',
+  statusFailed: 'Failed',
+  stageGrid: 'Grid triage',
+  stageRank: 'Rank group',
+  stageScore: 'Score photo',
+  pause: 'Pause',
+  spent: 'Spent',
+  checkpoint: 'Checkpoints',
+  aiDisabled: 'The current model does not accept image input, so AI stages are disabled.',
 }
 
 const btn = {
@@ -121,7 +143,28 @@ function statusLabel(t: (key: string) => string, status: string) {
   if (status === 'created') return t('statusCreated')
   if (status === 'scanned') return t('statusScanned')
   if (status === 'preprocessed') return t('statusPreprocessed')
+  if (status === 'gridded') return t('statusGridded')
+  if (status === 'scored') return t('statusScored')
+  if (status === 'paused') return t('statusPaused')
+  if (status === 'failed') return t('statusFailed')
   return status
+}
+
+function stageLabel(t: (key: string) => string, stage: string) {
+  const keys: Record<string, string> = {
+    scan: 'scan', preprocess: 'preprocess', grid: 'stageGrid', rank: 'stageRank', score: 'stageScore',
+  }
+  return keys[stage] === undefined ? stage : t(keys[stage])
+}
+
+function summarizeStats(stats: any) {
+  if (stats === null || stats === undefined) return ''
+  const parts: string[] = []
+  for (const key of ['photos', 'selected', 'rejected', 'failed', 'groups', 'kept', 'scored', 'done', 'errors']) {
+    if (typeof stats[key] === 'number') parts.push(`${key} ${stats[key]}`)
+  }
+  if (typeof stats.durationMs === 'number') parts.push(`${Math.round(stats.durationMs / 1000)}s`)
+  return parts.join(' · ')
 }
 
 function CreateForm({ t, onCreated, onCancel }: {
@@ -240,12 +283,19 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
   const [detail, setDetail] = useState<any>(null)
   const [photos, setPhotos] = useState<any[]>([])
   const [progress, setProgress] = useState<any>(null)
+  const [checkpoints, setCheckpoints] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const refresh = async () => {
     try {
-      setDetail(await api(`/photo-picker/api/projects/${id}`))
-      setPhotos(await api(`/photo-picker/api/projects/${id}/photos?limit=120`))
+      const [project, photos, points] = await Promise.all([
+        api(`/photo-picker/api/projects/${id}`),
+        api(`/photo-picker/api/projects/${id}/photos?limit=120`),
+        api(`/photo-picker/api/projects/${id}/checkpoints`),
+      ])
+      setDetail(project)
+      setPhotos(photos)
+      setCheckpoints(points)
       setError(null)
     } catch (cause) {
       setError(String(cause))
@@ -263,11 +313,11 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
     return () => events.close()
   }, [id])
 
-  const run = async (stage: string) => {
+  const run = async (stage: string, action = 'start') => {
     try {
       await api(`/photo-picker/api/projects/${id}/actions`, {
         method: 'POST',
-        body: JSON.stringify({ stage }),
+        body: JSON.stringify({ stage, action }),
       })
     } catch (cause) {
       setError(String(cause))
@@ -278,6 +328,8 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
 
   const counts = detail.counts ?? {}
   const version = detail.updatedAt ?? 0
+  const aiDisabled = detail.ai?.hasImageModel === false
+  const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -291,21 +343,68 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
           {Object.entries(counts).map(([state, count]) => (
             <span key={state} style={chip}>{state}: {String(count)}</span>
           ))}
+          <span style={chip}>
+            {t('spent')}: ¥{Number(detail.cost?.spentCny ?? 0).toFixed(4)} / ¥{Number(detail.cost?.budgetCny ?? 0).toFixed(0)}
+          </span>
           {detail.running !== null && (
             <span style={{ ...chip, color: 'var(--dsw-alias-brand-primary)' }}>{t('running')}: {detail.running}</span>
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" style={btn} onClick={() => run('scan')}>{t('scan')}</button>
         <button type="button" style={btn} onClick={() => run('preprocess')}>{t('preprocess')}</button>
+        <button type="button" style={btn} disabled={aiDisabled} onClick={() => run('grid')}>{t('stageGrid')}</button>
+        <button type="button" style={btn} disabled={aiDisabled} onClick={() => run('rank')}>{t('stageRank')}</button>
+        <button type="button" style={btn} disabled={aiDisabled} onClick={() => run('score')}>{t('stageScore')}</button>
+        {detail.running !== null && (
+          <button type="button" style={btn} onClick={() => run(detail.running, 'pause')}>{t('pause')}</button>
+        )}
       </div>
+      {aiDisabled && <div style={muted}>{t('aiDisabled')}</div>}
       {progress !== null && (
-        <div style={muted}>
-          {progress.stage} {progress.done ?? 0}/{progress.total ?? '?'} {progress.error ?? ''}
+        <div style={{ display: 'grid', gap: 4 }}>
+          <div style={muted}>
+            {stageLabel(t, progress.stage)} {progress.done ?? 0}/{progress.total ?? '?'}
+            {progress.costCny !== undefined ? ` · ¥${Number(progress.costCny).toFixed(4)}` : ''}
+            {progress.error !== undefined && progress.error !== null ? ` · ${String(progress.error)}` : ''}
+          </div>
+          <div style={{ height: 4, borderRadius: 2, background: 'var(--dsw-alias-bg-layer-2)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${percent}%`, background: 'var(--dsw-alias-brand-primary)' }} />
+          </div>
         </div>
       )}
       {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+      {checkpoints.length > 0 && (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <span style={{ ...muted, fontWeight: 600 }}>{t('checkpoint')}</span>
+          {checkpoints.map(cp => (
+            <div key={cp.stage} style={{
+              border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 10,
+              padding: 12, display: 'grid', gap: 8,
+            }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <strong>{stageLabel(t, cp.stage)}</strong>
+                <span style={chip}>{cp.status}</span>
+                <span style={chip}>¥{Number(cp.costCny ?? 0).toFixed(4)}</span>
+                <span style={{ ...muted, marginLeft: 'auto' }}>{summarizeStats(cp.stats)}</span>
+              </div>
+              {(cp.sampleIds ?? []).length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>
+                  {cp.sampleIds.map((pid: string) => (
+                    <img
+                      key={pid}
+                      src={`/photo-picker/media/thumb/${id}/${pid}?v=${version}`}
+                      alt={pid}
+                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, background: 'var(--dsw-alias-bg-layer-2)' }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       {photos.length === 0 ? (
         <div style={{ ...muted, fontSize: 13 }}>{t('noPhotos')}</div>
       ) : (
