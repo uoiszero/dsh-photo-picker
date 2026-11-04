@@ -13,16 +13,20 @@
 ## 快速命令
 
 ```bash
-npm install              # 依赖（sharp/exifr/nanoid/esbuild）
+npm install              # 依赖（sharp/exifr/nanoid/esbuild；类型检查用 tsc）
 npm test                 # 全部 node:test（71 个）
+npm run typecheck        # tsc --noEmit（TSX 只转译、esbuild 不做类型检查）
 npm run build:client     # plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # /tmp/pp-fixtures（120 张测试图）
 npm run acceptance:1     # 本机扫描/预处理
 npm run acceptance:2     # AI 流水线端到端（mock LLM，零费用）
 npm run acceptance:4     # 复核/改判/导出/源零写入
+npm run check:release    # 版本号三处一致（打 tag 时还要与 tag 一致）
+npm run check:hygiene    # 个人路径/密钥/数据库/本地 file: 依赖
+npm run verify           # 以上全串一遍，与 CI 同一套门禁
 ```
 
-改客户端后必须 `npm run build:client` 并提交 `plugin/dist/client.js`；Host 侧普通 JS 不需要编译。
+改客户端后必须 `npm run build:client` 并提交 `plugin/dist/client.js`；Host 侧普通 JS 不需要编译。CI 会重新构建并断言产物与源码同步（`git diff --exit-code -- plugin/dist/client.js`）。
 
 ## DSH 环境注意事项
 
@@ -74,10 +78,23 @@ npm run acceptance:4     # 复核/改判/导出/源零写入
 - 导出必须排除 `grid_rejected`/`filtered_*`；dry-run 与执行使用同一套判定 SQL。
 - 网格打包是**分组感知**的，实际格数可能大于 `ceil(候选/16)`，测试不要假设等于该值。
 - 组对比每页 6 张；`groupDetail` 的成员按分数降序，名次从 1 开始。
+- esbuild 会自动读根 `tsconfig.json`：`scripts/build-client.mjs` 已传 `tsconfigRaw: {}` 隔离。否则调整 `strict` / `module` 等选项会悄悄改变 bundle 字节（例如多出 `"use strict"`），让 CI 的产物同步校验误报。
+
+## CI
+
+- `.github/workflows/ci.yml`：push 到 `main`、PR、手动触发。三个 job 都应在合并前绿：
+  - `checks`（ubuntu）：`npm ci` → `npm test` → `typecheck` → `check:release` → `check:hygiene` → `build:client` + 产物必须与源码同步；
+  - `acceptance`（ubuntu）：`fixtures` + `acceptance:1/2/4`（假 LLM，零费用、无密钥）；
+  - `macOS`：主平台回归，测试 + 三个验收脚本。
+- 打 `v*` tag 触发 `release.yml`：重复完整门禁，把 `plugin/` 打成 `dsh-photo-picker-vX.Y.Z.tar.gz` 附到 GitHub Release；tag 必须等于 `v<版本号>`。
+- CI **不调用真实模型**，也**不做创造者模式安装 / 浏览器验证**，这两步仍按上面「DSH 环境注意事项」手工执行。
+- 依赖必须能被干净 clone 的 `npm ci` 安装：不要用 `file:` / `link:` 指向兄弟仓库（`scripts/check-hygiene.mjs` 会拦）。
+- Node 版本以 `.nvmrc` 为准（22.23.4），`package.json` 的 `engines` 同步约束。
 
 ## 发布
 
 - 版本号在两处：根 `package.json` 与 `plugin/package.json`（以及 `package-lock.json` 的根 packages 条目）。
-- 发布前：`npm test`、`npm run acceptance:1 && npm run acceptance:2 && npm run acceptance:4`、`npm run build:client`，确认 `git status` 干净。
+- 发布前：`npm run verify`（测试 / 类型检查 / 版本与卫生检查 / 构建 / 三个验收脚本），确认 `git status` 干净。
+- 发布走 tag：`chore: release X.Y.Z` 提交后打 `vX.Y.Z` 推上去，`release.yml` 会重跑门禁并生成带 bundle 的 Release。
 - 仓库默认分支 `main`；推送到 GitHub 前确认 remote 与可见性，不要在公开仓库里放个人照片/路径清单。
 - 设计文档与计划随代码一起维护；实现偏离 spec 时在对应 plan 里写「实现状态/偏差」。

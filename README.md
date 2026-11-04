@@ -157,18 +157,34 @@ Harness Web UI
 ## 开发
 
 ```bash
-npm install            # 安装依赖
-npm test               # 71 个单元/集成测试（node:test）
-npm run build:client   # 打包 plugin/src/client -> plugin/dist/client.js
-npm run fixtures       # 生成 120 张测试夹具到 /tmp/pp-fixtures
-npm run acceptance:1   # 本机扫描/预处理验收
-npm run acceptance:2   # AI 流水线端到端（mock LLM，不产生费用）
-npm run acceptance:4   # 复核/改判/导出/源零写入验收
+npm install              # 安装依赖
+npm test                 # 71 个单元/集成测试（node:test）
+npm run typecheck        # TSX 类型检查（tsc --noEmit）
+npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
+npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
+npm run acceptance:1     # 本机扫描/预处理验收
+npm run acceptance:2     # AI 流水线端到端（mock LLM，不产生费用）
+npm run acceptance:4     # 复核/改判/导出/源零写入验收
+npm run check:release    # 三处版本号一致（打 tag 时还要与 tag 一致）
+npm run check:hygiene    # 个人路径 / 密钥 / 数据库 / 本地 file: 依赖
+npm run verify           # 以上全部串一遍，与 CI 同一套门禁
 ```
 
 - Host 侧是普通 ESM JavaScript（不编译）；Client 是 TSX，由 esbuild 打包成 DSH 的 `window.__ModuleLoader__` 格式并提交。
 - 测试与验收脚本都不会调用真实模型；需要真实调用时请自行确认费用（16 张真实照片约 ¥0.05）。
 - 更多实现细节、验收记录与后续计划见 [`docs/superpowers/`](docs/superpowers/)。
+
+### CI
+
+GitHub Actions（`.github/workflows/ci.yml`）在 push 到 `main` 与 PR 上跑三个 job：
+
+| job | 内容 |
+| --- | --- |
+| `checks`（ubuntu） | `npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端，并断言 `plugin/dist/client.js` 与源码同步 |
+| `acceptance`（ubuntu） | fixture + `acceptance:1/2/4`（假 LLM，零费用、无密钥） |
+| `macOS` | 主平台回归：测试 + 三个验收脚本 |
+
+打 `v*` tag 时 `release.yml` 会重跑完整门禁，并把 `plugin/` 打成 `dsh-photo-picker-vX.Y.Z.tar.gz` 附到 GitHub Release（解压目录即可作为 `plugin_manager action=install_bundle` 的 `target`）。CI **不会**调用真实模型，也不做创造者模式安装与浏览器验证，这两步仍按 [`AGENTS.md`](AGENTS.md) 手工执行。
 
 ### 目录结构
 

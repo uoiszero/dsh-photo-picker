@@ -6,12 +6,15 @@
   "description": "DSH 照片工作台：本机照片扫描、AI 分层筛选、人工复核与导出。",
   "scripts": {
     "test": "node --test plugin/test/*.test.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "build:client": "node scripts/build-client.mjs",
     "fixtures": "node scripts/make-fixtures.mjs",
     "acceptance:1": "node scripts/acceptance-phase1.mjs",
     "acceptance:2": "node scripts/acceptance-phase2.mjs",
     "acceptance:4": "node scripts/acceptance-phase4.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "check:release": "node scripts/check-release.mjs",
+    "check:hygiene": "node scripts/check-hygiene.mjs",
+    "verify": "npm test && npm run typecheck && npm run check:release && npm run check:hygiene && npm run build:client && npm run fixtures && npm run acceptance:1 && npm run acceptance:2 && npm run acceptance:4"
   },
   "engines": {
     "node": ">=22.23.0"
