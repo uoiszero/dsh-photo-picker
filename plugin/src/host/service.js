@@ -84,7 +84,7 @@ export class PhotoPickerService extends Service {
       params.push(state)
     }
     const rows = db.prepare(`
-      SELECT id, rel_path, state, width, height, blur_score, dhash, group_id FROM photos
+      SELECT id, rel_path, state, width, height, blur_score, dhash, group_id, thumb_path FROM photos
       WHERE ${clauses.join(' AND ')}
       ORDER BY rel_path LIMIT ? OFFSET ?
     `).all(...params, limit, offset)
@@ -96,6 +96,7 @@ export class PhotoPickerService extends Service {
       height: row.height,
       blurScore: row.blur_score,
       groupId: row.group_id,
+      hasThumb: row.thumb_path !== null,
       thumbUrl: `/photo-picker/media/thumb/${id}/${row.id}`,
     }))
   }
