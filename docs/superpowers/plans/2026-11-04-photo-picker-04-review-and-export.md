@@ -36,6 +36,7 @@
 - **自动串联**：`POST /actions { action: 'run_all' }` 顺序跑 scan → preprocess → grid → rank → score（新建 `orchestrator.js`，含单元测试）。`stage_pause=1` 时每阶段结束停止并报告下一阶段；预算暂停、取消（abort）同样会停止；面板显示「自动跑完成/已暂停 + 完成的阶段链」。
   - 顺带修复：阶段启动原先读 `ProjectStore` 缓存的旧项目快照，改设置后（stagePause/预算/阈值/模型）不生效；现在每次启动前重读 `projects` 行。
 - 实测：真实项目自动跑（已全部处理完）→ 0 次 API 调用完成五阶段；临时开启 stagePause 后自动跑只执行 scan 即停（状态 `scanned`，报告下一阶段 preprocess），随后恢复默认。
+- **i18n（2026-11-04 完成）**：新增 `plugin/src/client/locales.js`（zh/en 词典 + 语言检测 + 订阅），界面语言按 `navigator.languages` 自动选择（zh* → 中文，其余 → English），不依赖 DSH 语言设置；设置抽屉可切换「跟随浏览器 / 中文 / English」，写入 `localStorage['photoPicker.lang']` 并即时重渲染（无需刷新）。`npm test` 增加 i18n 用例（检测、回退、词典键一致性）。
 - 仍未做：图墙虚拟滚动（大数据量）、组对比“按分数重排”视图。
 
 

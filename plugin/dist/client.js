@@ -39,10 +39,8 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 var import_react = __toESM(require("react"), 1);
-var h = import_react.default.createElement;
-var Fragment = import_react.default.Fragment;
-var NS = "photoPicker";
-var PANEL_ID = "photo-picker";
+
+// plugin/src/client/locales.js
 var zh = {
   title: "\u7167\u7247\u5DE5\u4F5C\u53F0",
   subtitle: "\u9009\u62E9\u672C\u673A\u7167\u7247\u6587\u4EF6\u5939\uFF0C\u626B\u63CF\u5E76\u505A\u672C\u5730\u9884\u5904\u7406\uFF08\u53BB\u91CD / \u6280\u672F\u8FC7\u6EE4 / \u5206\u7EC4\uFF09\u3002",
@@ -176,7 +174,9 @@ var zh = {
   settingsHint: "\u9608\u503C\u3001\u5206\u7EC4\u53C2\u6570\u4E0E\u63D0\u793A\u8BCD\u6539\u52A8\u5F71\u54CD\u540E\u7EED\u9636\u6BB5\uFF1B\u5206\u7EC4\u53C2\u6570\u9700\u8981\u91CD\u8DD1\u9884\u5904\u7406\u624D\u751F\u6548\u3002",
   rerunStages: "\u91CD\u8DD1\u53D7\u5F71\u54CD\u9636\u6BB5",
   rerun: "\u91CD\u8DD1",
-  settingsNoImageModel: "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u7247\u8F93\u5165\uFF0CAI \u9636\u6BB5\u4F1A\u88AB\u7981\u7528\u3002"
+  settingsNoImageModel: "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u7247\u8F93\u5165\uFF0CAI \u9636\u6BB5\u4F1A\u88AB\u7981\u7528\u3002",
+  language: "\u754C\u9762\u8BED\u8A00",
+  languageAuto: "\u8DDF\u968F\u6D4F\u89C8\u5668"
 };
 var en = {
   title: "Photo Picker",
@@ -311,8 +311,59 @@ var en = {
   settingsHint: "Thresholds, grouping and prompt changes affect later stages; grouping needs a preprocess re-run.",
   rerunStages: "Re-run affected stages",
   rerun: "Re-run",
-  settingsNoImageModel: "The current model does not accept image input; AI stages will be disabled."
+  settingsNoImageModel: "The current model does not accept image input; AI stages will be disabled.",
+  language: "Language",
+  languageAuto: "Follow browser"
 };
+var STORAGE_KEY = "photoPicker.lang";
+var listeners = /* @__PURE__ */ new Set();
+function detectLanguage(nav, stored) {
+  const override = stored ?? (typeof localStorage === "undefined" ? null : localStorage.getItem(STORAGE_KEY));
+  if (override === "zh" || override === "en") return override;
+  const candidates = [];
+  const source = nav ?? (typeof navigator === "undefined" ? void 0 : navigator);
+  if (source !== void 0) {
+    if (Array.isArray(source.languages)) candidates.push(...source.languages);
+    if (typeof source.language === "string") candidates.push(source.language);
+  }
+  for (const candidate of candidates) {
+    const language = String(candidate).toLowerCase();
+    if (language.startsWith("zh")) return "zh";
+    if (language.startsWith("en")) return "en";
+  }
+  return "en";
+}
+function getLanguage() {
+  return detectLanguage();
+}
+function setLanguage(value) {
+  if (typeof localStorage !== "undefined") {
+    if (value === "auto") localStorage.removeItem(STORAGE_KEY);
+    else localStorage.setItem(STORAGE_KEY, value);
+  }
+  for (const listener of listeners) listener();
+}
+function getLanguagePreference() {
+  if (typeof localStorage === "undefined") return "auto";
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored === "zh" || stored === "en" ? stored : "auto";
+}
+function subscribeLanguage(listener) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+function translate(language, key) {
+  const dictionary = language === "zh" ? zh : en;
+  return dictionary[key] ?? en[key] ?? zh[key] ?? key;
+}
+
+// plugin/src/client/index.tsx
+var h = import_react.default.createElement;
+var Fragment = import_react.default.Fragment;
+var NS = "photoPicker";
+var PANEL_ID = "photo-picker";
 var btn = {
   background: "var(--dsw-alias-bg-layer-1)",
   color: "var(--dsw-alias-label-primary)",
@@ -951,6 +1002,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
   }));
   const [prompt, setPrompt] = (0, import_react.useState)(null);
   const [models, setModels] = (0, import_react.useState)([]);
+  const [languagePreference, setLanguagePreference] = (0, import_react.useState)(getLanguagePreference());
   const [busy, setBusy] = (0, import_react.useState)(false);
   const [saved, setSaved] = (0, import_react.useState)(false);
   const [error, setError] = (0, import_react.useState)(null);
@@ -1025,7 +1077,20 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
         }
       },
       /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center" } }, /* @__PURE__ */ h("strong", null, t("settingsTitle")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, marginLeft: "auto" }, onClick: onClose }, t("close"))),
-      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("settingsBasic")), /* @__PURE__ */ h("label", { style: label }, t("theme"), /* @__PURE__ */ h("select", { value: form.theme, onChange: (event) => set("theme", event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: label }, t("model"), /* @__PURE__ */ h("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), style: input }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
+      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("settingsBasic")), /* @__PURE__ */ h("label", { style: label }, t("theme"), /* @__PURE__ */ h("select", { value: form.theme, onChange: (event) => set("theme", event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: label }, t("language"), /* @__PURE__ */ h(
+        "select",
+        {
+          value: languagePreference,
+          onChange: (event) => {
+            setLanguage(event.target.value);
+            setLanguagePreference(event.target.value);
+          },
+          style: input
+        },
+        /* @__PURE__ */ h("option", { value: "auto" }, t("languageAuto")),
+        /* @__PURE__ */ h("option", { value: "zh" }, "\u4E2D\u6587"),
+        /* @__PURE__ */ h("option", { value: "en" }, "English")
+      )), /* @__PURE__ */ h("label", { style: label }, t("model"), /* @__PURE__ */ h("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), style: input }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
         const supportsImage = Array.isArray(model.inputModalities) ? model.inputModalities.includes("image") : true;
         return /* @__PURE__ */ h("option", { key: model.id, value: model.id, disabled: !supportsImage }, model.name ?? model.id, supportsImage ? "" : ` \u2014 ${t("settingsNoImageModel")}`);
       }))), /* @__PURE__ */ h("div", { style: { ...row } }, /* @__PURE__ */ h("label", { style: label }, t("concurrency"), /* @__PURE__ */ h("input", { value: form.concurrency, onChange: (event) => set("concurrency", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("budget"), /* @__PURE__ */ h("input", { value: form.budgetCny, onChange: (event) => set("budgetCny", event.target.value), style: numberInput })))),
@@ -1124,6 +1189,7 @@ function ProjectDetail({ t, id }) {
   )))))), /* @__PURE__ */ h(ReviewSection, { t, projectId: id, version, onChanged: refresh }), /* @__PURE__ */ h(CalibrationSection, { t, projectId: id, onApplied: refresh }));
 }
 function Workbench({ t }) {
+  (0, import_react.useSyncExternalStore)(subscribeLanguage, getLanguage);
   const [projects, setProjects] = (0, import_react.useState)(null);
   const [selected, setSelected] = (0, import_react.useState)(null);
   const [creating, setCreating] = (0, import_react.useState)(false);
@@ -1197,14 +1263,14 @@ function PhotoPickerIcon({ size }) {
 }
 var inject = ["slots", "locale"];
 function apply(ctx) {
-  const t = ctx.locale.bind(NS);
+  const t = (key) => translate(getLanguage(), key);
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), "photo-picker.locale");
   ctx.slots.inject("main", () => ctx.slots.register(
-    { name: "main", key: PANEL_ID, locale: NS },
-    Workbench
+    { name: "main", key: PANEL_ID },
+    () => /* @__PURE__ */ h(Workbench, { t })
   ));
   ctx.slots.inject("sidebar.panellist", () => ctx.slots.register(
-    { name: "sidebar.panellist", id: PANEL_ID, order: 20, locale: NS, label: () => t("title") },
+    { name: "sidebar.panellist", id: PANEL_ID, order: 20, label: () => t("title") },
     PhotoPickerIcon
   ));
 }
