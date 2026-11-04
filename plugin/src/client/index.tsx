@@ -8,17 +8,24 @@ const NS = 'photoPicker'
 const PANEL_ID = 'photo-picker'
 
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
+import { installStyles } from './theme.js'
 
 
 const btn = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 6,
   background: 'var(--dsw-alias-bg-layer-1)',
   color: 'var(--dsw-alias-label-primary)',
   border: '1px solid var(--dsw-alias-border-l1)',
-  borderRadius: 8,
-  padding: '6px 12px',
+  borderRadius: 10,
+  padding: '7px 13px',
   fontSize: 13,
-  lineHeight: 1.4,
+  fontWeight: 500,
+  lineHeight: 1.3,
   cursor: 'pointer',
+  whiteSpace: 'nowrap',
 }
 
 const btnPrimary = {
@@ -26,13 +33,14 @@ const btnPrimary = {
   background: 'var(--dsw-alias-button-primary-fill)',
   color: 'var(--dsw-alias-label-primary-foreground)',
   border: '1px solid transparent',
+  fontWeight: 600,
 }
 
 const input = {
-  background: 'var(--dsw-alias-bg-layer-1)',
+  background: 'var(--dsw-alias-bg-base)',
   color: 'var(--dsw-alias-label-primary)',
   border: '1px solid var(--dsw-alias-border-l1)',
-  borderRadius: 8,
+  borderRadius: 9,
   padding: '7px 10px',
   fontSize: 13,
   minWidth: 0,
@@ -41,11 +49,15 @@ const input = {
 const muted = { color: 'var(--dsw-alias-label-secondary)', fontSize: 12 }
 
 const chip = {
+  display: 'inline-flex',
+  alignItems: 'center',
   background: 'var(--dsw-alias-bg-layer-2)',
-  borderRadius: 6,
-  padding: '2px 8px',
-  fontSize: 12,
+  borderRadius: 999,
+  padding: '2px 9px',
+  fontSize: 11,
   color: 'var(--dsw-alias-label-secondary)',
+  lineHeight: 1.6,
+  whiteSpace: 'nowrap',
 }
 
 async function api(path: string, init?: RequestInit) {
@@ -179,63 +191,64 @@ function CreateForm({ t, onCreated, onCancel }: {
   }
 
   return (
-    <div style={{ display: 'grid', gap: 14, maxWidth: 640, border: '1px solid var(--dsw-alias-border-l1)', background: 'var(--dsw-alias-bg-layer-1)', borderRadius: 12, padding: 16 }}>
-      <label style={{ display: 'grid', gap: 6 }}>
-        <span style={muted}>{t('folder')}</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <input
-            value={folder}
-            onChange={event => setFolder(event.target.value)}
-            placeholder="/Users/…/Pictures"
-            style={{ ...input, flex: 1 }}
-          />
-          <button type="button" style={btn} onClick={choose}>{t('choose')}</button>
-          <button type="button" style={btn} onClick={() => browse(folder)}>{t('browse')}</button>
-        </div>
-      </label>
-      {dirs.length > 0 && (
-        <div style={{ maxHeight: 200, overflow: 'auto', border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 8 }}>
-          {dirs.map(dir => (
-            <div
-              key={dir.path}
-              onClick={() => browse(dir.path)}
-              style={{ padding: '6px 10px', cursor: 'pointer', fontSize: 13 }}
-            >
-              {dir.name}
-            </div>
-          ))}
-        </div>
-      )}
-      <label style={{ display: 'grid', gap: 6 }}>
-        <span style={muted}>{t('name')}</span>
-        <input value={name} onChange={event => setName(event.target.value)} placeholder={t('namePlaceholder')} style={input} />
-      </label>
-      <div style={{ display: 'flex', gap: 14 }}>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={muted}>{t('theme')}</span>
-          <select value={theme} onChange={event => setTheme(event.target.value)} style={input}>
-            <option value="mixed">{t('themeMixed')}</option>
-            <option value="portrait">{t('themePortrait')}</option>
-            <option value="landscape">{t('themeLandscape')}</option>
-            <option value="event">{t('themeEvent')}</option>
-          </select>
+    <div className="pp-card pp-panel" style={{ maxWidth: 700 }}>
+      <div className="pp-form">
+        <label className="pp-field">
+          <span>{t('folder')}</span>
+          <div className="pp-row" style={{ alignItems: 'stretch' }}>
+            <input
+              value={folder}
+              onChange={event => setFolder(event.target.value)}
+              placeholder="/Users/…/Pictures"
+              style={{ ...input, flex: 1 }}
+            />
+            <button type="button" style={btn} onClick={choose}>{t('choose')}</button>
+            <button type="button" style={btn} onClick={() => browse(folder)}>{t('browse')}</button>
+          </div>
         </label>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={muted}>{t('budget')}</span>
-          <input value={budget} onChange={event => setBudget(event.target.value)} style={{ ...input, width: 100 }} />
+        {dirs.length > 0 && (
+          <div className="pp-card" style={{ maxHeight: 220, overflow: 'auto', padding: 4 }}>
+            {dirs.map(dir => (
+              <div
+                key={dir.path}
+                onClick={() => browse(dir.path)}
+                style={{ padding: '7px 10px', cursor: 'pointer', fontSize: 13, borderRadius: 8 }}
+              >
+                {dir.name}
+              </div>
+            ))}
+          </div>
+        )}
+        <label className="pp-field">
+          <span>{t('name')}</span>
+          <input value={name} onChange={event => setName(event.target.value)} placeholder={t('namePlaceholder')} style={input} />
         </label>
+        <div className="pp-row">
+          <label className="pp-field">
+            <span>{t('theme')}</span>
+            <select value={theme} onChange={event => setTheme(event.target.value)} style={input}>
+              <option value="mixed">{t('themeMixed')}</option>
+              <option value="portrait">{t('themePortrait')}</option>
+              <option value="landscape">{t('themeLandscape')}</option>
+              <option value="event">{t('themeEvent')}</option>
+            </select>
+          </label>
+          <label className="pp-field" style={{ maxWidth: 140 }}>
+            <span>{t('budget')}</span>
+            <input value={budget} onChange={event => setBudget(event.target.value)} style={input} />
+          </label>
+        </div>
+        <div className="pp-actions">
+          <button type="button" style={btnPrimary} disabled={busy || folder === ''} onClick={create}>
+            {busy ? t('creating') : t('create')}
+          </button>
+          <button type="button" style={btn} onClick={onCancel}>{t('back')}</button>
+        </div>
+        {error !== null && <div className="pp-error">{error}</div>}
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button type="button" style={btnPrimary} disabled={busy || folder === ''} onClick={create}>
-          {busy ? t('creating') : t('create')}
-        </button>
-        <button type="button" style={btn} onClick={onCancel}>{t('back')}</button>
-      </div>
-      {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
     </div>
   )
 }
-
 
 const VERDICT_COLORS: Record<string, string> = {
   keep: 'var(--dsw-static-green-500, #2f9e5f)',
@@ -363,85 +376,83 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   ]
 
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ ...muted, fontWeight: 600 }}>{t('review')}</span>
-        {filters.map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setFilter(value)}
-            style={{
-              ...chip,
-              cursor: 'pointer',
-              border: '1px solid transparent',
-              background: filter === value ? 'var(--dsw-alias-brand-primary)' : 'var(--dsw-alias-bg-layer-2)',
-              color: filter === value ? 'var(--dsw-alias-label-primary-foreground)' : 'var(--dsw-alias-label-secondary)',
-            }}
-          >
-            {label}
-          </button>
-        ))}
-        <select value={sort} onChange={event => setSort(event.target.value)} style={{ ...input, padding: '4px 8px', fontSize: 12 }}>
+    <section className="pp-review">
+      <div className="pp-toolbar">
+        <span className="pp-section-title">{t('review')}</span>
+        <div className="pp-seg">
+          {filters.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={filter === value ? 'active' : ''}
+              onClick={() => setFilter(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <select value={sort} onChange={event => setSort(event.target.value)} style={{ ...input, padding: '5px 8px', fontSize: 12 }}>
           <option value="score">{t('sortScore')}</option>
           <option value="score_asc">{t('sortScoreAsc')}</option>
           <option value="group">{t('sortGroup')}</option>
           <option value="taken_at">{t('sortTaken')}</option>
           <option value="rel_path">{t('sortPath')}</option>
         </select>
-        <span style={{ ...muted, marginLeft: 'auto' }}>{items.length} / {t('photos')}</span>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={muted}>{t('selectedCount')}: {selected.length}</span>
-        <button type="button" style={btn} disabled={selected.length === 0} onClick={() => decide(selected, 'keep')}>{t('keep')}</button>
-        <button type="button" style={btn} disabled={selected.length === 0} onClick={() => decide(selected, 'maybe')}>{t('maybe')}</button>
-        <button type="button" style={btn} disabled={selected.length === 0} onClick={() => decide(selected, 'reject')}>{t('reject')}</button>
+        <span className="pp-muted" style={{ marginLeft: 'auto' }}>{items.length} {t('photos')}</span>
         <button type="button" style={btn} disabled={undo.length === 0} onClick={undoLast}>{t('undoAction')}</button>
       </div>
 
-      {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+      {error !== null && <div className="pp-error">{error}</div>}
 
       {items.length === 0 ? (
-        <div style={{ ...muted, fontSize: 13 }}>{t('noPhotos')}</div>
+        <div className="pp-empty" style={{ padding: '44px 20px' }}>
+          <h2>{t('reviewEmpty')}</h2>
+          {filter !== 'all' && (
+            <button type="button" style={btn} onClick={() => setFilter('all')}>{t('filterAll')}</button>
+          )}
+        </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 8 }}>
+        <div className="pp-wall">
           {items.map(item => (
-            <div key={item.id} style={{ position: 'relative' }}>
+            <div className="pp-tile-wrap" key={item.id}>
               <button
                 type="button"
+                className={`pp-tile${selected.includes(item.id) ? ' selected' : ''}`}
                 title={item.relPath}
                 onClick={() => setSingle(item.id)}
-                style={{
-                  display: 'block', width: '100%', aspectRatio: '1', padding: 0,
-                  border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 8, overflow: 'hidden',
-                  background: 'var(--dsw-alias-bg-layer-2)', cursor: 'pointer', position: 'relative',
-                }}
               >
-                <img src={`${item.thumbUrl}?v=${version}`} alt={item.relPath} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 4, background: VERDICT_COLORS[item.verdict] ?? 'var(--dsw-alias-border-l2)' }} />
-                {item.score !== null && (
-                  <span style={{ position: 'absolute', top: 6, left: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 11 }}>
-                    {Number(item.score).toFixed(1)}
-                  </span>
-                )}
+                <img src={`${item.thumbUrl}?v=${version}`} alt={item.relPath} loading="lazy" />
+                <span
+                  className="pp-tile-bar"
+                  style={{ background: VERDICT_COLORS[item.verdict] ?? 'var(--dsw-alias-border-l2)' }}
+                />
+                {item.score !== null && <span className="pp-tile-score">{Number(item.score).toFixed(1)}</span>}
                 {item.humanVerdict !== null && (
-                  <span style={{ position: 'absolute', bottom: 8, right: 6, padding: '1px 5px', borderRadius: 5, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 10 }}>
-                    {verdictLabel(t, item.humanVerdict)}
-                  </span>
+                  <span className="pp-tile-human">{verdictLabel(t, item.humanVerdict)}</span>
                 )}
               </button>
               <input
+                className="pp-check"
                 type="checkbox"
                 checked={selected.includes(item.id)}
                 onChange={() => toggle(item.id)}
-                style={{ position: 'absolute', top: 8, right: 8, width: 16, height: 16, cursor: 'pointer' }}
+                aria-label={item.relPath}
               />
             </div>
           ))}
         </div>
       )}
-    </div>
+
+      {selected.length > 0 && (
+        <div className="pp-batch">
+          <span className="pp-muted">{t('selectedCount')} {selected.length}</span>
+          <button type="button" style={btn} onClick={() => decide(selected, 'keep')}>{t('keep')}</button>
+          <button type="button" style={btn} onClick={() => decide(selected, 'maybe')}>{t('maybe')}</button>
+          <button type="button" style={btn} onClick={() => decide(selected, 'reject')}>{t('reject')}</button>
+          <button type="button" style={btn} onClick={() => setSelected([])}>{t('clearSelection')}</button>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -483,38 +494,37 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
 
   const dimensions = detail.dimensions ?? {}
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <button type="button" style={btn} onClick={onClose}>{t('backToWall')}</button>
+    <section className="pp-single">
+      <div className="pp-single-head">
+        <button type="button" style={btn} onClick={onClose}>← {t('backToWall')}</button>
         {detail.group !== undefined && (
           <button type="button" style={btn} onClick={() => onOpenGroup(detail.group.id)}>{t('groupCompare')}</button>
         )}
-        <span style={muted}>{index + 1} / {items.length}</span>
-        <span style={{ ...chip, background: VERDICT_COLORS[detail.verdict] ?? 'var(--dsw-alias-bg-layer-2)', color: '#fff' }}>{verdictLabel(t, detail.verdict)}</span>
-        {detail.score !== null && <span style={chip}>{t('scoreLabel')}: {detail.score}</span>}
-        <span style={{ ...muted, marginLeft: 'auto' }}>{detail.relPath}</span>
+        <span className="pp-chip">{index + 1} / {items.length}</span>
+        <span className="pp-pill" data-tone={detail.verdict}>{verdictLabel(t, detail.verdict)}</span>
+        {detail.score !== null && <span className="pp-chip">{t('scoreLabel')} {detail.score}</span>}
+        <span className="pp-muted" style={{ marginLeft: 'auto' }}>{detail.relPath}</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 14, alignItems: 'start' }}>
-        <img
-          src={`${detail.previewUrl}?v=${version}`}
-          alt={detail.relPath}
-          style={{ width: '100%', maxHeight: '72vh', objectFit: 'contain', borderRadius: 10, background: 'var(--dsw-alias-bg-layer-2)' }}
-        />
-        <div style={{ display: 'grid', gap: 10 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" style={btn} onClick={() => onDecide([photoId], 'keep')}>{t('keep')}</button>
-            <button type="button" style={btn} onClick={() => onDecide([photoId], 'maybe')}>{t('maybe')}</button>
-            <button type="button" style={btn} onClick={() => onDecide([photoId], 'reject')}>{t('reject')}</button>
+
+      <div className="pp-single-body">
+        <div className="pp-stage">
+          <img src={`${detail.previewUrl}?v=${version}`} alt={detail.relPath} />
+        </div>
+        <aside className="pp-card pp-panel">
+          <div className="pp-row" style={{ gap: 6 }}>
+            <button type="button" style={{ ...btn, flex: 1 }} onClick={() => onDecide([photoId], 'keep')}>{t('keep')}</button>
+            <button type="button" style={{ ...btn, flex: 1 }} onClick={() => onDecide([photoId], 'maybe')}>{t('maybe')}</button>
+            <button type="button" style={{ ...btn, flex: 1 }} onClick={() => onDecide([photoId], 'reject')}>{t('reject')}</button>
           </div>
-          <div style={{ ...muted, fontSize: 12 }}>{t('keyboardHint')}</div>
-          <div style={{ display: 'grid', gap: 6 }}>
+          <div className="pp-kbd">{t('keyboardHint')}</div>
+          <div className="pp-meters">
             {Object.keys(DIMENSION_LABELS).map(key => {
               const value = dimensions[key]
               return (
-                <div key={key} style={{ display: 'grid', gridTemplateColumns: '64px 1fr 28px', gap: 8, alignItems: 'center', fontSize: 12 }}>
-                  <span style={muted}>{t(DIMENSION_LABELS[key])}</span>
-                  <div style={{ height: 6, borderRadius: 3, background: 'var(--dsw-alias-bg-layer-2)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%`, background: 'var(--dsw-alias-brand-primary)' }} />
+                <div key={key} className="pp-meter">
+                  <span className="pp-muted">{t(DIMENSION_LABELS[key])}</span>
+                  <div className="pp-meter-track">
+                    <div className="pp-meter-fill" style={{ width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` }} />
                   </div>
                   <span>{value === null || value === undefined ? '—' : value}</span>
                 </div>
@@ -522,26 +532,26 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
             })}
           </div>
           {detail.reason !== null && (
-            <div style={{ display: 'grid', gap: 4 }}>
-              <span style={{ ...muted, fontWeight: 600 }}>{t('reason')}</span>
-              <span style={{ fontSize: 13 }}>{detail.reason}</span>
+            <div>
+              <div className="pp-section-title" style={{ marginBottom: 4 }}>{t('reason')}</div>
+              <div className="pp-reason">{detail.reason}</div>
             </div>
           )}
           {(detail.postProcessing ?? []).length > 0 && (
-            <div style={{ display: 'grid', gap: 4 }}>
-              <span style={{ ...muted, fontWeight: 600 }}>{t('postProcessing')}</span>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {detail.postProcessing.map((code: string) => <span key={code} style={chip}>{code}</span>)}
+            <div>
+              <div className="pp-section-title" style={{ marginBottom: 6 }}>{t('postProcessing')}</div>
+              <div className="pp-chips">
+                {detail.postProcessing.map((code: string) => <span key={code} className="pp-chip">{code}</span>)}
               </div>
             </div>
           )}
-          <div style={muted}>
+          <div className="pp-muted">
             {detail.width} × {detail.height}
             {detail.group !== undefined ? ` · ${t('groupRank').replace('{rank}', String(detail.group.rank)).replace('{size}', String(detail.group.size))}` : ''}
           </div>
-        </div>
+        </aside>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -588,60 +598,66 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.42)', zIndex: 70, display: 'grid', placeItems: 'center' }}>
-      <div style={{
-        width: 'min(620px, 92vw)', maxHeight: '86vh', overflow: 'auto',
-        background: 'var(--dsw-alias-bg-overlay)', color: 'var(--dsw-alias-label-primary)',
-        border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 14, padding: 18, display: 'grid', gap: 12,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <strong>{t('exportTitle')}</strong>
-          <button type="button" style={{ ...btn, marginLeft: 'auto' }} onClick={onClose}>{t('close')}</button>
+    <div className="pp-overlay" onClick={onClose}>
+      <div className="pp-modal" onClick={event => event.stopPropagation()}>
+        <div className="pp-modal-head">
+          <span>{t('exportTitle')}</span>
+          <button type="button" style={btn} onClick={onClose}>{t('close')}</button>
         </div>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={muted}>{t('exportDest')}</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input
-              value={dest}
-              onChange={event => setDest(event.target.value)}
-              placeholder={t('destPlaceholder')}
-              style={{ ...input, flex: 1 }}
-            />
-            <button type="button" style={btn} onClick={choose}>{t('exportChoose')}</button>
+
+        <div className="pp-form">
+          <label className="pp-field">
+            <span>{t('exportDest')}</span>
+            <div className="pp-row" style={{ alignItems: 'stretch' }}>
+              <input
+                value={dest}
+                onChange={event => setDest(event.target.value)}
+                placeholder={t('destPlaceholder')}
+                style={{ ...input, flex: 1 }}
+              />
+              <button type="button" style={btn} onClick={choose}>{t('exportChoose')}</button>
+            </div>
+          </label>
+          <div className="pp-row" style={{ alignItems: 'center' }}>
+            <span className="pp-muted">{t('exportBuckets')}</span>
+            {['keep', 'maybe', 'reject'].map(bucket => (
+              <label key={bucket} className="pp-chip" style={{ cursor: 'pointer', gap: 6 }}>
+                <input type="checkbox" checked={buckets.includes(bucket)} onChange={() => toggleBucket(bucket)} />
+                {verdictLabel(t, bucket)}
+              </label>
+            ))}
+            <span className="pp-muted" style={{ marginLeft: 8 }}>{t('exportMode')}</span>
+            <select value={mode} onChange={event => setMode(event.target.value)} style={{ ...input, padding: '4px 8px', fontSize: 12 }}>
+              <option value="hardlink">{t('exportHardlink')}</option>
+              <option value="copy">{t('exportCopy')}</option>
+            </select>
           </div>
-        </label>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={muted}>{t('exportBuckets')}</span>
-          {['keep', 'maybe', 'reject'].map(bucket => (
-            <label key={bucket} style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 13 }}>
-              <input type="checkbox" checked={buckets.includes(bucket)} onChange={() => toggleBucket(bucket)} />
-              {verdictLabel(t, bucket)}
-            </label>
-          ))}
-          <span style={{ ...muted, marginLeft: 8 }}>{t('exportMode')}</span>
-          <select value={mode} onChange={event => setMode(event.target.value)} style={{ ...input, padding: '4px 8px', fontSize: 12 }}>
-            <option value="hardlink">{t('exportHardlink')}</option>
-            <option value="copy">{t('exportCopy')}</option>
-          </select>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+
+        <div className="pp-actions">
           <button type="button" style={btn} disabled={busy || dest === ''} onClick={() => execute('preview')}>{t('exportPreview')}</button>
           <button type="button" style={btnPrimary} disabled={busy || dest === '' || preview === null} onClick={() => execute('run')}>{t('exportRun')}</button>
         </div>
-        {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+
+        {error !== null && <div className="pp-error">{error}</div>}
+
         {preview !== null && (
-          <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>{Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(' · ')} · {(preview.totalBytes / 1024 / 1024).toFixed(1)} MB</span>
-            <span style={muted}>
+          <div className="pp-callout">
+            <div>
+              {Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(' · ')}
+              {' · '}{(preview.totalBytes / 1024 / 1024).toFixed(1)} MB
+            </div>
+            <div style={{ marginTop: 4 }}>
               {t('exportSkipped')} {preview.skippedExisting} · {t('exportConflict')} {preview.conflictCount} · {preview.sameVolume ? t('exportSameVolume') : t('exportCrossVolume')}
-            </span>
+            </div>
           </div>
         )}
+
         {result !== null && (
-          <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>{t('exportResult')}: {Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(' · ')}</span>
-            <span style={muted}>{t('manifest')}: {result.manifestPath}</span>
-            <div>
+          <div className="pp-callout">
+            <div>{t('exportResult')}: {Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(' · ')}</div>
+            <div style={{ marginTop: 4, wordBreak: 'break-all' }}>{t('manifest')}: {result.manifestPath}</div>
+            <div className="pp-actions" style={{ marginTop: 8 }}>
               <button
                 type="button"
                 style={btn}
@@ -653,16 +669,13 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
                 {t('revealInFinder')}
               </button>
             </div>
-            {result.failureCount > 0 && (
-              <span style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)' }}>{t('exportConflict')}: {result.failureCount}</span>
-            )}
+            {result.failureCount > 0 && <div className="pp-error" style={{ marginTop: 4 }}>{t('exportConflict')}: {result.failureCount}</div>}
           </div>
         )}
       </div>
     </div>
   )
 }
-
 
 function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onDecided }: any) {
   const [groups, setGroups] = useState<any[]>([])
@@ -760,15 +773,13 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
   const pageStart = page * 6
   const visible = detail.members.slice(pageStart, pageStart + 6)
   return (
-    <div style={{ display: 'grid', gap: 12 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button type="button" style={btn} onClick={onClose}>{t('backToWall')}</button>
-        <span style={chip}>{kindLabel}</span>
-        <span style={chip}>{detail.size} {t('photos')}</span>
-        {pageCount > 1 && (
-          <span style={chip}>{page + 1} / {pageCount}</span>
-        )}
-        <span style={muted}>{index >= 0 ? `${index + 1} / ${groups.length}` : ''}</span>
+    <section className="pp-single">
+      <div className="pp-single-head">
+        <button type="button" style={btn} onClick={onClose}>← {t('backToWall')}</button>
+        <span className="pp-chip">{kindLabel}</span>
+        <span className="pp-chip">{detail.size} {t('photos')}</span>
+        {pageCount > 1 && <span className="pp-chip">{page + 1} / {pageCount}</span>}
+        <span className="pp-muted">{index >= 0 ? `${index + 1} / ${groups.length}` : ''}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
           {pageCount > 1 && (
             <>
@@ -780,45 +791,39 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
           <button type="button" style={btn} disabled={index < 0 || index >= groups.length - 1} onClick={() => switchGroup(1)}>→</button>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+
+      <div className="pp-compare-grid">
         {visible.map((member: any, localPosition: number) => {
           const position = pageStart + localPosition
           return (
-          <button
-            key={member.id}
-            type="button"
-            onClick={() => setSelected(position)}
-            style={{
-              padding: 0, overflow: 'hidden', borderRadius: 10, cursor: 'pointer', position: 'relative',
-              border: position === selected ? '2px solid var(--dsw-alias-brand-primary)' : '1px solid var(--dsw-alias-border-l1)',
-              background: 'var(--dsw-alias-bg-layer-2)',
-            }}
-          >
-            <img
-              src={`${member.thumbUrl}?v=${version}`}
-              alt={member.relPath}
-              style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block' }}
-            />
-            <span style={{ position: 'absolute', top: 6, left: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 11 }}>
-              #{position + 1}{member.score !== null && member.score !== undefined ? ` · ${Number(member.score).toFixed(1)}` : ''}
-            </span>
-            {member.humanVerdict !== null && (
-              <span style={{ position: 'absolute', bottom: 6, right: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 10 }}>
-                {verdictLabel(t, member.humanVerdict)}
+            <button
+              key={member.id}
+              type="button"
+              className={`pp-compare-card${position === selected ? ' selected' : ''}`}
+              onClick={() => setSelected(position)}
+            >
+              <img src={`${member.thumbUrl}?v=${version}`} alt={member.relPath} loading="lazy" />
+              <span className="pp-compare-badge">
+                #{position + 1}{member.score !== null && member.score !== undefined ? ` · ${Number(member.score).toFixed(1)}` : ''}
               </span>
-            )}
-          </button>
+              {member.humanVerdict !== null && (
+                <span className="pp-pill" style={{ position: 'absolute', right: 8, bottom: 8, background: 'rgba(0,0,0,.62)', color: '#fff' }}>
+                  {verdictLabel(t, member.humanVerdict)}
+                </span>
+              )}
+            </button>
           )
         })}
       </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+
+      <div className="pp-actions">
         <button type="button" style={btnPrimary} disabled={busy} onClick={confirm}>{t('groupConfirm')}</button>
         <button type="button" style={btn} disabled={busy} onClick={() => decide('reject', detail.members.map((member: any) => member.id))}>
           {t('groupRejectAll')}
         </button>
       </div>
-      <div style={{ ...muted, fontSize: 12 }}>{t('groupHint')}</div>
-    </div>
+      <div className="pp-kbd">{t('groupHint')}</div>
+    </section>
   )
 }
 
@@ -910,15 +915,24 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
   }
 
   const summary = (data: any) => (
-    <div style={{ display: 'grid', gap: 6, fontSize: 13 }}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <span>{t('calibrationPrecision')}: {(data.keep?.precision ?? 0).toFixed(2)}</span>
-        <span>{t('calibrationRecall')}: {(data.keep?.recall ?? 0).toFixed(2)}</span>
-        <span>{t('calibrationF1')}: {(data.keep?.f1 ?? 0).toFixed(2)}</span>
-        <span>{t('calibrationAgreement')}: {((data.agreement ?? 0) * 100).toFixed(0)}%</span>
+    <div style={{ display: 'grid', gap: 12 }}>
+      <div className="pp-stats">
+        {[
+          [t('calibrationPrecision'), (data.keep?.precision ?? 0).toFixed(2)],
+          [t('calibrationRecall'), (data.keep?.recall ?? 0).toFixed(2)],
+          [t('calibrationF1'), (data.keep?.f1 ?? 0).toFixed(2)],
+          [t('calibrationAgreement'), `${((data.agreement ?? 0) * 100).toFixed(0)}%`],
+        ].map(([label, value]) => (
+          <div className="pp-stat" key={String(label)}>
+            <span className="pp-stat-value">{value}</span>
+            <span className="pp-stat-label">{label}</span>
+          </div>
+        ))}
       </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={chip}>{t('calibrationSuggested')}: {verdictLabel(t, 'keep')} ≥ {data.suggestedKeep} · {verdictLabel(t, 'maybe')} ≥ {data.suggestedMaybe}</span>
+      <div className="pp-row" style={{ alignItems: 'center' }}>
+        <span className="pp-chip">
+          {t('calibrationSuggested')}: {verdictLabel(t, 'keep')} ≥ {data.suggestedKeep} · {verdictLabel(t, 'maybe')} ≥ {data.suggestedMaybe}
+        </span>
         <button type="button" style={btn} disabled={busy} onClick={apply}>
           {applied ? t('calibrationApplied') : t('calibrationApply')}
         </button>
@@ -927,44 +941,42 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
   )
 
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ ...muted, fontWeight: 600 }}>{t('calibration')}</span>
+    <section className="pp-card pp-panel">
+      <div className="pp-row" style={{ alignItems: 'center' }}>
+        <div className="pp-section-title">{t('calibration')}</div>
         <button type="button" style={btn} disabled={busy} onClick={start}>{t('calibrationStart')}</button>
         {phase === 'idle' && latest?.metrics !== null && latest?.metrics !== undefined && (
-          <span style={{ ...muted, marginLeft: 'auto' }}>{t('calibrationLast')}: {latest.sampleSize} {t('photos')}</span>
+          <span className="pp-muted" style={{ marginLeft: 'auto' }}>{t('calibrationLast')}: {latest.sampleSize} {t('photos')}</span>
         )}
       </div>
 
-      {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+      {error !== null && <div className="pp-error">{error}</div>}
 
       {phase === 'idle' && latest?.metrics !== null && latest?.metrics !== undefined && summary(latest.metrics)}
 
       {phase === 'blind' && items[index] !== undefined && (
-        <div style={{ display: 'grid', gap: 10 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={chip}>{t('calibrationProgress').replace('{n}', String(index + 1)).replace('{total}', String(items.length))}</span>
-            <span style={{ ...muted, marginLeft: 'auto' }}>{t('calibrationHint')}</span>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div className="pp-row" style={{ alignItems: 'center' }}>
+            <span className="pp-chip">{t('calibrationProgress').replace('{n}', String(index + 1)).replace('{total}', String(items.length))}</span>
+            <span className="pp-muted" style={{ marginLeft: 'auto' }}>{t('calibrationHint')}</span>
           </div>
-          <img
-            src={items[index].previewUrl}
-            alt={items[index].relPath}
-            style={{ width: '100%', maxHeight: '62vh', objectFit: 'contain', borderRadius: 10, background: 'var(--dsw-alias-bg-layer-2)' }}
-          />
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="pp-stage" style={{ minHeight: 0, padding: 10 }}>
+            <img src={items[index].previewUrl} alt={items[index].relPath} />
+          </div>
+          <div className="pp-actions">
             <button type="button" style={btn} disabled={busy} onClick={() => label('keep')}>{t('keep')}</button>
             <button type="button" style={btn} disabled={busy} onClick={() => label('maybe')}>{t('maybe')}</button>
             <button type="button" style={btn} disabled={busy} onClick={() => label('reject')}>{t('reject')}</button>
+            <span style={{ flex: 1 }} />
             <button type="button" style={btn} disabled={busy} onClick={() => setPhase('idle')}>{t('close')}</button>
           </div>
         </div>
       )}
 
       {phase === 'report' && report !== null && summary(report)}
-    </div>
+    </section>
   )
 }
-
 
 function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
   const [form, setForm] = useState<any>(() => ({
@@ -1033,32 +1045,18 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
     }
   }
 
-  const label = { display: 'grid', gap: 4, fontSize: 12, color: 'var(--dsw-alias-label-secondary)' }
-  const row = { display: 'flex', gap: 8, alignItems: 'center' }
-  const numberInput = { ...input, width: 88, padding: '5px 8px' }
-
   return (
-    <div
-      onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.28)', zIndex: 80 }}
-    >
-      <div
-        onClick={event => event.stopPropagation()}
-        style={{
-          position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(440px, 94vw)',
-          background: 'var(--dsw-alias-bg-overlay)', color: 'var(--dsw-alias-label-primary)',
-          borderLeft: '1px solid var(--dsw-alias-border-l1)', padding: 18, overflow: 'auto',
-          display: 'grid', gap: 14, alignContent: 'start',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <strong>{t('settingsTitle')}</strong>
-          <button type="button" style={{ ...btn, marginLeft: 'auto' }} onClick={onClose}>{t('close')}</button>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.32)', zIndex: 80 }}>
+      <div className="pp-drawer" onClick={event => event.stopPropagation()}>
+        <div className="pp-modal-head">
+          <span>{t('settingsTitle')}</span>
+          <button type="button" style={btn} onClick={onClose}>{t('close')}</button>
         </div>
 
-        <div style={{ display: 'grid', gap: 10 }}>
-          <span style={{ ...muted, fontWeight: 600 }}>{t('settingsBasic')}</span>
-          <label style={label}>{t('theme')}
+        <div className="pp-form">
+          <div className="pp-section-title">{t('settingsBasic')}</div>
+          <label className="pp-field">
+            <span>{t('theme')}</span>
             <select value={form.theme} onChange={event => set('theme', event.target.value)} style={input}>
               <option value="mixed">{t('themeMixed')}</option>
               <option value="portrait">{t('themePortrait')}</option>
@@ -1066,7 +1064,8 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
               <option value="event">{t('themeEvent')}</option>
             </select>
           </label>
-          <label style={label}>{t('model')}
+          <label className="pp-field">
+            <span>{t('model')}</span>
             <select value={form.modelId} onChange={event => set('modelId', event.target.value)} style={input}>
               {(models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model: any) => {
                 const supportsImage = Array.isArray(model.inputModalities)
@@ -1080,96 +1079,97 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
               })}
             </select>
           </label>
-          <div style={{ ...row }}>
-            <label style={label}>{t('concurrency')}
-              <input value={form.concurrency} onChange={event => set('concurrency', event.target.value)} style={numberInput} />
+          <div className="pp-row">
+            <label className="pp-field">
+              <span>{t('concurrency')}</span>
+              <input value={form.concurrency} onChange={event => set('concurrency', event.target.value)} style={input} />
             </label>
-            <label style={label}>{t('budget')}
-              <input value={form.budgetCny} onChange={event => set('budgetCny', event.target.value)} style={numberInput} />
+            <label className="pp-field">
+              <span>{t('budget')}</span>
+              <input value={form.budgetCny} onChange={event => set('budgetCny', event.target.value)} style={input} />
             </label>
           </div>
-        </div>
 
-        <div style={{ display: 'grid', gap: 10 }}>
-          <span style={{ ...muted, fontWeight: 600 }}>{t('gridSize')} / {t('thresholds')}</span>
-          <div style={row}>
-            <label style={label}>{t('gridCols')}
-              <input value={form.gridCols} onChange={event => set('gridCols', event.target.value)} style={numberInput} />
+          <div className="pp-section-title">{t('gridSize')} / {t('thresholds')}</div>
+          <div className="pp-row">
+            <label className="pp-field">
+              <span>{t('gridCols')}</span>
+              <input value={form.gridCols} onChange={event => set('gridCols', event.target.value)} style={input} />
             </label>
-            <label style={label}>{t('gridRows')}
-              <input value={form.gridRows} onChange={event => set('gridRows', event.target.value)} style={numberInput} />
-            </label>
-          </div>
-          <div style={row}>
-            <label style={label}>{t('thresholdKeep')}
-              <input value={form.thresholdKeep} onChange={event => set('thresholdKeep', event.target.value)} style={numberInput} />
-            </label>
-            <label style={label}>{t('thresholdMaybe')}
-              <input value={form.thresholdMaybe} onChange={event => set('thresholdMaybe', event.target.value)} style={numberInput} />
+            <label className="pp-field">
+              <span>{t('gridRows')}</span>
+              <input value={form.gridRows} onChange={event => set('gridRows', event.target.value)} style={input} />
             </label>
           </div>
-        </div>
+          <div className="pp-row">
+            <label className="pp-field">
+              <span>{t('thresholdKeep')}</span>
+              <input value={form.thresholdKeep} onChange={event => set('thresholdKeep', event.target.value)} style={input} />
+            </label>
+            <label className="pp-field">
+              <span>{t('thresholdMaybe')}</span>
+              <input value={form.thresholdMaybe} onChange={event => set('thresholdMaybe', event.target.value)} style={input} />
+            </label>
+          </div>
 
-        <div style={{ display: 'grid', gap: 10 }}>
-          <span style={{ ...muted, fontWeight: 600 }}>{t('grouping')}</span>
-          <div style={row}>
-            <label style={label}>{t('burstSeconds')}
-              <input value={form.groupBurstSeconds} onChange={event => set('groupBurstSeconds', event.target.value)} style={numberInput} />
+          <div className="pp-section-title">{t('grouping')}</div>
+          <div className="pp-row">
+            <label className="pp-field">
+              <span>{t('burstSeconds')}</span>
+              <input value={form.groupBurstSeconds} onChange={event => set('groupBurstSeconds', event.target.value)} style={input} />
             </label>
-            <label style={label}>{t('burstHamming')}
-              <input value={form.groupBurstHamming} onChange={event => set('groupBurstHamming', event.target.value)} style={numberInput} />
-            </label>
-          </div>
-          <div style={row}>
-            <label style={label}>{t('sceneSeconds')}
-              <input value={form.groupSceneSeconds} onChange={event => set('groupSceneSeconds', event.target.value)} style={numberInput} />
-            </label>
-            <label style={label}>{t('sceneHamming')}
-              <input value={form.groupSceneHamming} onChange={event => set('groupSceneHamming', event.target.value)} style={numberInput} />
+            <label className="pp-field">
+              <span>{t('burstHamming')}</span>
+              <input value={form.groupBurstHamming} onChange={event => set('groupBurstHamming', event.target.value)} style={input} />
             </label>
           </div>
-        </div>
+          <div className="pp-row">
+            <label className="pp-field">
+              <span>{t('sceneSeconds')}</span>
+              <input value={form.groupSceneSeconds} onChange={event => set('groupSceneSeconds', event.target.value)} style={input} />
+            </label>
+            <label className="pp-field">
+              <span>{t('sceneHamming')}</span>
+              <input value={form.groupSceneHamming} onChange={event => set('groupSceneHamming', event.target.value)} style={input} />
+            </label>
+          </div>
 
-        <div style={{ display: 'grid', gap: 6 }}>
-          <span style={{ ...muted, fontWeight: 600 }}>{t('runOptions')}</span>
-          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
-            <input type="checkbox" checked={form.stagePause} onChange={event => set('stagePause', event.target.checked)} />
-            {t('stagePause')}
-          </label>
-          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
-            <input type="checkbox" checked={form.offpeakOnly} onChange={event => set('offpeakOnly', event.target.checked)} />
-            {t('offpeak')}
-          </label>
-        </div>
+          <div className="pp-section-title">{t('runOptions')}</div>
+          <div className="pp-checks">
+            <label>
+              <input type="checkbox" checked={form.stagePause} onChange={event => set('stagePause', event.target.checked)} />
+              {t('stagePause')}
+            </label>
+            <label>
+              <input type="checkbox" checked={form.offpeakOnly} onChange={event => set('offpeakOnly', event.target.checked)} />
+              {t('offpeak')}
+            </label>
+          </div>
 
-        {prompt !== null && (
-          <div style={{ display: 'grid', gap: 6 }}>
-            <span style={{ ...muted, fontWeight: 600 }}>{t('promptSection')} · {prompt.version}</span>
+          {prompt !== null && (
             <details>
-              <summary style={{ cursor: 'pointer', fontSize: 12 }}>{t('viewPrompt')}</summary>
-              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 11, lineHeight: 1.5, background: 'var(--dsw-alias-bg-layer-2)', padding: 10, borderRadius: 8, marginTop: 6 }}>
+              <summary className="pp-muted" style={{ cursor: 'pointer' }}>{t('promptSection')} · {prompt.version} · {t('viewPrompt')}</summary>
+              <pre>
                 {prompt.prompts.gridUser}{"\n\n---\n\n"}{prompt.prompts.rankUser}{"\n\n---\n\n"}{prompt.prompts.scoreUser}
               </pre>
             </details>
-          </div>
-        )}
+          )}
 
-        <div style={{ display: 'grid', gap: 6 }}>
-          <span style={{ ...muted, fontWeight: 600 }}>{t('rerunStages')}</span>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="pp-section-title">{t('rerunStages')}</div>
+          <div className="pp-actions">
             {['preprocess', 'grid', 'rank', 'score'].map(stage => (
               <button key={stage} type="button" style={btn} onClick={() => onRunStage?.(stage)}>
                 {t('rerun')} {stageLabel(t, stage)}
               </button>
             ))}
           </div>
-        </div>
 
-        <div style={{ ...muted, fontSize: 12 }}>{t('settingsHint')}</div>
-        {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button type="button" style={btnPrimary} disabled={busy} onClick={save}>{t('save')}</button>
-          {saved && <span style={{ ...muted, fontSize: 12 }}>{t('saved')}</span>}
+          <div className="pp-callout">{t('settingsHint')}</div>
+          {error !== null && <div className="pp-error">{error}</div>}
+          <div className="pp-modal-foot">
+            <button type="button" style={btnPrimary} disabled={busy} onClick={save}>{t('save')}</button>
+            {saved && <span className="pp-muted">{t('saved')}</span>}
+          </div>
         </div>
       </div>
     </div>
@@ -1178,6 +1178,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
 
 function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
   const [detail, setDetail] = useState<any>(null)
+  const [stats, setStats] = useState<any>(null)
   const [progress, setProgress] = useState<any>(null)
   const [checkpoints, setCheckpoints] = useState<any[]>([])
   const [pipelineEvent, setPipelineEvent] = useState<any>(null)
@@ -1189,12 +1190,14 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
 
   const refresh = async () => {
     try {
-      const [project, points] = await Promise.all([
+      const [project, points, statistics] = await Promise.all([
         api(`/photo-picker/api/projects/${id}`),
         api(`/photo-picker/api/projects/${id}/checkpoints`),
+        api(`/photo-picker/api/projects/${id}/stats`),
       ])
       setDetail(project)
       setCheckpoints(points)
+      setStats(statistics)
       setError(null)
     } catch (cause) {
       setError(String(cause))
@@ -1243,10 +1246,32 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
     }
   }
 
-  if (detail === null) return <div style={{ ...muted, fontSize: 13 }}>{t('loading')}</div>
+  if (detail === null) {
+    return <div className="pp-card pp-panel"><span className="pp-muted">{t('loading')}</span></div>
+  }
 
   const counts = detail.counts ?? {}
+  const verdicts = stats?.verdicts ?? {}
   const version = detail.updatedAt ?? 0
+  const aiDisabled = detail.ai?.hasImageModel === false
+  const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0
+  const stages = ['scan', 'preprocess', 'grid', 'rank', 'score'] as string[]
+  const stageStatus: Record<string, string> = {}
+  for (const checkpoint of checkpoints) stageStatus[checkpoint.stage] = checkpoint.status
+  const activeStage = detail.running === 'pipeline' ? progress?.stage : detail.running
+  const runningLabel = detail.running === null
+    ? null
+    : detail.running === 'pipeline' ? t('autoRun') : stageLabel(t, detail.running)
+  const spent = Number(detail.cost?.spentCny ?? 0)
+  const budget = Number(detail.cost?.budgetCny ?? 0)
+  const statItems = [
+    { key: 'scored', label: t('stateScored'), value: String(counts.scored ?? 0) },
+    { key: 'keep', label: verdictLabel(t, 'keep'), value: String(verdicts.keep ?? 0) },
+    { key: 'maybe', label: verdictLabel(t, 'maybe'), value: String(verdicts.maybe ?? 0) },
+    { key: 'reject', label: verdictLabel(t, 'reject'), value: String(verdicts.reject ?? 0) },
+    { key: 'spent', label: t('spent'), value: `¥${spent.toFixed(2)}`, hint: `/ ¥${budget}` },
+  ]
+
   let pipelineNotice: { kind: 'done' | 'paused' | 'failed', text: string } | null = null
   if (pipelineEvent !== null && pipelineEvent.stage === 'pipeline') {
     if (pipelineEvent.error !== undefined) {
@@ -1268,64 +1293,103 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
       }
     }
   }
-  const aiDisabled = detail.ai?.hasImageModel === false
-  const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      <div style={{ display: 'grid', gap: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <strong style={{ fontSize: 16 }}>{detail.name}</strong>
-          <span style={chip}>{statusLabel(t, detail.status)}</span>
-          <span style={muted}>{detail.sourcePath}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {Object.entries(counts).map(([state, count]) => (
-            <span key={state} style={chip}>{stateLabel(t, state)}: {String(count)}</span>
-          ))}
-          <span style={chip}>
-            {t('spent')}: ¥{Number(detail.cost?.spentCny ?? 0).toFixed(4)} / ¥{Number(detail.cost?.budgetCny ?? 0).toFixed(0)}
+      <section className="pp-card pp-summary">
+        <div className="pp-summary-top">
+          <strong className="pp-project-title">{detail.name}</strong>
+          <span className="pp-pill">{statusLabel(t, detail.status)}</span>
+          {runningLabel !== null && <span className="pp-pill" data-tone="live">{t('running')} · {runningLabel}</span>}
+          <span className="pp-path" style={{ marginLeft: 'auto', maxWidth: '46%' }} title={detail.sourcePath}>
+            {detail.sourcePath}
           </span>
-          {detail.running !== null && (
-            <span style={{ ...chip, color: 'var(--dsw-alias-brand-primary)' }}>{t('running')}: {detail.running}</span>
-          )}
         </div>
-      </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button type="button" style={btnPrimary} disabled={detail.running !== null} onClick={runAll}>{t('autoRun')}</button>
-        {detail.running !== null && (
-          <button type="button" style={btn} onClick={() => run(detail.running, 'pause')}>{t('pause')}</button>
-        )}
-        <div style={{ position: 'relative' }}>
-          <button type="button" style={btn} onClick={() => setSingleStepsOpen(open => !open)}>
-            {t('singleStep')} {singleStepsOpen ? '▴' : '▾'}
-          </button>
-          {singleStepsOpen && (
-            <div style={{
-              position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 20,
-              display: 'grid', gap: 6, minWidth: 168, padding: 8,
-              background: 'var(--dsw-alias-bg-overlay)', border: '1px solid var(--dsw-alias-border-l1)',
-              borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
-            }}>
-              {(['scan', 'preprocess', 'grid', 'rank', 'score'] as string[]).map(stage => (
-                <button
-                  key={stage}
-                  type="button"
-                  style={{ ...btn, width: '100%', textAlign: 'left' }}
-                  disabled={aiDisabled && ['grid', 'rank', 'score'].includes(stage)}
-                  onClick={() => { setSingleStepsOpen(false); run(stage) }}
-                >
-                  {stage === 'scan' ? t('scan') : stage === 'preprocess' ? t('preprocess') : stageLabel(t, stage)}
-                </button>
-              ))}
+
+        <div className="pp-stats">
+          {statItems.map(item => (
+            <div className="pp-stat" key={item.key}>
+              <span className="pp-stat-value">{item.value}</span>
+              <span className="pp-stat-label">
+                {item.label}{item.hint !== undefined ? ` ${item.hint}` : ''}
+              </span>
             </div>
-          )}
+          ))}
         </div>
-        <button type="button" style={btn} onClick={() => setExporting(true)}>{t('export')}</button>
-        <button type="button" style={btn} onClick={() => setSettingsOpen(true)}>{t('settings')}</button>
-      </div>
+
+        <div className="pp-actions">
+          <button type="button" style={btnPrimary} disabled={detail.running !== null} onClick={runAll}>
+            {t('autoRun')}
+          </button>
+          {detail.running !== null && (
+            <button type="button" style={btn} onClick={() => run(detail.running, 'pause')}>{t('pause')}</button>
+          )}
+          <div style={{ position: 'relative' }}>
+            <button type="button" style={btn} onClick={() => setSingleStepsOpen(open => !open)}>
+              {t('singleStep')} {singleStepsOpen ? '▴' : '▾'}
+            </button>
+            {singleStepsOpen && (
+              <div className="pp-menu">
+                {stages.map(stage => (
+                  <button
+                    key={stage}
+                    type="button"
+                    style={btn}
+                    disabled={aiDisabled && ['grid', 'rank', 'score'].includes(stage)}
+                    onClick={() => { setSingleStepsOpen(false); run(stage) }}
+                  >
+                    {stage === 'scan' ? t('scan') : stage === 'preprocess' ? t('preprocess') : stageLabel(t, stage)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <span style={{ flex: 1 }} />
+          <button type="button" style={btn} onClick={() => setExporting(true)}>{t('export')}</button>
+          <button type="button" style={btn} onClick={() => setSettingsOpen(true)}>{t('settings')}</button>
+        </div>
+
+        <div className="pp-steps">
+          {stages.map(stage => {
+            const status = stage === activeStage ? 'running' : (stageStatus[stage] ?? 'pending')
+            return (
+              <span className="pp-step" key={stage} title={runStatusLabel(t, status)}>
+                <span className="pp-dot" data-status={status} />
+                <strong>{stageLabel(t, stage)}</strong>
+                <span>{runStatusLabel(t, status)}</span>
+              </span>
+            )
+          })}
+        </div>
+
+        {detail.running !== null && (
+          <div className="pp-progress">
+            <div className="pp-muted">
+              {activeStage !== undefined && activeStage !== null ? stageLabel(t, activeStage) : t('running')}
+              {' '}{progress?.done ?? 0}/{progress?.total ?? '?'}
+              {progress?.costCny !== undefined ? ` · ¥${Number(progress.costCny).toFixed(4)}` : ''}
+            </div>
+            <div className="pp-progress-track">
+              <div className="pp-progress-fill" style={{ width: `${percent}%` }} />
+            </div>
+          </div>
+        )}
+
+        {pipelineEvent !== null && (
+          <div className="pp-muted">
+            {pipelineEvent.error !== undefined
+              ? `${t('pipelineFailed')}: ${pipelineEvent.error}`
+              : pipelineEvent.stage === 'pipeline' && pipelineEvent.result !== undefined
+                ? `${pipelineEvent.result.reason === 'paused' ? t('pipelinePaused') : t('pipelineDone')}: ${(pipelineEvent.result.completed ?? []).map((stage: string) => stageLabel(t, stage)).join(' → ')}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== undefined ? ` · ${t('nextStage')} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ''}`
+                : `${t('autoRun')}: ${stageLabel(t, pipelineEvent.stage)} · ${phaseLabel(t, pipelineEvent.phase)}`}
+          </div>
+        )}
+
+        {aiDisabled && <div className="pp-callout">{t('aiDisabled')}</div>}
+      </section>
+
       {exporting && <ExportDialog t={t} projectId={id} onClose={() => setExporting(false)} />}
-      {settingsOpen && detail !== null && (
+      {settingsOpen && (
         <SettingsDrawer
           t={t}
           detail={{ ...detail, id }}
@@ -1334,75 +1398,58 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
           onRunStage={(stage: string) => run(stage)}
         />
       )}
-      {aiDisabled && <div style={muted}>{t('aiDisabled')}</div>}
-      {progress !== null && (
-        <div style={{ display: 'grid', gap: 4 }}>
-          <div style={muted}>
-            {stageLabel(t, progress.stage)} {progress.done ?? 0}/{progress.total ?? '?'}
-            {progress.costCny !== undefined ? ` · ¥${Number(progress.costCny).toFixed(4)}` : ''}
-            {progress.error !== undefined && progress.error !== null ? ` · ${String(progress.error)}` : ''}
-          </div>
-          <div style={{ height: 4, borderRadius: 2, background: 'var(--dsw-alias-bg-layer-2)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${percent}%`, background: 'var(--dsw-alias-brand-primary)' }} />
-          </div>
-        </div>
-      )}
-      {pipelineEvent !== null && (
-        <div style={muted}>
-          {pipelineEvent.error !== undefined
-            ? `${t('pipelineFailed')}: ${pipelineEvent.error}`
-            : pipelineEvent.stage === 'pipeline' && pipelineEvent.result !== undefined
-              ? `${pipelineEvent.result.reason === 'paused' ? t('pipelinePaused') : t('pipelineDone')}: ${(pipelineEvent.result.completed ?? []).map((stage: string) => stageLabel(t, stage)).join(' → ')}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== undefined ? ` · ${t('nextStage')} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ''}`
-              : `${t('autoRun')}: ${stageLabel(t, pipelineEvent.stage)} · ${phaseLabel(t, pipelineEvent.phase)}`}
-        </div>
-      )}
-      {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+
+      {error !== null && <div className="pp-error">{error}</div>}
+
       {checkpoints.length > 0 && (
-        <div style={{ display: 'grid', gap: 8 }}>
-          <span style={{ ...muted, fontWeight: 600 }}>{t('checkpoint')}</span>
-          {checkpoints.map(cp => (
-            <div key={cp.stage} style={{
-              border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 10,
-              padding: 12, display: 'grid', gap: 8,
-            }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <strong>{stageLabel(t, cp.stage)}</strong>
-                <span style={chip}>{runStatusLabel(t, cp.status)}</span>
-                <span style={chip}>¥{Number(cp.costCny ?? 0).toFixed(4)}</span>
-                <span style={{ ...muted, marginLeft: 'auto' }}>{summarizeStats(t, cp.stats)}</span>
-              </div>
-              {(cp.sampleIds ?? []).length > 0 && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>
-                  {cp.sampleIds.map((pid: string) => (
-                    <img
-                      key={pid}
-                      src={`/photo-picker/media/thumb/${id}/${pid}?v=${version}`}
-                      alt={pid}
-                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, background: 'var(--dsw-alias-bg-layer-2)' }}
-                    />
-                  ))}
+        <details className="pp-card pp-history">
+          <summary>
+            <span>{t('history')}</span>
+            <span className="pp-muted" style={{ marginLeft: 6 }}>
+              {checkpoints.filter(checkpoint => checkpoint.status === 'done').length} / {checkpoints.length}
+            </span>
+          </summary>
+          <div className="pp-history-body">
+            {checkpoints.map(checkpoint => (
+              <div key={checkpoint.stage}>
+                <div className="pp-history-row">
+                  <strong>{stageLabel(t, checkpoint.stage)}</strong>
+                  <span className="pp-pill">{runStatusLabel(t, checkpoint.status)}</span>
+                  <span className="pp-muted">{summarizeStats(t, checkpoint.stats)}</span>
+                  <span className="pp-chip">¥{Number(checkpoint.costCny ?? 0).toFixed(4)}</span>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+                {(checkpoint.sampleIds ?? []).length > 0 && (
+                  <details className="pp-history-samples">
+                    <summary>{t('samples')} · {checkpoint.sampleIds.length}</summary>
+                    <div>
+                      {checkpoint.sampleIds.map((pid: string) => (
+                        <img
+                          key={pid}
+                          src={`/photo-picker/media/thumb/${id}/${pid}?v=${version}`}
+                          alt={pid}
+                          loading="lazy"
+                        />
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
       )}
+
       <ReviewSection t={t} projectId={id} version={version} onChanged={refresh} />
       <CalibrationSection t={t} projectId={id} onApplied={refresh} />
+
       {pipelineNotice !== null && !noticeDismissed && (
-        <div
-          aria-live="polite"
-          style={{
-            position: 'fixed', right: 24, bottom: 24, zIndex: 95, maxWidth: 380,
-            display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px',
-            background: 'var(--dsw-alias-bg-overlay)', color: 'var(--dsw-alias-label-primary)',
-            border: '1px solid var(--dsw-alias-border-l1)',
-            borderLeft: `4px solid ${pipelineNotice.kind === 'done' ? 'var(--dsw-static-green-500, #2f9e5f)' : pipelineNotice.kind === 'paused' ? 'var(--dsw-static-amber-500, #d09a2b)' : 'var(--dsw-static-red-500, #cc4b3f)'}`,
-            borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.22)', fontSize: 13,
-          }}
-        >
+        <div className="pp-toast" data-kind={pipelineNotice.kind} aria-live="polite">
           <span style={{ flex: 1 }}>{pipelineNotice.text}</span>
-          <button type="button" style={{ ...btn, padding: '2px 8px', fontSize: 12 }} onClick={() => setNoticeDismissed(true)}>
+          <button
+            type="button"
+            style={{ ...btn, padding: '2px 8px', fontSize: 12 }}
+            onClick={() => setNoticeDismissed(true)}
+          >
             {t('close')}
           </button>
         </div>
@@ -1434,21 +1481,26 @@ function Workbench({ t }: { t: (key: string) => string }) {
   const list = projects ?? []
 
   return (
-    <div style={{
-      width: '100%', height: '100%', overflow: 'auto',
-      background: 'var(--dsw-alias-bg-base)', color: 'var(--dsw-alias-label-primary)',
-      fontSize: 14, lineHeight: 1.6,
-    }}>
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 clamp(24px, 4vw, 48px) 48px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 28, marginBottom: 24 }}>
-          <div style={{ display: 'grid', gap: 2 }}>
-            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t('title')}</h1>
-            <span style={muted}>{t('subtitle')}</span>
+    <div className="pp-page">
+      <div className="pp-shell">
+        <header className="pp-header">
+          <div className="pp-title-wrap">
+            <span className="pp-mark" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="8.4" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="2.6" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
+            </span>
+            <div>
+              <h1 className="pp-title">{t('title')}</h1>
+              <p className="pp-subtitle">{t('subtitle')}</p>
+            </div>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="pp-header-actions">
             <button
               type="button"
-              style={{ ...btn, padding: '5px 10px', fontSize: 12 }}
+              className="pp-lang"
               title={t('language')}
               onClick={() => setLanguage(getLanguage() === 'zh' ? 'en' : 'zh')}
             >
@@ -1457,15 +1509,13 @@ function Workbench({ t }: { t: (key: string) => string }) {
             {selected !== null && (
               <button type="button" style={btn} onClick={() => setSelected(null)}>{t('back')}</button>
             )}
-            <button type="button" style={selected !== null ? btn : btnPrimary} onClick={() => { setCreating(true); setSelected(null) }}>
+            <button type="button" style={btnPrimary} onClick={() => { setCreating(true); setSelected(null) }}>
               {t('newProject')}
             </button>
           </div>
-        </div>
+        </header>
 
-        {error !== null && (
-          <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12, marginBottom: 12 }}>{error}</div>
-        )}
+        {error !== null && <div className="pp-error" style={{ marginBottom: 12 }}>{error}</div>}
 
         {selected !== null ? (
           <ProjectDetail t={t} id={selected} />
@@ -1476,34 +1526,40 @@ function Workbench({ t }: { t: (key: string) => string }) {
             onCancel={() => setCreating(false)}
           />
         ) : projects === null ? (
-          <div style={{ ...muted, fontSize: 13 }}>{t('loading')}</div>
+          <div className="pp-card pp-panel"><span className="pp-muted">{t('loading')}</span></div>
         ) : list.length === 0 ? (
-          <div style={{
-            display: 'grid', gap: 12, placeItems: 'start', border: '1px dashed var(--dsw-alias-border-l2)',
-            borderRadius: 12, padding: 24, color: 'var(--dsw-alias-label-secondary)', fontSize: 13,
-          }}>
-            <span>{t('empty')}</span>
+          <div className="pp-empty">
+            <div className="pp-empty-icon">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="8.4" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="2.6" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
+            </div>
+            <h2>{t('empty')}</h2>
+            <p>{t('subtitle')}</p>
             <button type="button" style={btnPrimary} onClick={() => setCreating(true)}>{t('newProject')}</button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div className="pp-projects">
             {list.map(project => (
               <button
                 type="button"
+                className="pp-project"
                 key={project.id}
                 onClick={() => setSelected(project.id)}
-                style={{
-                  ...btn, textAlign: 'left', display: 'grid', gap: 4, padding: '12px 14px', borderRadius: 10,
-                }}
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <strong style={{ fontSize: 14 }}>{project.name}</strong>
-                  <span style={chip}>{statusLabel(t, project.status)}</span>
+                <span className="pp-project-top">
+                  <strong className="pp-project-name">{project.name}</strong>
+                  <span className="pp-pill">{statusLabel(t, project.status)}</span>
+                  <span className="pp-chevron">→</span>
                 </span>
-                <span style={muted}>
-                  {project.sourcePath}
-                  {' · '}
-                  {Object.entries(project.counts ?? {}).map(([state, n]) => `${stateLabel(t, state)} ${String(n)}`).join('  ')}
+                <span className="pp-project-path" title={project.sourcePath}>{project.sourcePath}</span>
+                <span className="pp-project-meta">
+                  {Object.entries(project.counts ?? {}).map(([state, n]) => (
+                    <span className="pp-chip" key={state}>{stateLabel(t, state)} {String(n)}</span>
+                  ))}
+                  <span className="pp-chip">{t('spent')} ¥{Number(project.cost?.spentCny ?? 0).toFixed(4)}</span>
                 </span>
               </button>
             ))}
@@ -1529,6 +1585,7 @@ function PhotoPickerIcon({ size }: { size?: number; active?: boolean }) {
 export const inject = ['slots', 'locale']
 
 export function apply(ctx: any) {
+  installStyles()
   // 界面语言跟随浏览器（可在设置里覆盖），不依赖 DSH 语言设置。
   const t = (key: string) => translate(getLanguage(), key)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'photo-picker.locale')
