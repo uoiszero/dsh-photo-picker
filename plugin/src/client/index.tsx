@@ -7,7 +7,7 @@ const Fragment = React.Fragment
 const NS = 'photoPicker'
 const PANEL_ID = 'photo-picker'
 
-import { createTranslator, getLanguage, getLanguagePreference, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
+import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 
 
 const btn = {
@@ -984,7 +984,6 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
   }))
   const [prompt, setPrompt] = useState<any>(null)
   const [models, setModels] = useState<any[]>([])
-  const [languagePreference, setLanguagePreference] = useState(getLanguagePreference())
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1064,17 +1063,6 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
               <option value="portrait">{t('themePortrait')}</option>
               <option value="landscape">{t('themeLandscape')}</option>
               <option value="event">{t('themeEvent')}</option>
-            </select>
-          </label>
-          <label style={label}>{t('language')}
-            <select
-              value={languagePreference}
-              onChange={event => { setLanguage(event.target.value); setLanguagePreference(event.target.value) }}
-              style={input}
-            >
-              <option value="auto">{t('languageAuto')}</option>
-              <option value="zh">中文</option>
-              <option value="en">English</option>
             </select>
           </label>
           <label style={label}>{t('model')}
@@ -1388,7 +1376,15 @@ function Workbench({ t }: { t: (key: string) => string }) {
             <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t('title')}</h1>
             <span style={muted}>{t('subtitle')}</span>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              type="button"
+              style={{ ...btn, padding: '5px 10px', fontSize: 12 }}
+              title={t('language')}
+              onClick={() => setLanguage(getLanguage() === 'zh' ? 'en' : 'zh')}
+            >
+              {getLanguage() === 'zh' ? 'EN' : '中'}
+            </button>
             {selected !== null && (
               <button type="button" style={btn} onClick={() => setSelected(null)}>{t('back')}</button>
             )}

@@ -423,11 +423,6 @@ function setLanguage(value) {
   }
   for (const listener of listeners) listener();
 }
-function getLanguagePreference() {
-  if (typeof localStorage === "undefined") return "auto";
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored === "zh" || stored === "en" ? stored : "auto";
-}
 function subscribeLanguage(listener) {
   listeners.add(listener);
   return () => {
@@ -1131,7 +1126,6 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
   }));
   const [prompt, setPrompt] = (0, import_react.useState)(null);
   const [models, setModels] = (0, import_react.useState)([]);
-  const [languagePreference, setLanguagePreference] = (0, import_react.useState)(getLanguagePreference());
   const [busy, setBusy] = (0, import_react.useState)(false);
   const [saved, setSaved] = (0, import_react.useState)(false);
   const [error, setError] = (0, import_react.useState)(null);
@@ -1206,20 +1200,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
         }
       },
       /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center" } }, /* @__PURE__ */ h("strong", null, t("settingsTitle")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, marginLeft: "auto" }, onClick: onClose }, t("close"))),
-      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("settingsBasic")), /* @__PURE__ */ h("label", { style: label }, t("theme"), /* @__PURE__ */ h("select", { value: form.theme, onChange: (event) => set("theme", event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: label }, t("language"), /* @__PURE__ */ h(
-        "select",
-        {
-          value: languagePreference,
-          onChange: (event) => {
-            setLanguage(event.target.value);
-            setLanguagePreference(event.target.value);
-          },
-          style: input
-        },
-        /* @__PURE__ */ h("option", { value: "auto" }, t("languageAuto")),
-        /* @__PURE__ */ h("option", { value: "zh" }, "\u4E2D\u6587"),
-        /* @__PURE__ */ h("option", { value: "en" }, "English")
-      )), /* @__PURE__ */ h("label", { style: label }, t("model"), /* @__PURE__ */ h("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), style: input }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
+      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("settingsBasic")), /* @__PURE__ */ h("label", { style: label }, t("theme"), /* @__PURE__ */ h("select", { value: form.theme, onChange: (event) => set("theme", event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: label }, t("model"), /* @__PURE__ */ h("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), style: input }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
         const supportsImage = Array.isArray(model.inputModalities) ? model.inputModalities.includes("image") : true;
         return /* @__PURE__ */ h("option", { key: model.id, value: model.id, disabled: !supportsImage }, model.name ?? model.id, supportsImage ? "" : ` \u2014 ${t("settingsNoImageModel")}`);
       }))), /* @__PURE__ */ h("div", { style: { ...row } }, /* @__PURE__ */ h("label", { style: label }, t("concurrency"), /* @__PURE__ */ h("input", { value: form.concurrency, onChange: (event) => set("concurrency", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("budget"), /* @__PURE__ */ h("input", { value: form.budgetCny, onChange: (event) => set("budgetCny", event.target.value), style: numberInput })))),
@@ -1344,7 +1325,16 @@ function Workbench({ t }) {
     color: "var(--dsw-alias-label-primary)",
     fontSize: 14,
     lineHeight: 1.6
-  } }, /* @__PURE__ */ h("div", { style: { maxWidth: 960, margin: "0 auto", padding: "0 clamp(24px, 4vw, 48px) 48px" } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 12, paddingTop: 28, marginBottom: 24 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 2 } }, /* @__PURE__ */ h("h1", { style: { margin: 0, fontSize: 20, fontWeight: 600 } }, t("title")), /* @__PURE__ */ h("span", { style: muted }, t("subtitle"))), /* @__PURE__ */ h("div", { style: { marginLeft: "auto", display: "flex", gap: 8 } }, selected !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSelected(null) }, t("back")), /* @__PURE__ */ h("button", { type: "button", style: selected !== null ? btn : btnPrimary, onClick: () => {
+  } }, /* @__PURE__ */ h("div", { style: { maxWidth: 960, margin: "0 auto", padding: "0 clamp(24px, 4vw, 48px) 48px" } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 12, paddingTop: 28, marginBottom: 24 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 2 } }, /* @__PURE__ */ h("h1", { style: { margin: 0, fontSize: 20, fontWeight: 600 } }, t("title")), /* @__PURE__ */ h("span", { style: muted }, t("subtitle"))), /* @__PURE__ */ h("div", { style: { marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" } }, /* @__PURE__ */ h(
+    "button",
+    {
+      type: "button",
+      style: { ...btn, padding: "5px 10px", fontSize: 12 },
+      title: t("language"),
+      onClick: () => setLanguage(getLanguage() === "zh" ? "en" : "zh")
+    },
+    getLanguage() === "zh" ? "EN" : "\u4E2D"
+  ), selected !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSelected(null) }, t("back")), /* @__PURE__ */ h("button", { type: "button", style: selected !== null ? btn : btnPrimary, onClick: () => {
     setCreating(true);
     setSelected(null);
   } }, t("newProject")))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12, marginBottom: 12 } }, error), selected !== null ? /* @__PURE__ */ h(ProjectDetail, { t, id: selected }) : creating ? /* @__PURE__ */ h(
