@@ -36,5 +36,10 @@
       ]
     }
   },
-  "description": "DSH photo picker workbench: scan, AI triage, review and export."
+  "description": "DSH photo picker workbench: scan, AI triage, review and export.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uoiszero/dsh-photo-picker.git",
+    "directory": "plugin"
+  }
 }

@@ -20,5 +20,9 @@
   "devDependencies": {
     "@deepseek-ai/dsh-tools": "file:../deepseek-harness/packages/core/tools",
     "esbuild": "^0.28.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uoiszero/dsh-photo-picker.git"
   }
 }

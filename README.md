@@ -1,4 +1,4 @@
-# 照片工作台 · Photo Picker Workbench
+# 照片工作台 · dsh-photo-picker
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
@@ -47,8 +47,8 @@
 1. 克隆并安装依赖：
 
 ```bash
-git clone https://github.com/uoiszero/photo-picker.git
-cd photo-picker
+git clone https://github.com/uoiszero/dsh-photo-picker.git
+cd dsh-photo-picker
 npm install
 ```
 
@@ -61,7 +61,7 @@ npm run build:client
 3. 在 DSH 的**创造者模式**会话里安装 bundle（需要批准）：
 
 ```text
-plugin_manager action=install_bundle target=<abs-path>/photo-picker/plugin
+plugin_manager action=install_bundle target=<abs-path>/dsh-photo-picker/plugin
 ```
 
 4. 如果返回 `restart-required`，重启 DSH Web 后重开会话。侧栏出现「照片工作台 / Photo Picker」即安装成功。
