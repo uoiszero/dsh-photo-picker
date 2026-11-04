@@ -147,7 +147,7 @@ Harness Web UI
 npm install            # 安装依赖
 npm test               # 71 个单元/集成测试（node:test）
 npm run build:client   # 打包 plugin/src/client -> plugin/dist/client.js
-npm run fixtures       # 生成 120 张测试样本到 /tmp/pp-fixtures
+npm run fixtures       # 生成 120 张测试夹具到 /tmp/pp-fixtures
 npm run acceptance:1   # 本机扫描/预处理验收
 npm run acceptance:2   # AI 流水线端到端（mock LLM，不产生费用）
 npm run acceptance:4   # 复核/改判/导出/源零写入验收

@@ -20,7 +20,7 @@
 
 ## 执行前提（Handoff）
 
-1. **必须在创造者模式会话里执行**。确认工具表里有 `plugin_manager`、`cordis_inspect_list`、`cordis_inspect_query`；当前工作目录是 `dsh-photo-picker`。
+1. **必须在创造者模式会话里执行**。确认工具表里有 `plugin_manager`、`cordis_inspect_list`、`cordis_inspect_query`；当前工作目录是 `dsh-photo-picker` 仓库根目录。
 2. **先读 spec**，至少读第 3、5、6、7、8、9、15 节。
 3. **安装/切换插件需要用户批准**：`plugin_manager` 的每次调用都会走审批；不要绕过。
 4. **不要手写 profile 的 `package.json` / `cordis.patch.yml`**，不要 `$DSH_HOME` 下建包，不要跑 pnpm 到 profile 目录；安装只走 `plugin_manager install_bundle`。
@@ -224,7 +224,7 @@ Expected: 打印 `0.35.5 8.18.7`（版本号可能略新）。
 调用 `plugin_manager`：
 
 ```json
-{ "action": "install_bundle", "target": "dsh-photo-picker/plugin" }
+{ "action": "install_bundle", "target": "<abs-path>/dsh-photo-picker/plugin" }
 ```
 
 （按工具实际参数名调用；需要用户批准。）
