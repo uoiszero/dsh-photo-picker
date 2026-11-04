@@ -6,6 +6,7 @@ import path from 'node:path'
 import { openDb } from '../src/host/db.js'
 import {
   getPhotoDetail,
+  listGroups,
   listReviewPhotos,
   projectStats,
   setHumanDecisions,
@@ -121,5 +122,24 @@ test('projectStats counts verdicts and buckets scores', () => {
   const buckets = Object.fromEntries(stats.histogram.map(item => [item.bucket, item.count]))
   assert.equal(buckets[8], 1)
   assert.equal(buckets[6], 2)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('listGroups returns sizes and member thumbnails', () => {
+  const { db, dir, addPhoto } = setup()
+  db.prepare(`INSERT INTO groups (id, project_id, kind, size, started_at, ended_at)
+              VALUES ('grp', 'p1', 'burst', 3, 1000, 2000)`).run()
+  addPhoto.run('m1', 'm1.jpg', 100, 1, 'grp', 'thumbs/m1.webp', 'scored', 1)
+  addPhoto.run('m2', 'm2.jpg', 200, 2, 'grp', 'thumbs/m2.webp', 'scored', 2)
+  addPhoto.run('m3', 'm3.jpg', 300, 3, 'grp', 'thumbs/m3.webp', 'scored', 3)
+  addPhoto.run('other', 'o.jpg', 400, 4, null, 'thumbs/o.webp', 'scored', 4)
+
+  const groups = listGroups(db, 'p1')
+  assert.equal(groups.total, 1)
+  assert.equal(groups.items[0].id, 'grp')
+  assert.equal(groups.items[0].kind, 'burst')
+  assert.equal(groups.items[0].size, 3)
+  assert.equal(groups.items[0].thumbUrls.length, 3)
+  assert.match(groups.items[0].thumbUrls[0], /\/media\/thumb\/p1\/m1$/)
   rmSync(dir, { recursive: true, force: true })
 })

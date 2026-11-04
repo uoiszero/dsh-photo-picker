@@ -151,6 +151,37 @@ export function getPhotoDetail(db, projectId, photoId) {
   return photo
 }
 
+export function listGroups(db, projectId, { limit = 100, offset = 0 } = {}) {
+  const total = db.prepare('SELECT COUNT(*) AS n FROM groups WHERE project_id = ?').get(projectId).n
+  const groups = db.prepare(`
+    SELECT g.id, g.kind, g.started_at, g.ended_at,
+      (SELECT COUNT(*) FROM photos p
+       WHERE p.project_id = g.project_id AND p.group_id = g.id AND p.thumb_path IS NOT NULL) AS members
+    FROM groups g
+    WHERE g.project_id = ?
+    ORDER BY COALESCE(g.started_at, 0), g.id
+    LIMIT ? OFFSET ?
+  `).all(projectId, Math.min(Math.max(Number(limit), 1), 500), Math.max(Number(offset), 0))
+  return {
+    total,
+    items: groups.map(group => {
+      const thumbs = db.prepare(`
+        SELECT id FROM photos WHERE project_id = ? AND group_id = ? AND thumb_path IS NOT NULL
+        ORDER BY COALESCE(taken_at, mtime_ms), rel_path LIMIT 4
+      `).all(projectId, group.id)
+      return {
+        id: group.id,
+        kind: group.kind,
+        size: group.members,
+        startedAt: group.started_at,
+        endedAt: group.ended_at,
+        memberIds: thumbs.map(row => row.id),
+        thumbUrls: thumbs.map(row => `/photo-picker/media/thumb/${projectId}/${row.id}`),
+      }
+    }),
+  }
+}
+
 export function groupDetail(db, projectId, groupId) {
   const group = db.prepare('SELECT * FROM groups WHERE project_id = ? AND id = ?').get(projectId, groupId)
   if (group === undefined) {

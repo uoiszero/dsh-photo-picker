@@ -25,6 +25,11 @@ function stub() {
     async setDecisions(id, body) { return { updated: body.photoIds.map(photoId => ({ photoId, verdict: body.verdict })) } },
     async stats(id) { return { verdicts: { keep: 1 }, id } },
     async group(id, gid) { return { id: gid, members: [] } },
+    async groups(id, options) { return { total: 1, options, items: [{ id: 'g1' }] } },
+    async calibrationSample(id, options) { return { available: 5, options, items: [] } },
+    async calibrate(id, labels) { return { id: 'cal1', sampleSize: (labels ?? []).length } },
+    async calibrationReport(id) { return { id: 'cal1', sampleSize: 3 } },
+    async updateSettings(id, patch) { return { id, thresholdKeep: patch.thresholdKeep } },
     async previewFile() { return undefined },
     async exportPreview(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
     async exportRun(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
@@ -137,5 +142,34 @@ test('review, decisions and export routes answer JSON', async () => {
     const preview = await fetch(`${origin}/photo-picker/media/preview/p1/ph1`)
     assert.equal(preview.status, 404)
     assert.equal((await preview.json()).error.code, 'NOT_FOUND')
+  })
+})
+
+test('groups, calibration and settings routes answer JSON', async () => {
+  await withServer(async origin => {
+    const groups = await fetch(`${origin}/photo-picker/api/projects/p1/groups?limit=5`)
+    const groupsBody = await groups.json()
+    assert.equal(groupsBody.options.limit, 5)
+    assert.equal(groupsBody.total, 1)
+
+    const sample = await fetch(`${origin}/photo-picker/api/projects/p1/calibration/sample?size=6`)
+    assert.equal((await sample.json()).options.size, 6)
+
+    const computed = await fetch(`${origin}/photo-picker/api/projects/p1/calibration`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ labels: [{ photoId: 'a', verdict: 'keep' }] }),
+    })
+    assert.deepEqual(await computed.json(), { id: 'cal1', sampleSize: 1 })
+
+    const report = await fetch(`${origin}/photo-picker/api/projects/p1/calibration`)
+    assert.equal((await report.json()).id, 'cal1')
+
+    const patched = await fetch(`${origin}/photo-picker/api/projects/p1`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ thresholdKeep: 7.2 }),
+    })
+    assert.deepEqual(await patched.json(), { id: 'p1', thresholdKeep: 7.2 })
   })
 })

@@ -88,6 +88,25 @@ const zh = {
   maybe: '待定 (M)',
   reject: '弃用 (X)',
   keyboardHint: 'J/K 前后 · P 保留 · M 待定 · X 弃用 · Space 返回',
+  groupCompare: '组对比 (G)',
+  groupKindBurst: '连拍',
+  groupKindScene: '同场景',
+  groupConfirm: '确认本组 (Enter)',
+  groupRejectAll: '全组弃用 (X)',
+  groupHint: '1–6 选一张 · Enter 确认本组（选中 keep，其余 reject） · ←/→ 换组 · Space 返回',
+  calibration: '校准',
+  calibrationStart: '开始校准',
+  calibrationProgress: '第 {n} / {total} 张',
+  calibrationHint: '盲评：只凭肉眼判断，不看 AI 分数。完成后揭示一致率与建议阈值。',
+  calibrationPrecision: 'keep 精确率',
+  calibrationRecall: 'keep 召回率',
+  calibrationF1: 'keep F1',
+  calibrationAgreement: '一致率',
+  calibrationSuggested: '建议阈值',
+  calibrationApply: '应用建议阈值',
+  calibrationApplied: '已应用到项目',
+  calibrationNoSample: '还没有已评分的照片，先跑一次单张精评再校准。',
+  calibrationLast: '上次校准',
 }
 
 const en = {
@@ -171,6 +190,25 @@ const en = {
   maybe: 'Maybe (M)',
   reject: 'Reject (X)',
   keyboardHint: 'J/K prev/next · P keep · M maybe · X reject · Space back',
+  groupCompare: 'Compare group (G)',
+  groupKindBurst: 'Burst',
+  groupKindScene: 'Scene',
+  groupConfirm: 'Confirm group (Enter)',
+  groupRejectAll: 'Reject group (X)',
+  groupHint: '1–6 pick one · Enter confirm (chosen keep, rest reject) · ←/→ switch group · Space back',
+  calibration: 'Calibration',
+  calibrationStart: 'Start calibration',
+  calibrationProgress: '{n} / {total}',
+  calibrationHint: 'Blind review: judge by eye only, AI scores stay hidden. Finish to reveal agreement and a suggested threshold.',
+  calibrationPrecision: 'Keep precision',
+  calibrationRecall: 'Keep recall',
+  calibrationF1: 'Keep F1',
+  calibrationAgreement: 'Agreement',
+  calibrationSuggested: 'Suggested threshold',
+  calibrationApply: 'Apply suggested threshold',
+  calibrationApplied: 'Applied to project',
+  calibrationNoSample: 'No scored photos yet. Run single-photo scoring first.',
+  calibrationLast: 'Previous calibration',
 }
 
 const btn = {
@@ -391,6 +429,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   const [selected, setSelected] = useState<string[]>([])
   const [undo, setUndo] = useState<any[]>([])
   const [single, setSingle] = useState<string | null>(null)
+  const [groupView, setGroupView] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const load = async () => {
@@ -450,6 +489,20 @@ function ReviewSection({ t, projectId, version, onChanged }: {
     current.includes(photoId) ? current.filter(id => id !== photoId) : [...current, photoId]
   ))
 
+  if (groupView !== null) {
+    return (
+      <GroupCompare
+        t={t}
+        projectId={projectId}
+        groupId={groupView}
+        version={version}
+        onNavigate={setGroupView}
+        onClose={() => setGroupView(null)}
+        onDecided={async () => { await load(); onChanged?.() }}
+      />
+    )
+  }
+
   if (single !== null) {
     return (
       <PhotoSingle
@@ -459,6 +512,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
         photoId={single}
         version={version}
         onNavigate={setSingle}
+        onOpenGroup={setGroupView}
         onDecide={decide}
         onClose={() => setSingle(null)}
       />
@@ -553,7 +607,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   )
 }
 
-function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onDecide, onClose }: any) {
+function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -579,11 +633,12 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onDeci
       else if (event.key === 'p') onDecide([photoId], 'keep')
       else if (event.key === 'm') onDecide([photoId], 'maybe')
       else if (event.key === 'x') onDecide([photoId], 'reject')
+      else if (event.key === 'g' && detail?.group !== undefined) onOpenGroup(detail.group.id)
       else if (event.key === ' ' || event.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [photoId, index, items])
+  }, [photoId, index, items, detail])
 
   if (error !== null) return <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>
   if (detail === null) return <div style={{ ...muted, fontSize: 13 }}>{t('loading')}</div>
@@ -593,6 +648,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onDeci
     <div style={{ display: 'grid', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" style={btn} onClick={onClose}>{t('backToWall')}</button>
+        {detail.group !== undefined && (
+          <button type="button" style={btn} onClick={() => onOpenGroup(detail.group.id)}>{t('groupCompare')}</button>
+        )}
         <span style={muted}>{index + 1} / {items.length}</span>
         <span style={{ ...chip, background: VERDICT_COLORS[detail.verdict] ?? 'var(--dsw-alias-bg-layer-2)', color: '#fff' }}>{detail.verdict}</span>
         {detail.score !== null && <span style={chip}>{t('scoreLabel')}: {detail.score}</span>}
@@ -755,6 +813,308 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
   )
 }
 
+
+function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onDecided }: any) {
+  const [groups, setGroups] = useState<any[]>([])
+  const [detail, setDetail] = useState<any>(null)
+  const [selected, setSelected] = useState(0)
+  const [page, setPage] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    api(`/photo-picker/api/projects/${projectId}/groups?limit=200`)
+      .then(data => setGroups(data.items))
+      .catch(() => {})
+  }, [projectId])
+
+  useEffect(() => {
+    setDetail(null)
+    setSelected(0)
+    setPage(0)
+    api(`/photo-picker/api/projects/${projectId}/groups/${groupId}`)
+      .then(setDetail)
+      .catch(cause => setError(String(cause)))
+  }, [groupId])
+
+  const index = groups.findIndex(group => group.id === groupId)
+  const switchGroup = (delta: number) => {
+    const next = groups[index + delta]
+    if (next !== undefined) onNavigate(next.id)
+  }
+
+  const decide = async (verdict: string, ids: string[]) => {
+    setBusy(true)
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/decisions`, {
+        method: 'POST',
+        body: JSON.stringify({ photoIds: ids, verdict }),
+      })
+      await onDecided?.()
+      onClose()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const confirm = async () => {
+    if (detail === null) return
+    const chosen = detail.members[selected]
+    setBusy(true)
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/decisions`, {
+        method: 'POST',
+        body: JSON.stringify({ photoIds: detail.members.map((member: any) => member.id), verdict: 'reject' }),
+      })
+      if (chosen !== undefined) {
+        await api(`/photo-picker/api/projects/${projectId}/decisions`, {
+          method: 'POST',
+          body: JSON.stringify({ photoIds: [chosen.id], verdict: 'keep' }),
+        })
+      }
+      await onDecided?.()
+      onClose()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target !== null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      if (event.key === 'Escape' || event.key === ' ') onClose()
+      else if (event.key === 'ArrowLeft') switchGroup(-1)
+      else if (event.key === 'ArrowRight') switchGroup(1)
+      else if (event.key === 'Enter') confirm()
+      else if (event.key === 'x' || event.key === 'X') {
+        if (detail !== null) decide('reject', detail.members.map((member: any) => member.id))
+      } else if (/^[1-6]$/.test(event.key) && detail !== null) {
+        const position = page * 6 + Number(event.key) - 1
+        if (position < detail.members.length) setSelected(position)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [detail, selected, index, groups, page])
+
+  if (error !== null) return <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>
+  if (detail === null) return <div style={{ ...muted, fontSize: 13 }}>{t('loading')}</div>
+
+  const kindLabel = detail.kind === 'burst' ? t('groupKindBurst') : t('groupKindScene')
+  const pageCount = Math.max(1, Math.ceil(detail.members.length / 6))
+  const pageStart = page * 6
+  const visible = detail.members.slice(pageStart, pageStart + 6)
+  return (
+    <div style={{ display: 'grid', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button type="button" style={btn} onClick={onClose}>{t('backToWall')}</button>
+        <span style={chip}>{kindLabel}</span>
+        <span style={chip}>{detail.size} {t('photos')}</span>
+        {pageCount > 1 && (
+          <span style={chip}>{page + 1} / {pageCount}</span>
+        )}
+        <span style={muted}>{index >= 0 ? `${index + 1} / ${groups.length}` : ''}</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          {pageCount > 1 && (
+            <>
+              <button type="button" style={btn} disabled={page === 0} onClick={() => { setPage(page - 1); setSelected(pageStart - 6) }}>‹</button>
+              <button type="button" style={btn} disabled={page >= pageCount - 1} onClick={() => { setPage(page + 1); setSelected(pageStart + 6) }}>›</button>
+            </>
+          )}
+          <button type="button" style={btn} disabled={index <= 0} onClick={() => switchGroup(-1)}>←</button>
+          <button type="button" style={btn} disabled={index < 0 || index >= groups.length - 1} onClick={() => switchGroup(1)}>→</button>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+        {visible.map((member: any, localPosition: number) => {
+          const position = pageStart + localPosition
+          return (
+          <button
+            key={member.id}
+            type="button"
+            onClick={() => setSelected(position)}
+            style={{
+              padding: 0, overflow: 'hidden', borderRadius: 10, cursor: 'pointer', position: 'relative',
+              border: position === selected ? '2px solid var(--dsw-alias-brand-primary)' : '1px solid var(--dsw-alias-border-l1)',
+              background: 'var(--dsw-alias-bg-layer-2)',
+            }}
+          >
+            <img
+              src={`${member.thumbUrl}?v=${version}`}
+              alt={member.relPath}
+              style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block' }}
+            />
+            <span style={{ position: 'absolute', top: 6, left: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 11 }}>
+              #{position + 1}{member.score !== null && member.score !== undefined ? ` · ${Number(member.score).toFixed(1)}` : ''}
+            </span>
+            {member.humanVerdict !== null && (
+              <span style={{ position: 'absolute', bottom: 6, right: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 10 }}>
+                {member.humanVerdict}
+              </span>
+            )}
+          </button>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" style={btnPrimary} disabled={busy} onClick={confirm}>{t('groupConfirm')}</button>
+        <button type="button" style={btn} disabled={busy} onClick={() => decide('reject', detail.members.map((member: any) => member.id))}>
+          {t('groupRejectAll')}
+        </button>
+      </div>
+      <div style={{ ...muted, fontSize: 12 }}>{t('groupHint')}</div>
+    </div>
+  )
+}
+
+function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: string; onApplied?: () => void }) {
+  const [phase, setPhase] = useState<'idle' | 'blind' | 'report'>('idle')
+  const [items, setItems] = useState<any[]>([])
+  const [index, setIndex] = useState(0)
+  const [labels, setLabels] = useState<any[]>([])
+  const [report, setReport] = useState<any>(null)
+  const [latest, setLatest] = useState<any>(null)
+  const [busy, setBusy] = useState(false)
+  const [applied, setApplied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    api(`/photo-picker/api/projects/${projectId}/calibration`).then(setLatest).catch(() => {})
+  }, [projectId])
+
+  const start = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const sample = await api(`/photo-picker/api/projects/${projectId}/calibration/sample?size=80`)
+      if (sample.items.length === 0) {
+        setError(t('calibrationNoSample'))
+        return
+      }
+      setItems(sample.items)
+      setIndex(0)
+      setLabels([])
+      setReport(null)
+      setApplied(false)
+      setPhase('blind')
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submit = async allLabels => {
+    setBusy(true)
+    try {
+      const computed = await api(`/photo-picker/api/projects/${projectId}/calibration`, {
+        method: 'POST',
+        body: JSON.stringify({ labels: allLabels }),
+      })
+      setReport(computed)
+      setLatest(computed)
+      setPhase('report')
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const label = async (verdict: string) => {
+    const item = items[index]
+    if (item === undefined) return
+    const nextLabels = [...labels, { photoId: item.id, verdict }]
+    setLabels(nextLabels)
+    if (index + 1 < items.length) {
+      setIndex(index + 1)
+      return
+    }
+    await submit(nextLabels)
+  }
+
+  const apply = async () => {
+    const source = report ?? latest?.metrics
+    if (source === null || source === undefined) return
+    const keep = source.suggestedKeep
+    const maybe = source.suggestedMaybe
+    if (keep === undefined) return
+    setBusy(true)
+    try {
+      await api(`/photo-picker/api/projects/${projectId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ thresholdKeep: keep, thresholdMaybe: maybe }),
+      })
+      setApplied(true)
+      onApplied?.()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const summary = (data: any) => (
+    <div style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <span>{t('calibrationPrecision')}: {(data.keep?.precision ?? 0).toFixed(2)}</span>
+        <span>{t('calibrationRecall')}: {(data.keep?.recall ?? 0).toFixed(2)}</span>
+        <span>{t('calibrationF1')}: {(data.keep?.f1 ?? 0).toFixed(2)}</span>
+        <span>{t('calibrationAgreement')}: {((data.agreement ?? 0) * 100).toFixed(0)}%</span>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={chip}>{t('calibrationSuggested')}: keep ≥ {data.suggestedKeep} · maybe ≥ {data.suggestedMaybe}</span>
+        <button type="button" style={btn} disabled={busy} onClick={apply}>
+          {applied ? t('calibrationApplied') : t('calibrationApply')}
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ ...muted, fontWeight: 600 }}>{t('calibration')}</span>
+        <button type="button" style={btn} disabled={busy} onClick={start}>{t('calibrationStart')}</button>
+        {phase === 'idle' && latest?.metrics !== null && latest?.metrics !== undefined && (
+          <span style={{ ...muted, marginLeft: 'auto' }}>{t('calibrationLast')}: {latest.sampleSize} {t('photos')}</span>
+        )}
+      </div>
+
+      {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+
+      {phase === 'idle' && latest?.metrics !== null && latest?.metrics !== undefined && summary(latest.metrics)}
+
+      {phase === 'blind' && items[index] !== undefined && (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={chip}>{t('calibrationProgress').replace('{n}', String(index + 1)).replace('{total}', String(items.length))}</span>
+            <span style={{ ...muted, marginLeft: 'auto' }}>{t('calibrationHint')}</span>
+          </div>
+          <img
+            src={items[index].previewUrl}
+            alt={items[index].relPath}
+            style={{ width: '100%', maxHeight: '62vh', objectFit: 'contain', borderRadius: 10, background: 'var(--dsw-alias-bg-layer-2)' }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" style={btn} disabled={busy} onClick={() => label('keep')}>{t('keep')}</button>
+            <button type="button" style={btn} disabled={busy} onClick={() => label('maybe')}>{t('maybe')}</button>
+            <button type="button" style={btn} disabled={busy} onClick={() => label('reject')}>{t('reject')}</button>
+            <button type="button" style={btn} disabled={busy} onClick={() => setPhase('idle')}>{t('close')}</button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'report' && report !== null && summary(report)}
+    </div>
+  )
+}
+
 function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
   const [detail, setDetail] = useState<any>(null)
   const [progress, setProgress] = useState<any>(null)
@@ -781,7 +1141,7 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
     const events = new EventSource(`/photo-picker/api/projects/${id}/events`)
     events.onmessage = message => {
       const event = JSON.parse(message.data)
-      setProgress(event)
+      if (event.stage !== undefined) setProgress(event)
       if (event.done === true) refresh()
     }
     return () => events.close()
@@ -882,6 +1242,7 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
         </div>
       )}
       <ReviewSection t={t} projectId={id} version={version} onChanged={refresh} />
+      <CalibrationSection t={t} projectId={id} onApplied={refresh} />
     </div>
   )
 }

@@ -64,6 +64,9 @@ export function createHttpHandler(service) {
       if (projectMatch !== null && req.method === 'GET') {
         return send(res, 200, await service.getProjectDetail(projectMatch[1]))
       }
+      if (projectMatch !== null && req.method === 'PATCH') {
+        return send(res, 200, await service.updateSettings(projectMatch[1], await readJson(req)))
+      }
 
       const photosMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos$/)
       if (photosMatch !== null && req.method === 'GET') {
@@ -100,9 +103,33 @@ export function createHttpHandler(service) {
         return send(res, 200, await service.stats(statsMatch[1]))
       }
 
+      const groupsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/groups$/)
+      if (groupsMatch !== null && req.method === 'GET') {
+        return send(res, 200, await service.groups(groupsMatch[1], {
+          limit: Number(url.searchParams.get('limit') ?? 100),
+          offset: Number(url.searchParams.get('offset') ?? 0),
+        }))
+      }
+
       const groupMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/groups\/([^/]+)$/)
       if (groupMatch !== null && req.method === 'GET') {
         return send(res, 200, await service.group(groupMatch[1], groupMatch[2]))
+      }
+
+      const calibrationSampleMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/calibration\/sample$/)
+      if (calibrationSampleMatch !== null && req.method === 'GET') {
+        return send(res, 200, await service.calibrationSample(calibrationSampleMatch[1], {
+          size: Number(url.searchParams.get('size') ?? 80),
+        }))
+      }
+
+      const calibrationMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/calibration$/)
+      if (calibrationMatch !== null && req.method === 'GET') {
+        return send(res, 200, await service.calibrationReport(calibrationMatch[1]))
+      }
+      if (calibrationMatch !== null && req.method === 'POST') {
+        const body = await readJson(req)
+        return send(res, 200, await service.calibrate(calibrationMatch[1], body.labels))
       }
 
       const exportPreviewMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/export\/preview$/)

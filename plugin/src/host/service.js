@@ -11,7 +11,12 @@ import { previewExport, runExport } from './export.js'
 import { renderPreview } from './images.js'
 import { runGridStage, runRankStage, runScoreStage } from './pipeline.js'
 import { ProjectStore, toProject } from './projects.js'
-import { getPhotoDetail, groupDetail, listReviewPhotos, projectStats, setHumanDecisions } from './review.js'
+import {
+  computeCalibration, lastCalibrationReport, sampleCalibration, saveCalibrationReport,
+} from './calibration.js'
+import {
+  getPhotoDetail, groupDetail, listGroups, listReviewPhotos, projectStats, setHumanDecisions,
+} from './review.js'
 import { preprocessProject } from './preprocess.js'
 import { scanProject } from './scan.js'
 import { LocalSource } from './source.js'
@@ -266,9 +271,64 @@ export class PhotoPickerService extends Service {
     return projectStats(db, id)
   }
 
+  async groups(id, options = {}) {
+    const { db } = await this.store.open(id)
+    return listGroups(db, id, options)
+  }
+
   async group(id, groupId) {
     const { db } = await this.store.open(id)
     return groupDetail(db, id, groupId)
+  }
+
+  async calibrationSample(id, options = {}) {
+    const { db } = await this.store.open(id)
+    return sampleCalibration(db, id, options)
+  }
+
+  async calibrate(id, labels = []) {
+    const { db } = await this.store.open(id)
+    const report = computeCalibration(db, id, labels)
+    return saveCalibrationReport(db, id, report)
+  }
+
+  async calibrationReport(id) {
+    const { db } = await this.store.open(id)
+    return lastCalibrationReport(db, id)
+  }
+
+  async updateSettings(id, patch = {}) {
+    const { db } = await this.store.open(id)
+    const fields = {
+      theme: ['theme', value => typeof value === 'string'],
+      budgetCny: ['budget_cny', value => Number.isFinite(Number(value)) && Number(value) >= 0],
+      concurrency: ['concurrency', value => Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 16],
+      gridCols: ['grid_cols', value => Number.isInteger(Number(value)) && Number(value) >= 1],
+      gridRows: ['grid_rows', value => Number.isInteger(Number(value)) && Number(value) >= 1],
+      thresholdKeep: ['threshold_keep', value => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 10],
+      thresholdMaybe: ['threshold_maybe', value => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 10],
+      stagePause: ['stage_pause', value => typeof value === 'boolean' || value === 0 || value === 1],
+      offpeakOnly: ['offpeak_only', value => typeof value === 'boolean' || value === 0 || value === 1],
+    }
+    const sets = []
+    const params = []
+    for (const [key, [column, valid]] of Object.entries(fields)) {
+      if (patch[key] === undefined) continue
+      if (!valid(patch[key])) {
+        const error = new Error(`invalid setting ${key}: ${patch[key]}`)
+        error.code = 'BAD_SETTING'
+        error.statusCode = 400
+        throw error
+      }
+      const value = typeof patch[key] === 'boolean' ? (patch[key] ? 1 : 0) : patch[key]
+      sets.push(`${column} = ?`)
+      params.push(value)
+    }
+    if (sets.length === 0) return this.getProjectDetail(id)
+    db.prepare(`UPDATE projects SET ${sets.join(', ')}, updated_at = ? WHERE id = ?`)
+      .run(...params, Date.now(), id)
+    this.events.emit('event', { projectId: id, settings: true })
+    return this.getProjectDetail(id)
   }
 
   async previewFile(id, photoId) {

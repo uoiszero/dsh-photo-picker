@@ -123,7 +123,26 @@ var zh = {
   keep: "\u4FDD\u7559 (P)",
   maybe: "\u5F85\u5B9A (M)",
   reject: "\u5F03\u7528 (X)",
-  keyboardHint: "J/K \u524D\u540E \xB7 P \u4FDD\u7559 \xB7 M \u5F85\u5B9A \xB7 X \u5F03\u7528 \xB7 Space \u8FD4\u56DE"
+  keyboardHint: "J/K \u524D\u540E \xB7 P \u4FDD\u7559 \xB7 M \u5F85\u5B9A \xB7 X \u5F03\u7528 \xB7 Space \u8FD4\u56DE",
+  groupCompare: "\u7EC4\u5BF9\u6BD4 (G)",
+  groupKindBurst: "\u8FDE\u62CD",
+  groupKindScene: "\u540C\u573A\u666F",
+  groupConfirm: "\u786E\u8BA4\u672C\u7EC4 (Enter)",
+  groupRejectAll: "\u5168\u7EC4\u5F03\u7528 (X)",
+  groupHint: "1\u20136 \u9009\u4E00\u5F20 \xB7 Enter \u786E\u8BA4\u672C\u7EC4\uFF08\u9009\u4E2D keep\uFF0C\u5176\u4F59 reject\uFF09 \xB7 \u2190/\u2192 \u6362\u7EC4 \xB7 Space \u8FD4\u56DE",
+  calibration: "\u6821\u51C6",
+  calibrationStart: "\u5F00\u59CB\u6821\u51C6",
+  calibrationProgress: "\u7B2C {n} / {total} \u5F20",
+  calibrationHint: "\u76F2\u8BC4\uFF1A\u53EA\u51ED\u8089\u773C\u5224\u65AD\uFF0C\u4E0D\u770B AI \u5206\u6570\u3002\u5B8C\u6210\u540E\u63ED\u793A\u4E00\u81F4\u7387\u4E0E\u5EFA\u8BAE\u9608\u503C\u3002",
+  calibrationPrecision: "keep \u7CBE\u786E\u7387",
+  calibrationRecall: "keep \u53EC\u56DE\u7387",
+  calibrationF1: "keep F1",
+  calibrationAgreement: "\u4E00\u81F4\u7387",
+  calibrationSuggested: "\u5EFA\u8BAE\u9608\u503C",
+  calibrationApply: "\u5E94\u7528\u5EFA\u8BAE\u9608\u503C",
+  calibrationApplied: "\u5DF2\u5E94\u7528\u5230\u9879\u76EE",
+  calibrationNoSample: "\u8FD8\u6CA1\u6709\u5DF2\u8BC4\u5206\u7684\u7167\u7247\uFF0C\u5148\u8DD1\u4E00\u6B21\u5355\u5F20\u7CBE\u8BC4\u518D\u6821\u51C6\u3002",
+  calibrationLast: "\u4E0A\u6B21\u6821\u51C6"
 };
 var en = {
   title: "Photo Picker",
@@ -205,7 +224,26 @@ var en = {
   keep: "Keep (P)",
   maybe: "Maybe (M)",
   reject: "Reject (X)",
-  keyboardHint: "J/K prev/next \xB7 P keep \xB7 M maybe \xB7 X reject \xB7 Space back"
+  keyboardHint: "J/K prev/next \xB7 P keep \xB7 M maybe \xB7 X reject \xB7 Space back",
+  groupCompare: "Compare group (G)",
+  groupKindBurst: "Burst",
+  groupKindScene: "Scene",
+  groupConfirm: "Confirm group (Enter)",
+  groupRejectAll: "Reject group (X)",
+  groupHint: "1\u20136 pick one \xB7 Enter confirm (chosen keep, rest reject) \xB7 \u2190/\u2192 switch group \xB7 Space back",
+  calibration: "Calibration",
+  calibrationStart: "Start calibration",
+  calibrationProgress: "{n} / {total}",
+  calibrationHint: "Blind review: judge by eye only, AI scores stay hidden. Finish to reveal agreement and a suggested threshold.",
+  calibrationPrecision: "Keep precision",
+  calibrationRecall: "Keep recall",
+  calibrationF1: "Keep F1",
+  calibrationAgreement: "Agreement",
+  calibrationSuggested: "Suggested threshold",
+  calibrationApply: "Apply suggested threshold",
+  calibrationApplied: "Applied to project",
+  calibrationNoSample: "No scored photos yet. Run single-photo scoring first.",
+  calibrationLast: "Previous calibration"
 };
 var btn = {
   background: "var(--dsw-alias-bg-layer-1)",
@@ -364,6 +402,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
   const [selected, setSelected] = (0, import_react.useState)([]);
   const [undo, setUndo] = (0, import_react.useState)([]);
   const [single, setSingle] = (0, import_react.useState)(null);
+  const [groupView, setGroupView] = (0, import_react.useState)(null);
   const [error, setError] = (0, import_react.useState)(null);
   const load = async () => {
     const params = new URLSearchParams({ scope: "review", sort, limit: "200" });
@@ -415,6 +454,23 @@ function ReviewSection({ t, projectId, version, onChanged }) {
     }
   };
   const toggle = (photoId) => setSelected((current) => current.includes(photoId) ? current.filter((id) => id !== photoId) : [...current, photoId]);
+  if (groupView !== null) {
+    return /* @__PURE__ */ h(
+      GroupCompare,
+      {
+        t,
+        projectId,
+        groupId: groupView,
+        version,
+        onNavigate: setGroupView,
+        onClose: () => setGroupView(null),
+        onDecided: async () => {
+          await load();
+          onChanged?.();
+        }
+      }
+    );
+  }
   if (single !== null) {
     return /* @__PURE__ */ h(
       PhotoSingle,
@@ -425,6 +481,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
         photoId: single,
         version,
         onNavigate: setSingle,
+        onOpenGroup: setGroupView,
         onDecide: decide,
         onClose: () => setSingle(null)
       }
@@ -484,7 +541,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
     }
   )))));
 }
-function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onDecide, onClose }) {
+function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
   const [error, setError] = (0, import_react.useState)(null);
   (0, import_react.useEffect)(() => {
@@ -505,15 +562,16 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onDeci
       else if (event.key === "p") onDecide([photoId], "keep");
       else if (event.key === "m") onDecide([photoId], "maybe");
       else if (event.key === "x") onDecide([photoId], "reject");
+      else if (event.key === "g" && detail?.group !== void 0) onOpenGroup(detail.group.id);
       else if (event.key === " " || event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [photoId, index, items]);
+  }, [photoId, index, items, detail]);
   if (error !== null) return /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error);
   if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
   const dimensions = detail.dimensions ?? {};
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("backToWall")), /* @__PURE__ */ h("span", { style: muted }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { style: { ...chip, background: VERDICT_COLORS[detail.verdict] ?? "var(--dsw-alias-bg-layer-2)", color: "#fff" } }, detail.verdict), detail.score !== null && /* @__PURE__ */ h("span", { style: chip }, t("scoreLabel"), ": ", detail.score), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 280px", gap: 14, alignItems: "start" } }, /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { style: muted }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { style: { ...chip, background: VERDICT_COLORS[detail.verdict] ?? "var(--dsw-alias-bg-layer-2)", color: "#fff" } }, detail.verdict), detail.score !== null && /* @__PURE__ */ h("span", { style: chip }, t("scoreLabel"), ": ", detail.score), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 280px", gap: 14, alignItems: "start" } }, /* @__PURE__ */ h(
     "img",
     {
       src: `${detail.previewUrl}?v=${version}`,
@@ -582,6 +640,219 @@ function ExportDialog({ t, projectId, onClose }) {
     }
   ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("exportChoose")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, style: { display: "flex", gap: 4, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), bucket)), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), preview !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, Object.entries(preview.counts).map(([bucket, count]) => `${bucket} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("span", { style: muted }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${bucket} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("span", { style: muted }, t("manifest"), ": ", result.manifestPath), result.failureCount > 0 && /* @__PURE__ */ h("span", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)" } }, t("exportConflict"), ": ", result.failureCount))));
 }
+function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onDecided }) {
+  const [groups, setGroups] = (0, import_react.useState)([]);
+  const [detail, setDetail] = (0, import_react.useState)(null);
+  const [selected, setSelected] = (0, import_react.useState)(0);
+  const [page, setPage] = (0, import_react.useState)(0);
+  const [busy, setBusy] = (0, import_react.useState)(false);
+  const [error, setError] = (0, import_react.useState)(null);
+  (0, import_react.useEffect)(() => {
+    api(`/photo-picker/api/projects/${projectId}/groups?limit=200`).then((data) => setGroups(data.items)).catch(() => {
+    });
+  }, [projectId]);
+  (0, import_react.useEffect)(() => {
+    setDetail(null);
+    setSelected(0);
+    setPage(0);
+    api(`/photo-picker/api/projects/${projectId}/groups/${groupId}`).then(setDetail).catch((cause) => setError(String(cause)));
+  }, [groupId]);
+  const index = groups.findIndex((group) => group.id === groupId);
+  const switchGroup = (delta) => {
+    const next = groups[index + delta];
+    if (next !== void 0) onNavigate(next.id);
+  };
+  const decide = async (verdict, ids) => {
+    setBusy(true);
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/decisions`, {
+        method: "POST",
+        body: JSON.stringify({ photoIds: ids, verdict })
+      });
+      await onDecided?.();
+      onClose();
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const confirm = async () => {
+    if (detail === null) return;
+    const chosen = detail.members[selected];
+    setBusy(true);
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/decisions`, {
+        method: "POST",
+        body: JSON.stringify({ photoIds: detail.members.map((member) => member.id), verdict: "reject" })
+      });
+      if (chosen !== void 0) {
+        await api(`/photo-picker/api/projects/${projectId}/decisions`, {
+          method: "POST",
+          body: JSON.stringify({ photoIds: [chosen.id], verdict: "keep" })
+        });
+      }
+      await onDecided?.();
+      onClose();
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  (0, import_react.useEffect)(() => {
+    const onKey = (event) => {
+      const target = event.target;
+      if (target !== null && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      if (event.key === "Escape" || event.key === " ") onClose();
+      else if (event.key === "ArrowLeft") switchGroup(-1);
+      else if (event.key === "ArrowRight") switchGroup(1);
+      else if (event.key === "Enter") confirm();
+      else if (event.key === "x" || event.key === "X") {
+        if (detail !== null) decide("reject", detail.members.map((member) => member.id));
+      } else if (/^[1-6]$/.test(event.key) && detail !== null) {
+        const position = page * 6 + Number(event.key) - 1;
+        if (position < detail.members.length) setSelected(position);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [detail, selected, index, groups, page]);
+  if (error !== null) return /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error);
+  if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
+  const kindLabel = detail.kind === "burst" ? t("groupKindBurst") : t("groupKindScene");
+  const pageCount = Math.max(1, Math.ceil(detail.members.length / 6));
+  const pageStart = page * 6;
+  const visible = detail.members.slice(pageStart, pageStart + 6);
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 12 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("backToWall")), /* @__PURE__ */ h("span", { style: chip }, kindLabel), /* @__PURE__ */ h("span", { style: chip }, detail.size, " ", t("photos")), pageCount > 1 && /* @__PURE__ */ h("span", { style: chip }, page + 1, " / ", pageCount), /* @__PURE__ */ h("span", { style: muted }, index >= 0 ? `${index + 1} / ${groups.length}` : ""), /* @__PURE__ */ h("div", { style: { marginLeft: "auto", display: "flex", gap: 6 } }, pageCount > 1 && /* @__PURE__ */ h(Fragment, null, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: page === 0, onClick: () => {
+    setPage(page - 1);
+    setSelected(pageStart - 6);
+  } }, "\u2039"), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: page >= pageCount - 1, onClick: () => {
+    setPage(page + 1);
+    setSelected(pageStart + 6);
+  } }, "\u203A")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: index <= 0, onClick: () => switchGroup(-1) }, "\u2190"), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: index < 0 || index >= groups.length - 1, onClick: () => switchGroup(1) }, "\u2192"))), /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 } }, visible.map((member, localPosition) => {
+    const position = pageStart + localPosition;
+    return /* @__PURE__ */ h(
+      "button",
+      {
+        key: member.id,
+        type: "button",
+        onClick: () => setSelected(position),
+        style: {
+          padding: 0,
+          overflow: "hidden",
+          borderRadius: 10,
+          cursor: "pointer",
+          position: "relative",
+          border: position === selected ? "2px solid var(--dsw-alias-brand-primary)" : "1px solid var(--dsw-alias-border-l1)",
+          background: "var(--dsw-alias-bg-layer-2)"
+        }
+      },
+      /* @__PURE__ */ h(
+        "img",
+        {
+          src: `${member.thumbUrl}?v=${version}`,
+          alt: member.relPath,
+          style: { width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block" }
+        }
+      ),
+      /* @__PURE__ */ h("span", { style: { position: "absolute", top: 6, left: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 11 } }, "#", position + 1, member.score !== null && member.score !== void 0 ? ` \xB7 ${Number(member.score).toFixed(1)}` : ""),
+      member.humanVerdict !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", bottom: 6, right: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 10 } }, member.humanVerdict)
+    );
+  })), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: confirm }, t("groupConfirm")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => decide("reject", detail.members.map((member) => member.id)) }, t("groupRejectAll"))), /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 12 } }, t("groupHint")));
+}
+function CalibrationSection({ t, projectId, onApplied }) {
+  const [phase, setPhase] = (0, import_react.useState)("idle");
+  const [items, setItems] = (0, import_react.useState)([]);
+  const [index, setIndex] = (0, import_react.useState)(0);
+  const [labels, setLabels] = (0, import_react.useState)([]);
+  const [report, setReport] = (0, import_react.useState)(null);
+  const [latest, setLatest] = (0, import_react.useState)(null);
+  const [busy, setBusy] = (0, import_react.useState)(false);
+  const [applied, setApplied] = (0, import_react.useState)(false);
+  const [error, setError] = (0, import_react.useState)(null);
+  (0, import_react.useEffect)(() => {
+    api(`/photo-picker/api/projects/${projectId}/calibration`).then(setLatest).catch(() => {
+    });
+  }, [projectId]);
+  const start = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const sample = await api(`/photo-picker/api/projects/${projectId}/calibration/sample?size=80`);
+      if (sample.items.length === 0) {
+        setError(t("calibrationNoSample"));
+        return;
+      }
+      setItems(sample.items);
+      setIndex(0);
+      setLabels([]);
+      setReport(null);
+      setApplied(false);
+      setPhase("blind");
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const submit = async (allLabels) => {
+    setBusy(true);
+    try {
+      const computed = await api(`/photo-picker/api/projects/${projectId}/calibration`, {
+        method: "POST",
+        body: JSON.stringify({ labels: allLabels })
+      });
+      setReport(computed);
+      setLatest(computed);
+      setPhase("report");
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const label = async (verdict) => {
+    const item = items[index];
+    if (item === void 0) return;
+    const nextLabels = [...labels, { photoId: item.id, verdict }];
+    setLabels(nextLabels);
+    if (index + 1 < items.length) {
+      setIndex(index + 1);
+      return;
+    }
+    await submit(nextLabels);
+  };
+  const apply2 = async () => {
+    const source = report ?? latest?.metrics;
+    if (source === null || source === void 0) return;
+    const keep = source.suggestedKeep;
+    const maybe = source.suggestedMaybe;
+    if (keep === void 0) return;
+    setBusy(true);
+    try {
+      await api(`/photo-picker/api/projects/${projectId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ thresholdKeep: keep, thresholdMaybe: maybe })
+      });
+      setApplied(true);
+      onApplied?.();
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const summary = (data) => /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6, fontSize: 13 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", null, t("calibrationPrecision"), ": ", (data.keep?.precision ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationRecall"), ": ", (data.keep?.recall ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationF1"), ": ", (data.keep?.f1 ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationAgreement"), ": ", ((data.agreement ?? 0) * 100).toFixed(0), "%")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: chip }, t("calibrationSuggested"), ": keep \u2265 ", data.suggestedKeep, " \xB7 maybe \u2265 ", data.suggestedMaybe), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: apply2 }, applied ? t("calibrationApplied") : t("calibrationApply"))));
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("calibration")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: start }, t("calibrationStart")), phase === "idle" && latest?.metrics !== null && latest?.metrics !== void 0 && /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, t("calibrationLast"), ": ", latest.sampleSize, " ", t("photos"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), phase === "idle" && latest?.metrics !== null && latest?.metrics !== void 0 && summary(latest.metrics), phase === "blind" && items[index] !== void 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: chip }, t("calibrationProgress").replace("{n}", String(index + 1)).replace("{total}", String(items.length))), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, t("calibrationHint"))), /* @__PURE__ */ h(
+    "img",
+    {
+      src: items[index].previewUrl,
+      alt: items[index].relPath,
+      style: { width: "100%", maxHeight: "62vh", objectFit: "contain", borderRadius: 10, background: "var(--dsw-alias-bg-layer-2)" }
+    }
+  ), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("reject") }, t("reject")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => setPhase("idle") }, t("close")))), phase === "report" && report !== null && summary(report));
+}
 function ProjectDetail({ t, id }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
   const [progress, setProgress] = (0, import_react.useState)(null);
@@ -606,7 +877,7 @@ function ProjectDetail({ t, id }) {
     const events = new EventSource(`/photo-picker/api/projects/${id}/events`);
     events.onmessage = (message) => {
       const event = JSON.parse(message.data);
-      setProgress(event);
+      if (event.stage !== void 0) setProgress(event);
       if (event.done === true) refresh();
     };
     return () => events.close();
@@ -640,7 +911,7 @@ function ProjectDetail({ t, id }) {
       alt: pid,
       style: { width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 6, background: "var(--dsw-alias-bg-layer-2)" }
     }
-  )))))), /* @__PURE__ */ h(ReviewSection, { t, projectId: id, version, onChanged: refresh }));
+  )))))), /* @__PURE__ */ h(ReviewSection, { t, projectId: id, version, onChanged: refresh }), /* @__PURE__ */ h(CalibrationSection, { t, projectId: id, onApplied: refresh }));
 }
 function Workbench({ t }) {
   const [projects, setProjects] = (0, import_react.useState)(null);
