@@ -1991,6 +1991,8 @@ console.log('built plugin/dist/client.js')
 
 > 入口先用 spec 9.1 的备选方案：composer dock 按钮（`conversation.composer.dock`）+ 全屏面板（`shell.overlay`）。侧栏“照片工作台”入口留到 Plan 3 的 UI 收尾再评估，避免 Plan 1 依赖侧栏插槽的细节。
 
+> **实现备注（2026-11-04，已按所有者要求调整）**：最终实现改为 spec 9.1 的**首选方案**——左侧栏菜单项（`sidebar.panellist`，id `photo-picker`）+ 主区域页面（`main` keyed slot，key `photo-picker`），与「自动化任务」（`ui-schedule`）一致；点击侧栏项由 `ctx.layout.selectPanel(id)` 打开页面，不使用 `shell.overlay`，也不再注册 composer dock 按钮。页面容器改用 DSH 主题 token（`--dsw-alias-*`）并按 960px 内容列排版。下面的示例代码仅保留历史参考，实际文件以 `plugin/src/client/index.tsx` 为准。
+
 `plugin/src/client/index.tsx`（首版只做「列表 / 建项目 / 扫描 / 预处理 / 缩略图」）：
 
 ```tsx
