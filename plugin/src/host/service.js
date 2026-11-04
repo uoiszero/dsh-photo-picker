@@ -11,6 +11,7 @@ import { ProjectStore } from './projects.js'
 import { preprocessProject } from './preprocess.js'
 import { scanProject } from './scan.js'
 import { LocalSource } from './source.js'
+import { createPhotoPickerTool } from './tools.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -32,6 +33,7 @@ export class PhotoPickerService extends Service {
       }),
       'photo-picker.http',
     )
+    ctx.effect(() => ctx.tools.register(createPhotoPickerTool(this)), 'photo-picker.tool')
   }
 
   async listProjects() {
