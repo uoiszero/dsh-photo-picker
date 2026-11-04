@@ -184,6 +184,8 @@ GitHub Actions（`.github/workflows/ci.yml`）在 push 到 `main` 与 PR 上跑�
 | `acceptance`（ubuntu） | fixture + `acceptance:1/2/4`（假 LLM，零费用、无密钥） |
 | `macOS` | 主平台回归：测试 + 三个验收脚本 |
 
+`main` 已启用规则集：改动必须走 PR，上表三个 job 全绿才能合并；禁止强推和删除分支。发布 tag 不受规则集限制。
+
 打 `v*` tag 时 `release.yml` 会重跑完整门禁，并把 `plugin/` 打成 `dsh-photo-picker-vX.Y.Z.tar.gz` 附到 GitHub Release（解压目录即可作为 `plugin_manager action=install_bundle` 的 `target`）。CI **不会**调用真实模型，也不做创造者模式安装与浏览器验证，这两步仍按 [`AGENTS.md`](AGENTS.md) 手工执行。
 
 ### 目录结构

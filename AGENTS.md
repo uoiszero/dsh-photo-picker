@@ -86,6 +86,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
   - `checks`（ubuntu）：`npm ci` → `npm test` → `typecheck` → `check:release` → `check:hygiene` → `build:client` + 产物必须与源码同步；
   - `acceptance`（ubuntu）：`fixtures` + `acceptance:1/2/4`（假 LLM，零费用、无密钥）；
   - `macOS`：主平台回归，测试 + 三个验收脚本。
+- `main` 启用了规则集（name `main`）：改动必须走 PR，`checks (ubuntu)` / `acceptance (ubuntu)` / `macOS` 三项必需检查全绿才能合；禁止强推和删除分支。**不要再直接 `git push origin main`**。发布 tag 不受规则集限制。
 - 打 `v*` tag 触发 `release.yml`：重复完整门禁，把 `plugin/` 打成 `dsh-photo-picker-vX.Y.Z.tar.gz` 附到 GitHub Release；tag 必须等于 `v<版本号>`。
 - CI **不调用真实模型**，也**不做创造者模式安装 / 浏览器验证**，这两步仍按上面「DSH 环境注意事项」手工执行。
 - 依赖必须能被干净 clone 的 `npm ci` 安装：不要用 `file:` / `link:` 指向兄弟仓库（`scripts/check-hygiene.mjs` 会拦）。
