@@ -270,7 +270,7 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
       {error !== null && <div style={{ color: '#ff8a80', fontSize: 12 }}>{error}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>
         {photos.map(photo => (
-          <img key={photo.id} src={photo.thumbUrl} alt={photo.relPath} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 4, background: '#1a1f2a' }} />
+          <img key={photo.id} src={`${photo.thumbUrl}?v=${detail.updatedAt ?? 0}`} alt={photo.relPath} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 4, background: '#1a1f2a' }} />
         ))}
       </div>
     </div>
