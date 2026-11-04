@@ -10,7 +10,8 @@
     "fixtures": "node scripts/make-fixtures.mjs",
     "acceptance:1": "node scripts/acceptance-phase1.mjs",
     "acceptance:2": "node scripts/acceptance-phase2.mjs",
-    "acceptance:4": "node scripts/acceptance-phase4.mjs"
+    "acceptance:4": "node scripts/acceptance-phase4.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "engines": {
     "node": ">=22.23.0"
@@ -22,7 +23,9 @@
   },
   "devDependencies": {
     "@deepseek-ai/dsh-tools": "0.2.1-rc.5",
-    "esbuild": "^0.28.2"
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

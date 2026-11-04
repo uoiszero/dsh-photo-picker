@@ -301,7 +301,8 @@ function ReviewSection({ t, projectId, version, onChanged }: {
     const entry = undo[0]
     if (entry === undefined) return
     const groups: Record<string, string[]> = {}
-    for (const [photoId, verdict] of Object.entries(entry.previous)) {
+    const previous: Record<string, string | null> = entry.previous
+    for (const [photoId, verdict] of Object.entries(previous)) {
       const key = verdict ?? 'auto'
       groups[key] = [...(groups[key] ?? []), photoId]
     }
@@ -858,7 +859,7 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
     }
   }
 
-  const submit = async allLabels => {
+  const submit = async (allLabels: { photoId: string; verdict: string }[]) => {
     setBusy(true)
     try {
       const computed = await api(`/photo-picker/api/projects/${projectId}/calibration`, {

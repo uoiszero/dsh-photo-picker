@@ -12,6 +12,9 @@ const result = await build({
   jsxFactory: 'h',
   jsxFragment: 'Fragment',
   external: ['react', 'react-dom'],
+  // tsconfig.json 只给 tsc --noEmit 用；让 esbuild 忽略它，否则改 strict/module
+  // 之类的选项会悄悄改变 bundle 字节（例如多出 "use strict"），让 CI 的产物校验误报。
+  tsconfigRaw: {},
   logLevel: 'warning',
 })
 

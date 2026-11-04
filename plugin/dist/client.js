@@ -686,7 +686,8 @@ function ReviewSection({ t, projectId, version, onChanged }) {
     const entry = undo[0];
     if (entry === void 0) return;
     const groups = {};
-    for (const [photoId, verdict] of Object.entries(entry.previous)) {
+    const previous = entry.previous;
+    for (const [photoId, verdict] of Object.entries(previous)) {
       const key = verdict ?? "auto";
       groups[key] = [...groups[key] ?? [], photoId];
     }
