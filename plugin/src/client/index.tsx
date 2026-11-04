@@ -78,13 +78,49 @@ function stageLabel(t: (key: string) => string, stage: string) {
   return keys[stage] === undefined ? stage : t(keys[stage])
 }
 
-function summarizeStats(stats: any) {
+const VERDICT_KEYS: Record<string, string> = { keep: 'verdictKeep', maybe: 'verdictMaybe', reject: 'verdictReject' }
+const STATE_KEYS: Record<string, string> = {
+  ok: 'stateOk', candidate: 'stateCandidate', unreadable: 'stateUnreadable',
+  filtered_dup: 'stateFilteredDup', filtered_blur: 'stateFilteredBlur',
+  filtered_exposure: 'stateFilteredExposure', filtered_small: 'stateFilteredSmall',
+  grid_selected: 'stateGridSelected', grid_rejected: 'stateGridRejected', grid_error: 'stateGridError',
+  scored: 'stateScored', score_failed: 'stateScoreFailed',
+}
+const RUN_STATUS_KEYS: Record<string, string> = {
+  pending: 'runPending', running: 'runRunning', paused: 'runPaused',
+  done: 'runDone', failed: 'runFailed', cancelled: 'runCancelled',
+}
+const STAT_KEYS: Array<[string, string]> = [
+  ['photos', 'statPhotos'], ['skipped', 'statSkipped'], ['errors', 'statErrors'],
+  ['selected', 'statSelected'], ['rejected', 'statRejected'], ['failed', 'statFailed'],
+  ['groups', 'statGroups'], ['kept', 'statKept'], ['scored', 'statScored'], ['done', 'statDone'],
+]
+const PHASE_KEYS: Record<string, string> = { start: 'phaseStart', done: 'phaseDone' }
+
+function verdictLabel(t: (key: string) => string, verdict: string | null | undefined) {
+  if (verdict === null || verdict === undefined) return '—'
+  return VERDICT_KEYS[verdict] === undefined ? verdict : t(VERDICT_KEYS[verdict])
+}
+
+function stateLabel(t: (key: string) => string, state: string) {
+  return STATE_KEYS[state] === undefined ? state : t(STATE_KEYS[state])
+}
+
+function runStatusLabel(t: (key: string) => string, status: string) {
+  return RUN_STATUS_KEYS[status] === undefined ? status : t(RUN_STATUS_KEYS[status])
+}
+
+function phaseLabel(t: (key: string) => string, phase: string) {
+  return PHASE_KEYS[phase] === undefined ? phase : t(PHASE_KEYS[phase])
+}
+
+function summarizeStats(t: (key: string) => string, stats: any) {
   if (stats === null || stats === undefined) return ''
   const parts: string[] = []
-  for (const key of ['photos', 'selected', 'rejected', 'failed', 'groups', 'kept', 'scored', 'done', 'errors']) {
-    if (typeof stats[key] === 'number') parts.push(`${key} ${stats[key]}`)
+  for (const [key, labelKey] of STAT_KEYS) {
+    if (typeof stats[key] === 'number') parts.push(`${t(labelKey)} ${stats[key]}`)
   }
-  if (typeof stats.durationMs === 'number') parts.push(`${Math.round(stats.durationMs / 1000)}s`)
+  if (typeof stats.durationMs === 'number') parts.push(`${Math.round(stats.durationMs / 1000)}${t('secondsShort')}`)
   return parts.join(' · ')
 }
 
@@ -172,7 +208,7 @@ function CreateForm({ t, onCreated, onCancel }: {
       )}
       <label style={{ display: 'grid', gap: 6 }}>
         <span style={muted}>{t('name')}</span>
-        <input value={name} onChange={event => setName(event.target.value)} placeholder="2024 婚礼" style={input} />
+        <input value={name} onChange={event => setName(event.target.value)} placeholder={t('namePlaceholder')} style={input} />
       </label>
       <div style={{ display: 'flex', gap: 14 }}>
         <label style={{ display: 'grid', gap: 6 }}>
@@ -320,9 +356,9 @@ function ReviewSection({ t, projectId, version, onChanged }: {
 
   const filters: Array<[string, string]> = [
     ['all', t('filterAll')],
-    ['keep', t('filterKeep')],
-    ['maybe', t('filterMaybe')],
-    ['reject', t('filterReject')],
+    ['keep', verdictLabel(t, 'keep')],
+    ['maybe', verdictLabel(t, 'maybe')],
+    ['reject', verdictLabel(t, 'reject')],
   ]
 
   return (
@@ -390,7 +426,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
                 )}
                 {item.humanVerdict !== null && (
                   <span style={{ position: 'absolute', bottom: 8, right: 6, padding: '1px 5px', borderRadius: 5, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 10 }}>
-                    {item.humanVerdict}
+                    {verdictLabel(t, item.humanVerdict)}
                   </span>
                 )}
               </button>
@@ -453,7 +489,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
           <button type="button" style={btn} onClick={() => onOpenGroup(detail.group.id)}>{t('groupCompare')}</button>
         )}
         <span style={muted}>{index + 1} / {items.length}</span>
-        <span style={{ ...chip, background: VERDICT_COLORS[detail.verdict] ?? 'var(--dsw-alias-bg-layer-2)', color: '#fff' }}>{detail.verdict}</span>
+        <span style={{ ...chip, background: VERDICT_COLORS[detail.verdict] ?? 'var(--dsw-alias-bg-layer-2)', color: '#fff' }}>{verdictLabel(t, detail.verdict)}</span>
         {detail.score !== null && <span style={chip}>{t('scoreLabel')}: {detail.score}</span>}
         <span style={{ ...muted, marginLeft: 'auto' }}>{detail.relPath}</span>
       </div>
@@ -500,7 +536,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
           )}
           <div style={muted}>
             {detail.width} × {detail.height}
-            {detail.group !== undefined ? ` · 组内第 ${detail.group.rank}/${detail.group.size}` : ''}
+            {detail.group !== undefined ? ` · ${t('groupRank').replace('{rank}', String(detail.group.rank)).replace('{size}', String(detail.group.size))}` : ''}
           </div>
         </div>
       </div>
@@ -567,7 +603,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
             <input
               value={dest}
               onChange={event => setDest(event.target.value)}
-              placeholder="/Volumes/…/精选"
+              placeholder={t('destPlaceholder')}
               style={{ ...input, flex: 1 }}
             />
             <button type="button" style={btn} onClick={choose}>{t('exportChoose')}</button>
@@ -578,7 +614,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
           {['keep', 'maybe', 'reject'].map(bucket => (
             <label key={bucket} style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 13 }}>
               <input type="checkbox" checked={buckets.includes(bucket)} onChange={() => toggleBucket(bucket)} />
-              {bucket}
+              {verdictLabel(t, bucket)}
             </label>
           ))}
           <span style={{ ...muted, marginLeft: 8 }}>{t('exportMode')}</span>
@@ -594,7 +630,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
         {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
         {preview !== null && (
           <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>{Object.entries(preview.counts).map(([bucket, count]) => `${bucket} ${count}`).join(' · ')} · {(preview.totalBytes / 1024 / 1024).toFixed(1)} MB</span>
+            <span>{Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(' · ')} · {(preview.totalBytes / 1024 / 1024).toFixed(1)} MB</span>
             <span style={muted}>
               {t('exportSkipped')} {preview.skippedExisting} · {t('exportConflict')} {preview.conflictCount} · {preview.sameVolume ? t('exportSameVolume') : t('exportCrossVolume')}
             </span>
@@ -602,7 +638,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
         )}
         {result !== null && (
           <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>{t('exportResult')}: {Object.entries(result.counts).map(([bucket, count]) => `${bucket} ${count}`).join(' · ')}</span>
+            <span>{t('exportResult')}: {Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(' · ')}</span>
             <span style={muted}>{t('manifest')}: {result.manifestPath}</span>
             <div>
               <button
@@ -767,7 +803,7 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
             </span>
             {member.humanVerdict !== null && (
               <span style={{ position: 'absolute', bottom: 6, right: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 10 }}>
-                {member.humanVerdict}
+                {verdictLabel(t, member.humanVerdict)}
               </span>
             )}
           </button>
@@ -881,7 +917,7 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
         <span>{t('calibrationAgreement')}: {((data.agreement ?? 0) * 100).toFixed(0)}%</span>
       </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={chip}>{t('calibrationSuggested')}: keep ≥ {data.suggestedKeep} · maybe ≥ {data.suggestedMaybe}</span>
+        <span style={chip}>{t('calibrationSuggested')}: {verdictLabel(t, 'keep')} ≥ {data.suggestedKeep} · {verdictLabel(t, 'maybe')} ≥ {data.suggestedMaybe}</span>
         <button type="button" style={btn} disabled={busy} onClick={apply}>
           {applied ? t('calibrationApplied') : t('calibrationApply')}
         </button>
@@ -1226,7 +1262,7 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {Object.entries(counts).map(([state, count]) => (
-            <span key={state} style={chip}>{state}: {String(count)}</span>
+            <span key={state} style={chip}>{stateLabel(t, state)}: {String(count)}</span>
           ))}
           <span style={chip}>
             {t('spent')}: ¥{Number(detail.cost?.spentCny ?? 0).toFixed(4)} / ¥{Number(detail.cost?.budgetCny ?? 0).toFixed(0)}
@@ -1277,8 +1313,8 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
           {pipelineEvent.error !== undefined
             ? `${t('pipelineFailed')}: ${pipelineEvent.error}`
             : pipelineEvent.stage === 'pipeline' && pipelineEvent.result !== undefined
-              ? `${pipelineEvent.result.reason === 'paused' ? t('pipelinePaused') : t('pipelineDone')}: ${(pipelineEvent.result.completed ?? []).join(' → ')}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== undefined ? ` · 下一阶段 ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ''}`
-              : `${t('autoRun')}: ${stageLabel(t, pipelineEvent.stage)} · ${pipelineEvent.phase}`}
+              ? `${pipelineEvent.result.reason === 'paused' ? t('pipelinePaused') : t('pipelineDone')}: ${(pipelineEvent.result.completed ?? []).join(' → ')}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== undefined ? ` · ${t('nextStage')} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ''}`
+              : `${t('autoRun')}: ${stageLabel(t, pipelineEvent.stage)} · ${phaseLabel(t, pipelineEvent.phase)}`}
         </div>
       )}
       {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
@@ -1292,9 +1328,9 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
             }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <strong>{stageLabel(t, cp.stage)}</strong>
-                <span style={chip}>{cp.status}</span>
+                <span style={chip}>{runStatusLabel(t, cp.status)}</span>
                 <span style={chip}>¥{Number(cp.costCny ?? 0).toFixed(4)}</span>
-                <span style={{ ...muted, marginLeft: 'auto' }}>{summarizeStats(cp.stats)}</span>
+                <span style={{ ...muted, marginLeft: 'auto' }}>{summarizeStats(t, cp.stats)}</span>
               </div>
               {(cp.sampleIds ?? []).length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>
@@ -1402,7 +1438,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
                 <span style={muted}>
                   {project.sourcePath}
                   {' · '}
-                  {Object.entries(project.counts ?? {}).map(([state, n]) => `${state} ${String(n)}`).join('  ')}
+                  {Object.entries(project.counts ?? {}).map(([state, n]) => `${stateLabel(t, state)} ${String(n)}`).join('  ')}
                 </span>
               </button>
             ))}

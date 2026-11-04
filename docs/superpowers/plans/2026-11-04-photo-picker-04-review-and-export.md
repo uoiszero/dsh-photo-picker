@@ -37,6 +37,7 @@
   - 顺带修复：阶段启动原先读 `ProjectStore` 缓存的旧项目快照，改设置后（stagePause/预算/阈值/模型）不生效；现在每次启动前重读 `projects` 行。
 - 实测：真实项目自动跑（已全部处理完）→ 0 次 API 调用完成五阶段；临时开启 stagePause 后自动跑只执行 scan 即停（状态 `scanned`，报告下一阶段 preprocess），随后恢复默认。
 - **i18n（2026-11-04 完成）**：新增 `plugin/src/client/locales.js`（zh/en 词典 + 语言检测 + 订阅），界面语言按 `navigator.languages` 自动选择（zh* → 中文，其余 → English），不依赖 DSH 语言设置；设置抽屉可切换「跟随浏览器 / 中文 / English」，写入 `localStorage['photoPicker.lang']` 并即时重渲染（无需刷新）。`npm test` 增加 i18n 用例（检测、回退、词典键一致性）。
+- **枚举本地化（2026-11-04 补）**：补回丢失的 `close` / `photos` 键；把判定（keep/maybe/reject）、照片状态（含 `filtered_blur` 等）、阶段运行状态（done/paused/…）、检查点统计键、流水线阶段、导出分桶、组内排名与“下一阶段”等全部走词典；新增测试保证源码里每个字面量 `t('key')` 在 zh/en 都存在。
 - 仍未做：图墙虚拟滚动（大数据量）、组对比“按分数重排”视图。
 
 

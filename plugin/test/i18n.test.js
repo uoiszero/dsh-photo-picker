@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import {
   detectLanguage, en, getLanguagePreference, translate, zh,
 } from '../src/client/locales.js'
@@ -32,4 +33,29 @@ test('zh and en dictionaries keep the same keys', () => {
 
 test('getLanguagePreference is auto without localStorage', () => {
   assert.equal(getLanguagePreference(), 'auto')
+})
+
+test('every literal t() key used by the panel exists in both dictionaries', () => {
+  const source = readFileSync(new URL('../src/client/index.tsx', import.meta.url), 'utf8')
+  const used = [...source.matchAll(/t\('([^']+)'\)/g)].map(match => match[1])
+  const missingZh = [...new Set(used)].filter(key => !(key in zh))
+  const missingEn = [...new Set(used)].filter(key => !(key in en))
+  assert.deepEqual(missingZh, [])
+  assert.deepEqual(missingEn, [])
+})
+
+test('enum label keys cover technical values shown in the panel', () => {
+  const keys = [
+    'verdictKeep', 'verdictMaybe', 'verdictReject',
+    'stateOk', 'stateUnreadable', 'stateFilteredBlur', 'stateFilteredExposure',
+    'stateFilteredSmall', 'stateGridSelected', 'stateGridRejected', 'stateGridError',
+    'stateScored', 'stateScoreFailed',
+    'runPending', 'runRunning', 'runPaused', 'runDone', 'runFailed', 'runCancelled',
+    'statPhotos', 'statSelected', 'statRejected', 'statGroups', 'statScored',
+    'phaseStart', 'phaseDone', 'photos', 'close',
+  ]
+  for (const key of keys) {
+    assert.ok(typeof zh[key] === 'string' && zh[key].length > 0, `zh missing ${key}`)
+    assert.ok(typeof en[key] === 'string' && en[key].length > 0, `en missing ${key}`)
+  }
 })

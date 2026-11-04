@@ -84,9 +84,9 @@ var zh = {
   aiDisabled: "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u7247\u8F93\u5165\uFF0CAI \u9636\u6BB5\u5DF2\u7981\u7528\u3002",
   review: "\u590D\u6838",
   filterAll: "\u5168\u90E8",
-  filterKeep: "keep",
-  filterMaybe: "maybe",
-  filterReject: "reject",
+  filterKeep: "\u4FDD\u7559",
+  filterMaybe: "\u5F85\u5B9A",
+  filterReject: "\u5F03\u7528",
   sortScore: "\u6309\u5206\u6570\uFF08\u9AD8\u2192\u4F4E\uFF09",
   sortScoreAsc: "\u6309\u5206\u6570\uFF08\u4F4E\u2192\u9AD8\uFF09",
   sortTaken: "\u6309\u62CD\u6444\u65F6\u95F4",
@@ -139,9 +139,9 @@ var zh = {
   calibrationStart: "\u5F00\u59CB\u6821\u51C6",
   calibrationProgress: "\u7B2C {n} / {total} \u5F20",
   calibrationHint: "\u76F2\u8BC4\uFF1A\u53EA\u51ED\u8089\u773C\u5224\u65AD\uFF0C\u4E0D\u770B AI \u5206\u6570\u3002\u5B8C\u6210\u540E\u63ED\u793A\u4E00\u81F4\u7387\u4E0E\u5EFA\u8BAE\u9608\u503C\u3002",
-  calibrationPrecision: "keep \u7CBE\u786E\u7387",
-  calibrationRecall: "keep \u53EC\u56DE\u7387",
-  calibrationF1: "keep F1",
+  calibrationPrecision: "\u4FDD\u7559\u7CBE\u786E\u7387",
+  calibrationRecall: "\u4FDD\u7559\u53EC\u56DE\u7387",
+  calibrationF1: "\u4FDD\u7559 F1",
   calibrationAgreement: "\u4E00\u81F4\u7387",
   calibrationSuggested: "\u5EFA\u8BAE\u9608\u503C",
   calibrationApply: "\u5E94\u7528\u5EFA\u8BAE\u9608\u503C",
@@ -157,8 +157,8 @@ var zh = {
   gridCols: "\u5217",
   gridRows: "\u884C",
   thresholds: "\u5224\u5B9A\u9608\u503C",
-  thresholdKeep: "keep \u9608\u503C",
-  thresholdMaybe: "maybe \u9608\u503C",
+  thresholdKeep: "\u4FDD\u7559\u9608\u503C",
+  thresholdMaybe: "\u5F85\u5B9A\u9608\u503C",
   grouping: "\u5206\u7EC4\u53C2\u6570",
   burstSeconds: "\u8FDE\u62CD\u65F6\u95F4\u7A97\uFF08\u79D2\uFF09",
   burstHamming: "\u8FDE\u62CD\u6C49\u660E\u8DDD\u79BB",
@@ -175,8 +175,48 @@ var zh = {
   rerunStages: "\u91CD\u8DD1\u53D7\u5F71\u54CD\u9636\u6BB5",
   rerun: "\u91CD\u8DD1",
   settingsNoImageModel: "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u7247\u8F93\u5165\uFF0CAI \u9636\u6BB5\u4F1A\u88AB\u7981\u7528\u3002",
+  photos: "\u7167\u7247",
+  close: "\u5173\u95ED",
+  verdictKeep: "\u4FDD\u7559",
+  verdictMaybe: "\u5F85\u5B9A",
+  verdictReject: "\u5F03\u7528",
+  stateOk: "\u6B63\u5E38",
+  stateCandidate: "\u5019\u9009",
+  stateUnreadable: "\u4E0D\u53EF\u8BFB",
+  stateFilteredDup: "\u91CD\u590D",
+  stateFilteredBlur: "\u6A21\u7CCA",
+  stateFilteredExposure: "\u66DD\u5149\u5F02\u5E38",
+  stateFilteredSmall: "\u5206\u8FA8\u7387\u8FC7\u5C0F",
+  stateGridSelected: "\u7C97\u7B5B\u5165\u9009",
+  stateGridRejected: "\u7C97\u7B5B\u843D\u9009",
+  stateGridError: "\u7C97\u7B5B\u5931\u8D25",
+  stateScored: "\u5DF2\u8BC4\u5206",
+  stateScoreFailed: "\u8BC4\u5206\u5931\u8D25",
+  runPending: "\u7B49\u5F85\u4E2D",
+  runRunning: "\u8FD0\u884C\u4E2D",
+  runPaused: "\u5DF2\u6682\u505C",
+  runDone: "\u5DF2\u5B8C\u6210",
+  runFailed: "\u5931\u8D25",
+  runCancelled: "\u5DF2\u53D6\u6D88",
+  statPhotos: "\u7167\u7247",
+  statSkipped: "\u8DF3\u8FC7",
+  statErrors: "\u9519\u8BEF",
+  statSelected: "\u9009\u4E2D",
+  statRejected: "\u843D\u9009",
+  statFailed: "\u5931\u8D25",
+  statGroups: "\u5206\u7EC4",
+  statKept: "\u6DD8\u6C70",
+  statScored: "\u8BC4\u5206",
+  statDone: "\u5B8C\u6210",
+  secondsShort: "\u79D2",
+  phaseStart: "\u5F00\u59CB",
+  phaseDone: "\u5B8C\u6210",
   language: "\u754C\u9762\u8BED\u8A00",
-  languageAuto: "\u8DDF\u968F\u6D4F\u89C8\u5668"
+  languageAuto: "\u8DDF\u968F\u6D4F\u89C8\u5668",
+  namePlaceholder: "2024 \u5A5A\u793C",
+  destPlaceholder: "/Volumes/\u2026/\u7CBE\u9009",
+  groupRank: "\u7EC4\u5185\u7B2C {rank}/{size}",
+  nextStage: "\u4E0B\u4E00\u9636\u6BB5"
 };
 var en = {
   title: "Photo Picker",
@@ -221,9 +261,9 @@ var en = {
   aiDisabled: "The current model does not accept image input, so AI stages are disabled.",
   review: "Review",
   filterAll: "All",
-  filterKeep: "keep",
-  filterMaybe: "maybe",
-  filterReject: "reject",
+  filterKeep: "\u4FDD\u7559",
+  filterMaybe: "\u5F85\u5B9A",
+  filterReject: "\u5F03\u7528",
   sortScore: "By score (high\u2192low)",
   sortScoreAsc: "By score (low\u2192high)",
   sortTaken: "By time",
@@ -312,8 +352,48 @@ var en = {
   rerunStages: "Re-run affected stages",
   rerun: "Re-run",
   settingsNoImageModel: "The current model does not accept image input; AI stages will be disabled.",
+  photos: "photos",
+  close: "Close",
+  verdictKeep: "Keep",
+  verdictMaybe: "Maybe",
+  verdictReject: "Reject",
+  stateOk: "ok",
+  stateCandidate: "candidate",
+  stateUnreadable: "unreadable",
+  stateFilteredDup: "duplicate",
+  stateFilteredBlur: "blurry",
+  stateFilteredExposure: "bad exposure",
+  stateFilteredSmall: "too small",
+  stateGridSelected: "grid selected",
+  stateGridRejected: "grid rejected",
+  stateGridError: "grid error",
+  stateScored: "scored",
+  stateScoreFailed: "score failed",
+  runPending: "pending",
+  runRunning: "running",
+  runPaused: "paused",
+  runDone: "done",
+  runFailed: "failed",
+  runCancelled: "cancelled",
+  statPhotos: "photos",
+  statSkipped: "skipped",
+  statErrors: "errors",
+  statSelected: "selected",
+  statRejected: "rejected",
+  statFailed: "failed",
+  statGroups: "groups",
+  statKept: "kept",
+  statScored: "scored",
+  statDone: "done",
+  secondsShort: "s",
+  phaseStart: "start",
+  phaseDone: "done",
   language: "Language",
-  languageAuto: "Follow browser"
+  languageAuto: "Follow browser",
+  namePlaceholder: "2024 wedding",
+  destPlaceholder: "/Volumes/\u2026/selects",
+  groupRank: "rank {rank}/{size} in group",
+  nextStage: "next stage"
 };
 var STORAGE_KEY = "photoPicker.lang";
 var listeners = /* @__PURE__ */ new Set();
@@ -428,13 +508,62 @@ function stageLabel(t, stage) {
   };
   return keys[stage] === void 0 ? stage : t(keys[stage]);
 }
-function summarizeStats(stats) {
+var VERDICT_KEYS = { keep: "verdictKeep", maybe: "verdictMaybe", reject: "verdictReject" };
+var STATE_KEYS = {
+  ok: "stateOk",
+  candidate: "stateCandidate",
+  unreadable: "stateUnreadable",
+  filtered_dup: "stateFilteredDup",
+  filtered_blur: "stateFilteredBlur",
+  filtered_exposure: "stateFilteredExposure",
+  filtered_small: "stateFilteredSmall",
+  grid_selected: "stateGridSelected",
+  grid_rejected: "stateGridRejected",
+  grid_error: "stateGridError",
+  scored: "stateScored",
+  score_failed: "stateScoreFailed"
+};
+var RUN_STATUS_KEYS = {
+  pending: "runPending",
+  running: "runRunning",
+  paused: "runPaused",
+  done: "runDone",
+  failed: "runFailed",
+  cancelled: "runCancelled"
+};
+var STAT_KEYS = [
+  ["photos", "statPhotos"],
+  ["skipped", "statSkipped"],
+  ["errors", "statErrors"],
+  ["selected", "statSelected"],
+  ["rejected", "statRejected"],
+  ["failed", "statFailed"],
+  ["groups", "statGroups"],
+  ["kept", "statKept"],
+  ["scored", "statScored"],
+  ["done", "statDone"]
+];
+var PHASE_KEYS = { start: "phaseStart", done: "phaseDone" };
+function verdictLabel(t, verdict) {
+  if (verdict === null || verdict === void 0) return "\u2014";
+  return VERDICT_KEYS[verdict] === void 0 ? verdict : t(VERDICT_KEYS[verdict]);
+}
+function stateLabel(t, state) {
+  return STATE_KEYS[state] === void 0 ? state : t(STATE_KEYS[state]);
+}
+function runStatusLabel(t, status) {
+  return RUN_STATUS_KEYS[status] === void 0 ? status : t(RUN_STATUS_KEYS[status]);
+}
+function phaseLabel(t, phase) {
+  return PHASE_KEYS[phase] === void 0 ? phase : t(PHASE_KEYS[phase]);
+}
+function summarizeStats(t, stats) {
   if (stats === null || stats === void 0) return "";
   const parts = [];
-  for (const key of ["photos", "selected", "rejected", "failed", "groups", "kept", "scored", "done", "errors"]) {
-    if (typeof stats[key] === "number") parts.push(`${key} ${stats[key]}`);
+  for (const [key, labelKey] of STAT_KEYS) {
+    if (typeof stats[key] === "number") parts.push(`${t(labelKey)} ${stats[key]}`);
   }
-  if (typeof stats.durationMs === "number") parts.push(`${Math.round(stats.durationMs / 1e3)}s`);
+  if (typeof stats.durationMs === "number") parts.push(`${Math.round(stats.durationMs / 1e3)}${t("secondsShort")}`);
   return parts.join(" \xB7 ");
 }
 function CreateForm({ t, onCreated, onCancel }) {
@@ -499,7 +628,7 @@ function CreateForm({ t, onCreated, onCancel }) {
       style: { padding: "6px 10px", cursor: "pointer", fontSize: 13 }
     },
     dir.name
-  ))), /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("name")), /* @__PURE__ */ h("input", { value: name, onChange: (event) => setName(event.target.value), placeholder: "2024 \u5A5A\u793C", style: input })), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 14 } }, /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("theme")), /* @__PURE__ */ h("select", { value: theme, onChange: (event) => setTheme(event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("budget")), /* @__PURE__ */ h("input", { value: budget, onChange: (event) => setBudget(event.target.value), style: { ...input, width: 100 } }))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || folder === "", onClick: create }, busy ? t("creating") : t("create")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onCancel }, t("back"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error));
+  ))), /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("name")), /* @__PURE__ */ h("input", { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder"), style: input })), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 14 } }, /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("theme")), /* @__PURE__ */ h("select", { value: theme, onChange: (event) => setTheme(event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("budget")), /* @__PURE__ */ h("input", { value: budget, onChange: (event) => setBudget(event.target.value), style: { ...input, width: 100 } }))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || folder === "", onClick: create }, busy ? t("creating") : t("create")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onCancel }, t("back"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error));
 }
 var VERDICT_COLORS = {
   keep: "var(--dsw-static-green-500, #2f9e5f)",
@@ -608,9 +737,9 @@ function ReviewSection({ t, projectId, version, onChanged }) {
   }
   const filters = [
     ["all", t("filterAll")],
-    ["keep", t("filterKeep")],
-    ["maybe", t("filterMaybe")],
-    ["reject", t("filterReject")]
+    ["keep", verdictLabel(t, "keep")],
+    ["maybe", verdictLabel(t, "maybe")],
+    ["reject", verdictLabel(t, "reject")]
   ];
   return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("review")), filters.map(([value, label]) => /* @__PURE__ */ h(
     "button",
@@ -649,7 +778,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
     /* @__PURE__ */ h("img", { src: `${item.thumbUrl}?v=${version}`, alt: item.relPath, style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }),
     /* @__PURE__ */ h("span", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 4, background: VERDICT_COLORS[item.verdict] ?? "var(--dsw-alias-border-l2)" } }),
     item.score !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", top: 6, left: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 11 } }, Number(item.score).toFixed(1)),
-    item.humanVerdict !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", bottom: 8, right: 6, padding: "1px 5px", borderRadius: 5, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 10 } }, item.humanVerdict)
+    item.humanVerdict !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", bottom: 8, right: 6, padding: "1px 5px", borderRadius: 5, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 10 } }, verdictLabel(t, item.humanVerdict))
   ), /* @__PURE__ */ h(
     "input",
     {
@@ -690,7 +819,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   if (error !== null) return /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error);
   if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
   const dimensions = detail.dimensions ?? {};
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { style: muted }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { style: { ...chip, background: VERDICT_COLORS[detail.verdict] ?? "var(--dsw-alias-bg-layer-2)", color: "#fff" } }, detail.verdict), detail.score !== null && /* @__PURE__ */ h("span", { style: chip }, t("scoreLabel"), ": ", detail.score), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 280px", gap: 14, alignItems: "start" } }, /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { style: muted }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { style: { ...chip, background: VERDICT_COLORS[detail.verdict] ?? "var(--dsw-alias-bg-layer-2)", color: "#fff" } }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h("span", { style: chip }, t("scoreLabel"), ": ", detail.score), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 280px", gap: 14, alignItems: "start" } }, /* @__PURE__ */ h(
     "img",
     {
       src: `${detail.previewUrl}?v=${version}`,
@@ -700,7 +829,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   ), /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 12 } }, t("keyboardHint")), /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h("div", { key, style: { display: "grid", gridTemplateColumns: "64px 1fr 28px", gap: 8, alignItems: "center", fontSize: 12 } }, /* @__PURE__ */ h("span", { style: muted }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h("div", { style: { height: 6, borderRadius: 3, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%`, background: "var(--dsw-alias-brand-primary)" } })), /* @__PURE__ */ h("span", null, value === null || value === void 0 ? "\u2014" : value));
-  })), detail.reason !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("reason")), /* @__PURE__ */ h("span", { style: { fontSize: 13 } }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("postProcessing")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, detail.postProcessing.map((code) => /* @__PURE__ */ h("span", { key: code, style: chip }, code)))), /* @__PURE__ */ h("div", { style: muted }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 \u7EC4\u5185\u7B2C ${detail.group.rank}/${detail.group.size}` : ""))));
+  })), detail.reason !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("reason")), /* @__PURE__ */ h("span", { style: { fontSize: 13 } }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("postProcessing")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, detail.postProcessing.map((code) => /* @__PURE__ */ h("span", { key: code, style: chip }, code)))), /* @__PURE__ */ h("div", { style: muted }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));
 }
 function ExportDialog({ t, projectId, onClose }) {
   const [dest, setDest] = (0, import_react.useState)("");
@@ -754,10 +883,10 @@ function ExportDialog({ t, projectId, onClose }) {
     {
       value: dest,
       onChange: (event) => setDest(event.target.value),
-      placeholder: "/Volumes/\u2026/\u7CBE\u9009",
+      placeholder: t("destPlaceholder"),
       style: { ...input, flex: 1 }
     }
-  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("exportChoose")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, style: { display: "flex", gap: 4, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), bucket)), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), preview !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, Object.entries(preview.counts).map(([bucket, count]) => `${bucket} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("span", { style: muted }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${bucket} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("span", { style: muted }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", null, /* @__PURE__ */ h(
+  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("exportChoose")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, style: { display: "flex", gap: 4, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket))), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), preview !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("span", { style: muted }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("span", { style: muted }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", null, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
@@ -887,7 +1016,7 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
         }
       ),
       /* @__PURE__ */ h("span", { style: { position: "absolute", top: 6, left: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 11 } }, "#", position + 1, member.score !== null && member.score !== void 0 ? ` \xB7 ${Number(member.score).toFixed(1)}` : ""),
-      member.humanVerdict !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", bottom: 6, right: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 10 } }, member.humanVerdict)
+      member.humanVerdict !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", bottom: 6, right: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 10 } }, verdictLabel(t, member.humanVerdict))
     );
   })), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: confirm }, t("groupConfirm")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => decide("reject", detail.members.map((member) => member.id)) }, t("groupRejectAll"))), /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 12 } }, t("groupHint")));
 }
@@ -973,7 +1102,7 @@ function CalibrationSection({ t, projectId, onApplied }) {
       setBusy(false);
     }
   };
-  const summary = (data) => /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6, fontSize: 13 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", null, t("calibrationPrecision"), ": ", (data.keep?.precision ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationRecall"), ": ", (data.keep?.recall ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationF1"), ": ", (data.keep?.f1 ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationAgreement"), ": ", ((data.agreement ?? 0) * 100).toFixed(0), "%")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: chip }, t("calibrationSuggested"), ": keep \u2265 ", data.suggestedKeep, " \xB7 maybe \u2265 ", data.suggestedMaybe), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: apply2 }, applied ? t("calibrationApplied") : t("calibrationApply"))));
+  const summary = (data) => /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6, fontSize: 13 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", null, t("calibrationPrecision"), ": ", (data.keep?.precision ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationRecall"), ": ", (data.keep?.recall ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationF1"), ": ", (data.keep?.f1 ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationAgreement"), ": ", ((data.agreement ?? 0) * 100).toFixed(0), "%")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: chip }, t("calibrationSuggested"), ": ", verdictLabel(t, "keep"), " \u2265 ", data.suggestedKeep, " \xB7 ", verdictLabel(t, "maybe"), " \u2265 ", data.suggestedMaybe), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: apply2 }, applied ? t("calibrationApplied") : t("calibrationApply"))));
   return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("calibration")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: start }, t("calibrationStart")), phase === "idle" && latest?.metrics !== null && latest?.metrics !== void 0 && /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, t("calibrationLast"), ": ", latest.sampleSize, " ", t("photos"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), phase === "idle" && latest?.metrics !== null && latest?.metrics !== void 0 && summary(latest.metrics), phase === "blind" && items[index] !== void 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: chip }, t("calibrationProgress").replace("{n}", String(index + 1)).replace("{total}", String(items.length))), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, t("calibrationHint"))), /* @__PURE__ */ h(
     "img",
     {
@@ -1163,7 +1292,7 @@ function ProjectDetail({ t, id }) {
   const version = detail.updatedAt ?? 0;
   const aiDisabled = detail.ai?.hasImageModel === false;
   const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0;
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, state, ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("grid") }, t("stageGrid")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("rank") }, t("stageRank")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("score") }, t("stageScore")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: detail.running !== null, onClick: runAll }, t("autoRun")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && detail !== null && /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, stateLabel(t, state), ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("grid") }, t("stageGrid")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("rank") }, t("stageRank")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("score") }, t("stageScore")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: detail.running !== null, onClick: runAll }, t("autoRun")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && detail !== null && /* @__PURE__ */ h(
     SettingsDrawer,
     {
       t,
@@ -1172,13 +1301,13 @@ function ProjectDetail({ t, id }) {
       onSaved: refresh,
       onRunStage: (stage) => run(stage)
     }
-  ), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), pipelineEvent !== null && /* @__PURE__ */ h("div", { style: muted }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 \u4E0B\u4E00\u9636\u6BB5 ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${pipelineEvent.phase}`), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
+  ), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), pipelineEvent !== null && /* @__PURE__ */ h("div", { style: muted }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
     border: "1px solid var(--dsw-alias-border-l1)",
     borderRadius: 10,
     padding: 12,
     display: "grid",
     gap: 8
-  } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", null, stageLabel(t, cp.stage)), /* @__PURE__ */ h("span", { style: chip }, cp.status), /* @__PURE__ */ h("span", { style: chip }, "\xA5", Number(cp.costCny ?? 0).toFixed(4)), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, summarizeStats(cp.stats))), (cp.sampleIds ?? []).length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 6 } }, cp.sampleIds.map((pid) => /* @__PURE__ */ h(
+  } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", null, stageLabel(t, cp.stage)), /* @__PURE__ */ h("span", { style: chip }, runStatusLabel(t, cp.status)), /* @__PURE__ */ h("span", { style: chip }, "\xA5", Number(cp.costCny ?? 0).toFixed(4)), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, summarizeStats(t, cp.stats))), (cp.sampleIds ?? []).length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 6 } }, cp.sampleIds.map((pid) => /* @__PURE__ */ h(
     "img",
     {
       key: pid,
@@ -1254,7 +1383,7 @@ function Workbench({ t }) {
       }
     },
     /* @__PURE__ */ h("span", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ h("strong", { style: { fontSize: 14 } }, project.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, project.status))),
-    /* @__PURE__ */ h("span", { style: muted }, project.sourcePath, " \xB7 ", Object.entries(project.counts ?? {}).map(([state, n]) => `${state} ${String(n)}`).join("  "))
+    /* @__PURE__ */ h("span", { style: muted }, project.sourcePath, " \xB7 ", Object.entries(project.counts ?? {}).map(([state, n]) => `${stateLabel(t, state)} ${String(n)}`).join("  "))
   )))));
 }
 function PhotoPickerIcon({ size }) {
