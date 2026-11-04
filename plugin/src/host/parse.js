@@ -11,7 +11,44 @@ export function isPostProcessingCode(code) {
 }
 
 export const DIMENSION_KEYS = ['composition', 'light', 'color', 'technique', 'post_potential', 'moment']
+const DIMENSION_ALIASES = {
+  composition: ['composition', '构图'],
+  light: ['light', '光影', '光线'],
+  color: ['color', '色彩', '颜色'],
+  technique: ['technique', '技术质量', '技术'],
+  post_potential: ['post_potential', '后期潜力'],
+  moment: ['moment', '瞬间与叙事', '瞬间', '叙事'],
+}
 const VERDICTS = new Set(['keep', 'maybe', 'reject'])
+const VERDICT_ALIASES = new Map([
+  ['keep', 'keep'], ['保留', 'keep'], ['留', 'keep'],
+  ['maybe', 'maybe'], ['待定', 'maybe'], ['也许', 'maybe'], ['不确定', 'maybe'],
+  ['reject', 'reject'], ['淘汰', 'reject'], ['弃', 'reject'], ['拒绝', 'reject'], ['不要', 'reject'],
+])
+
+function pickNumber(...values) {
+  for (const value of values) {
+    const number = Number(value)
+    if (Number.isFinite(number)) return number
+  }
+  return undefined
+}
+
+function pickString(...values) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim() !== '') return value
+  }
+  return undefined
+}
+
+/** 兼容模型返回中文键名 / 扁平六维 / 嵌套 dimensions 三种形态。 */
+function dimensionValue(source, key) {
+  for (const alias of DIMENSION_ALIASES[key]) {
+    const value = source?.[alias]
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+  }
+  return null
+}
 
 export class BadModelJson extends Error {
   constructor(message) {
@@ -90,13 +127,14 @@ export function parseRank(text, labels) {
     throw new BadModelJson('rank: expected an object')
   }
   const allowed = new Set(labels)
-  const order = [...new Set(Array.isArray(value.order)
-    ? value.order.filter(label => typeof label === 'string' && allowed.has(label))
+  const orderValue = value.order ?? value['排序'] ?? value['顺序']
+  const order = [...new Set(Array.isArray(orderValue)
+    ? orderValue.filter(label => typeof label === 'string' && allowed.has(label))
     : [])]
-  const best = typeof value.best === 'string' ? value.best : undefined
+  const best = pickString(value.best, value['最佳'], value['最好'], value['第一名'])
   if (best === undefined || !allowed.has(best)) throw new BadModelJson('rank: best is not one of the given labels')
   if (!order.includes(best)) order.unshift(best)
-  return { order, best, reason: normalizeReason(value.reason, 200) }
+  return { order, best, reason: normalizeReason(pickString(value.reason, value['理由'], value['原因'], value['说明']), 200) }
 }
 
 /** 单张精评结果：分数夹到 0–10，六维缺失补 null，后期建议过滤白名单。 */
@@ -112,24 +150,27 @@ export function parseScore(text) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new BadModelJson('score: expected an object')
   }
-  const score = Number(value.score)
-  if (!Number.isFinite(score)) throw new BadModelJson('score: missing numeric score')
-  if (typeof value.verdict !== 'string' || !VERDICTS.has(value.verdict)) {
+  const score = pickNumber(value.score, value['总分'], value['分数'], value['评分'])
+  if (score === undefined) throw new BadModelJson('score: missing numeric score')
+  const verdictRaw = pickString(value.verdict, value['建议'], value['判定'], value['结论'])
+  const verdict = verdictRaw === undefined ? undefined : VERDICT_ALIASES.get(verdictRaw.trim().toLowerCase()) ?? VERDICT_ALIASES.get(verdictRaw.trim())
+  if (verdict === undefined || !VERDICTS.has(verdict)) {
     throw new BadModelJson('score: missing or invalid verdict')
   }
+  const dimensionsSource = value.dimensions ?? value['维度'] ?? value['六维'] ?? value
   const dimensions = {}
   for (const key of DIMENSION_KEYS) {
-    const dimension = value.dimensions?.[key]
-    dimensions[key] = typeof dimension === 'number' && Number.isFinite(dimension) ? dimension : null
+    dimensions[key] = dimensionValue(dimensionsSource, key)
   }
-  const postProcessing = Array.isArray(value.post_processing)
-    ? [...new Set(value.post_processing.filter(code => typeof code === 'string' && isPostProcessingCode(code)))]
+  const postRaw = value.post_processing ?? value['后期建议'] ?? value['后期处理'] ?? value['建议后期']
+  const postProcessing = Array.isArray(postRaw)
+    ? [...new Set(postRaw.filter(code => typeof code === 'string' && isPostProcessingCode(code)))]
     : []
   return {
     score: Math.min(10, Math.max(0, Math.round(score * 10) / 10)),
-    verdict: value.verdict,
+    verdict,
     dimensions,
     postProcessing,
-    reason: normalizeReason(value.reason, 120),
+    reason: normalizeReason(pickString(value.reason, value['理由'], value['原因'], value['说明']), 120),
   }
 }

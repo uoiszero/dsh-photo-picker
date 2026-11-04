@@ -110,7 +110,7 @@ export async function runGridStage({
 
   const candidates = db.prepare(`
     SELECT id, rel_path, group_id, taken_at, mtime_ms, thumb_path FROM photos
-    WHERE project_id = ? AND state = 'ok' AND thumb_path IS NOT NULL
+    WHERE project_id = ? AND state IN ('ok', 'grid_error') AND thumb_path IS NOT NULL
     ORDER BY COALESCE(taken_at, mtime_ms), rel_path
   `).all(projectId)
   const packed = packCells(candidates, { cols, rows })
@@ -147,22 +147,26 @@ export async function runGridStage({
     let cost = 0
     let parsed = { codes: [], parsed: false }
     let lastError = null
+    let rawReply = null
     try {
       const first = await completeText({
         llm, provider: project.modelRoute, model: project.modelId,
-        system: GRID_SYSTEM, prompt, image, maxTokens: 256, temperature: 0, signal,
+        system: GRID_SYSTEM, prompt, image, reasoningEffort: 'off',
+        maxTokens: 256, temperature: 0, signal,
       })
       usage = sumUsage(usage, first.usage)
       cost += usageCost(first.usage, peak)
+      rawReply = first.text
       parsed = parseGridSelection(first.text, validCodes)
       if (!parsed.parsed) {
         const retry = await completeText({
           llm, provider: project.modelRoute, model: project.modelId,
           system: GRID_SYSTEM, prompt: `${prompt}\n\n${GRID_RETRY_USER}`, image,
-          maxTokens: 256, temperature: 0, signal,
+          reasoningEffort: 'off', maxTokens: 256, temperature: 0, signal,
         })
         usage = sumUsage(usage, retry.usage)
         cost += usageCost(retry.usage, peak)
+        rawReply = retry.text
         parsed = parseGridSelection(retry.text, validCodes)
       }
     } catch (error) {
@@ -188,8 +192,9 @@ export async function runGridStage({
 
     if (status === 'parse_failed') {
       failed += grid.photos.length
-      const message = lastError === null ? 'grid response was not parseable' : String(lastError.message ?? lastError)
-      recordError(db, projectId, 'grid', lastError?.code ?? 'GRID_PARSE_FAILED', `${grid.seq}: ${message}`)
+      const base = lastError === null ? 'grid response was not parseable' : String(lastError.message ?? lastError)
+      const raw = rawReply === null ? '' : ` | raw: ${String(rawReply).replace(/\s+/g, ' ').slice(0, 400)}`
+      recordError(db, projectId, 'grid', lastError?.code ?? 'GRID_PARSE_FAILED', `${grid.seq}: ${base}${raw}`)
       for (const photo of grid.photos) {
         db.prepare("UPDATE photos SET state = 'grid_error' WHERE id = ?").run(photo.id)
       }
@@ -330,7 +335,7 @@ async function rankOnce({ llm, project, items, signal }) {
   const prompt = rankUserPrompt({ count: items.length })
   const response = await completeText({
     llm, provider: project.modelRoute, model: project.modelId,
-    system: RANK_SYSTEM, prompt, maxTokens: 200, temperature: 0, signal,
+    system: RANK_SYSTEM, prompt, reasoningEffort: 'off', maxTokens: 200, temperature: 0, signal,
   })
   const parsed = parseRank(response.text, labels)
   const byLabel = new Map(items.map((item, index) => [LABELS[index], item]))
@@ -359,7 +364,14 @@ export async function runScoreStage({
     SELECT p.id, p.rel_path, p.state FROM photos p
     WHERE p.project_id = ?
       AND p.thumb_path IS NOT NULL
-      AND (p.state = 'grid_selected' OR p.state = 'grid_error')
+      AND (
+        p.state IN ('grid_selected', 'grid_error', 'score_failed')
+        OR (p.state = 'scored' AND NOT EXISTS (
+          SELECT 1 FROM assessments a2
+          WHERE a2.target_kind = 'photo' AND a2.target_id = p.id
+            AND a2.stage = 'single' AND a2.model_id = ? AND a2.prompt_version = ?
+        ))
+      )
       AND NOT EXISTS (
         SELECT 1 FROM decisions d
         WHERE d.photo_id = p.id AND d.source = 'ai' AND d.verdict = 'reject'
@@ -370,7 +382,7 @@ export async function runScoreStage({
           AND a.stage = 'single' AND a.model_id = ? AND a.prompt_version = ?
       )
     ORDER BY COALESCE(p.taken_at, p.mtime_ms), p.rel_path
-  `).all(projectId, project.modelId, PROMPT_VERSION)
+  `).all(projectId, project.modelId, PROMPT_VERSION, project.modelId, PROMPT_VERSION)
 
   let spentCny = 0
   let scored = 0
@@ -384,6 +396,7 @@ export async function runScoreStage({
     let cost = 0
     let result = null
     let lastError = null
+    let rawReply = null
     try {
       const bytes = await loadPhoto(photo)
       const rendered = await renderPhotoForModel(bytes)
@@ -391,10 +404,11 @@ export async function runScoreStage({
       const prompt = scoreUserPrompt({ theme: project.theme })
       const first = await completeText({
         llm, provider: project.modelRoute, model: project.modelId,
-        system: SCORE_SYSTEM, prompt, image, maxTokens: 300, temperature: 0, signal,
+        system: SCORE_SYSTEM, prompt, image, reasoningEffort: 'off', maxTokens: 300, temperature: 0, signal,
       })
       usage = sumUsage(usage, first.usage)
       cost += usageCost(first.usage, peak)
+      rawReply = first.text
       try {
         result = parseScore(first.text)
       } catch (error) {
@@ -402,10 +416,11 @@ export async function runScoreStage({
         const retry = await completeText({
           llm, provider: project.modelRoute, model: project.modelId,
           system: SCORE_SYSTEM, prompt: `${prompt}\n\n上一次返回不是合法 JSON，请只返回合法 JSON。`,
-          image, maxTokens: 300, temperature: 0, signal,
+          image, reasoningEffort: 'off', maxTokens: 300, temperature: 0, signal,
         })
         usage = sumUsage(usage, retry.usage)
         cost += usageCost(retry.usage, peak)
+        rawReply = retry.text
         result = parseScore(retry.text)
       }
     } catch (error) {
@@ -418,9 +433,11 @@ export async function runScoreStage({
 
     if (result === null) {
       failed += 1
-      recordError(db, projectId, 'score', lastError?.code ?? 'SCORE_FAILED', String(lastError?.message ?? lastError), photo.id)
+      const base = String(lastError?.message ?? lastError)
+      const raw = rawReply === null ? '' : ` | raw: ${String(rawReply).replace(/\s+/g, ' ').slice(0, 400)}`
+      recordError(db, projectId, 'score', lastError?.code ?? 'SCORE_FAILED', `${base}${raw}`, photo.id)
       upsertAiDecision(db, projectId, photo.id, 'maybe')
-      db.prepare("UPDATE photos SET state = 'scored' WHERE id = ?").run(photo.id)
+      db.prepare("UPDATE photos SET state = 'score_failed' WHERE id = ?").run(photo.id)
     } else {
       scored += 1
       const verdict = result.score >= (project.thresholdKeep ?? 7.5)

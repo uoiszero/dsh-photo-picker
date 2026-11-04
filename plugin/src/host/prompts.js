@@ -54,6 +54,10 @@ export function scoreUserPrompt({ theme = 'mixed' } = {}) {
     'exposure_+0.3/white_balance/warm/cool）、一句中文理由 reason（不超过 60 字）。',
   ]
   if (hint !== '') lines.push('', hint)
-  lines.push('', '只返回 JSON，不要输出其它内容。')
+  lines.push(
+    '',
+    '只返回如下结构的 JSON（不要围栏、不要解释）：',
+    '{"score":8.2,"dimensions":{"composition":8,"light":7,"color":8,"technique":9,"post_potential":7,"moment":6},"verdict":"keep","post_processing":["crop_right"],"reason":"主体清晰，侧光有层次"}',
+  )
   return lines.join('\n')
 }

@@ -45,7 +45,7 @@ function withTimeout(promise, timeoutMs, onTimeout) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
 }
 
-async function attemptOnce({ llm, provider, model, system, prompt, image, temperature, maxTokens, timeoutMs, signal }) {
+async function attemptOnce({ llm, provider, model, system, prompt, image, reasoningEffort, temperature, maxTokens, timeoutMs, signal }) {
   if (signal?.aborted === true) throw new LlmCallError('model call aborted', { code: 'LLM_ABORTED' })
   const controller = new AbortController()
   const onAbort = () => controller.abort()
@@ -62,16 +62,19 @@ async function attemptOnce({ llm, provider, model, system, prompt, image, temper
     signal: controller.signal,
   }
   if (system !== undefined) options.system = system
+  if (reasoningEffort !== undefined) options.reasoningEffort = reasoningEffort
 
   let text = ''
   let usage = { inputTokens: 0, outputTokens: 0 }
   let failure
+  let finishKind = 'unknown'
   const iteration = (async () => {
     for await (const chunk of llm.stream(options)) {
       if (chunk.type === 'text-delta') text += chunk.text
       else if (chunk.type === 'block-end' && chunk.block?.type === 'text' && text === '') text = chunk.block.text
       else if (chunk.type === 'usage') usage = chunk.usage
       else if (chunk.type === 'finish') {
+        finishKind = chunk.reason.kind
         if (chunk.reason.kind === 'error' || chunk.reason.kind === 'aborted') failure = chunk.reason.failure
       }
     }
@@ -92,7 +95,9 @@ async function attemptOnce({ llm, provider, model, system, prompt, image, temper
     throw new LlmCallError('model call aborted', { code: 'LLM_ABORTED' })
   }
   if (failure !== undefined) throw failureToError(failure)
-  if (text.trim() === '') throw new LlmCallError('model returned no text', { code: 'EMPTY_RESPONSE', retryable: true })
+  if (text.trim() === '') {
+    throw new LlmCallError(`model returned no text (finish: ${finishKind})`, { code: 'EMPTY_RESPONSE', retryable: true })
+  }
   return { text, usage }
 }
 
@@ -101,7 +106,7 @@ async function attemptOnce({ llm, provider, model, system, prompt, image, temper
  * @returns {{ text: string, usage: object, attempts: number, durationMs: number }}
  */
 export async function completeText({
-  llm, provider, model, system, prompt, image,
+  llm, provider, model, system, prompt, image, reasoningEffort,
   temperature = 0, maxTokens = 256,
   timeoutMs = DEFAULT_TIMEOUT_MS, maxAttempts = DEFAULT_MAX_ATTEMPTS,
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms)),
@@ -112,7 +117,7 @@ export async function completeText({
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const result = await attemptOnce({
-        llm, provider, model, system, prompt, image, temperature, maxTokens, timeoutMs, signal,
+        llm, provider, model, system, prompt, image, reasoningEffort, temperature, maxTokens, timeoutMs, signal,
       })
       return { ...result, attempts: attempt, durationMs: Date.now() - startedAt }
     } catch (error) {

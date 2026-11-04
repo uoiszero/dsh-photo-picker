@@ -85,3 +85,19 @@ test('post processing whitelist and prompt version are the spec values', () => {
   assert.match(prompt, /4 列 × 4 行/)
   assert.match(prompt, /人像/)
 })
+
+test('parseScore accepts Chinese keys and flat dimensions', () => {
+  const parsed = parseScore(JSON.stringify({
+    总分: 7.8,
+    构图: 8, 光影: 7, 色彩: 7, 技术质量: 8, 后期潜力: 8, 瞬间: 8,
+    建议: '保留',
+    后期建议: ['crop_left', 'warm'],
+    理由: '光线不错',
+  }))
+  assert.equal(parsed.score, 7.8)
+  assert.equal(parsed.verdict, 'keep')
+  assert.equal(parsed.dimensions.composition, 8)
+  assert.equal(parsed.dimensions.moment, 8)
+  assert.deepEqual(parsed.postProcessing, ['crop_left', 'warm'])
+  assert.equal(parsed.reason, '光线不错')
+})
