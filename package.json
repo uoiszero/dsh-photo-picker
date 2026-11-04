@@ -7,7 +7,8 @@
     "build:client": "node scripts/build-client.mjs",
     "fixtures": "node scripts/make-fixtures.mjs",
     "acceptance:1": "node scripts/acceptance-phase1.mjs",
-    "acceptance:2": "node scripts/acceptance-phase2.mjs"
+    "acceptance:2": "node scripts/acceptance-phase2.mjs",
+    "acceptance:4": "node scripts/acceptance-phase4.mjs"
   },
   "dependencies": {
     "exifr": "^7.1.3",

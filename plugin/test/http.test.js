@@ -20,6 +20,14 @@ function stub() {
       return options.action === 'pause' ? { paused: stage } : { started: stage }
     },
     async checkpoints(id) { return [{ stage: 'grid', status: 'done', id }] },
+    async reviewPhotos(id, options) { return { total: 1, options, items: [{ id: 'ph1', verdict: 'keep' }] } },
+    async photoDetail(id, photoId) { return { id: photoId, verdict: 'keep' } },
+    async setDecisions(id, body) { return { updated: body.photoIds.map(photoId => ({ photoId, verdict: body.verdict })) } },
+    async stats(id) { return { verdicts: { keep: 1 }, id } },
+    async group(id, gid) { return { id: gid, members: [] } },
+    async previewFile() { return undefined },
+    async exportPreview(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
+    async exportRun(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
     async listDir() { return [{ name: 'Pictures', path: '/Users/x/Pictures' }] },
     async chooseFolder() { return '/Users/x/Pictures' },
     async thumbFile() { return undefined },
@@ -95,5 +103,39 @@ test('an invalid stage returns 400 with a structured code', async () => {
     })
     assert.equal(response.status, 400)
     assert.equal((await response.json()).error.code, 'BAD_STAGE')
+  })
+})
+
+test('review, decisions and export routes answer JSON', async () => {
+  await withServer(async origin => {
+    const photos = await fetch(`${origin}/photo-picker/api/projects/p1/photos?verdict=keep&sort=score&limit=10`)
+    const photosBody = await photos.json()
+    assert.equal(photosBody.total, 1)
+    assert.equal(photosBody.options.verdict, 'keep')
+    assert.equal(photosBody.options.limit, 10)
+
+    const detail = await fetch(`${origin}/photo-picker/api/projects/p1/photos/ph1`)
+    assert.deepEqual(await detail.json(), { id: 'ph1', verdict: 'keep' })
+
+    const decisions = await fetch(`${origin}/photo-picker/api/projects/p1/decisions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ photoIds: ['ph1'], verdict: 'maybe' }),
+    })
+    assert.deepEqual(await decisions.json(), { updated: [{ photoId: 'ph1', verdict: 'maybe' }] })
+
+    const stats = await fetch(`${origin}/photo-picker/api/projects/p1/stats`)
+    assert.deepEqual(await stats.json(), { verdicts: { keep: 1 }, id: 'p1' })
+
+    const exported = await fetch(`${origin}/photo-picker/api/projects/p1/export/preview`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ dest: '/tmp/out' }),
+    })
+    assert.deepEqual(await exported.json(), { total: 2, dest: '/tmp/out', counts: { keep: 2 } })
+
+    const preview = await fetch(`${origin}/photo-picker/media/preview/p1/ph1`)
+    assert.equal(preview.status, 404)
+    assert.equal((await preview.json()).error.code, 'NOT_FOUND')
   })
 })

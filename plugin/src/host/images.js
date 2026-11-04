@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import sharp from 'sharp'
@@ -10,6 +10,7 @@ const execFileAsync = promisify(execFile)
 const THUMB_EDGE = 384
 const METRIC_EDGE = 800
 const DECODE_EDGE = 1200
+const PREVIEW_EDGE = 1600
 
 /** HEIC/RAW 用 macOS 的 sips 转出临时 JPEG；失败抛错由调用方记为 unreadable。 */
 async function sipsToJpeg(filePath) {
@@ -162,4 +163,33 @@ export async function deriveImage(filePath) {
     clipHigh: high / gray.length,
     dhash: dhashFromGray(dhashGray, 9, 8),
   }
+}
+
+/** 单图/组对比用的 1600px 预览；已有缓存直接命中。 */
+export async function renderPreview(filePath, cachePath) {
+  try {
+    await access(cachePath)
+    return { path: cachePath, cached: true }
+  } catch {
+    // 未命中
+  }
+  await mkdir(path.dirname(cachePath), { recursive: true })
+  const encode = buffer => sharp(buffer)
+    .rotate()
+    .resize({ width: PREVIEW_EDGE, height: PREVIEW_EDGE, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer()
+  let buffer
+  try {
+    buffer = await encode(filePath)
+  } catch {
+    const converted = await sipsToJpeg(filePath)
+    try {
+      buffer = await encode(converted.path)
+    } finally {
+      await converted.cleanup()
+    }
+  }
+  await writeFile(cachePath, buffer)
+  return { path: cachePath, cached: false }
 }

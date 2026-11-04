@@ -48,6 +48,46 @@ const zh = {
   spent: '已花费',
   checkpoint: '检查点',
   aiDisabled: '当前模型不支持图片输入，AI 阶段已禁用。',
+  review: '复核',
+  filterAll: '全部',
+  filterKeep: 'keep',
+  filterMaybe: 'maybe',
+  filterReject: 'reject',
+  sortScore: '按分数',
+  sortTaken: '按拍摄时间',
+  sortPath: '按路径',
+  selectedCount: '已选',
+  undoAction: '撤销',
+  export: '导出',
+  exportTitle: '导出照片',
+  exportDest: '目标目录',
+  exportChoose: '选择目录',
+  exportBuckets: '分桶',
+  exportMode: '方式',
+  exportHardlink: '硬链接',
+  exportCopy: '复制',
+  exportPreview: '预览汇总',
+  exportRun: '执行导出',
+  exportResult: '已导出',
+  exportConflict: '冲突',
+  exportSkipped: '已存在',
+  exportSameVolume: '同盘，可用硬链接',
+  exportCrossVolume: '跨盘，将回退复制',
+  manifest: 'manifest',
+  dimensionComposition: '构图',
+  dimensionLight: '光影',
+  dimensionColor: '色彩',
+  dimensionTechnique: '技术',
+  dimensionPostPotential: '后期潜力',
+  dimensionMoment: '瞬间',
+  postProcessing: '后期建议',
+  reason: '理由',
+  scoreLabel: '分数',
+  backToWall: '返回图墙',
+  keep: '保留 (P)',
+  maybe: '待定 (M)',
+  reject: '弃用 (X)',
+  keyboardHint: 'J/K 前后 · P 保留 · M 待定 · X 弃用 · Space 返回',
 }
 
 const en = {
@@ -91,6 +131,46 @@ const en = {
   spent: 'Spent',
   checkpoint: 'Checkpoints',
   aiDisabled: 'The current model does not accept image input, so AI stages are disabled.',
+  review: 'Review',
+  filterAll: 'All',
+  filterKeep: 'keep',
+  filterMaybe: 'maybe',
+  filterReject: 'reject',
+  sortScore: 'By score',
+  sortTaken: 'By time',
+  sortPath: 'By path',
+  selectedCount: 'Selected',
+  undoAction: 'Undo',
+  export: 'Export',
+  exportTitle: 'Export photos',
+  exportDest: 'Destination',
+  exportChoose: 'Choose folder',
+  exportBuckets: 'Buckets',
+  exportMode: 'Mode',
+  exportHardlink: 'Hardlink',
+  exportCopy: 'Copy',
+  exportPreview: 'Preview',
+  exportRun: 'Export',
+  exportResult: 'Exported',
+  exportConflict: 'Conflicts',
+  exportSkipped: 'Existing',
+  exportSameVolume: 'Same volume, hardlinks available',
+  exportCrossVolume: 'Cross volume, will fall back to copy',
+  manifest: 'manifest',
+  dimensionComposition: 'Composition',
+  dimensionLight: 'Light',
+  dimensionColor: 'Color',
+  dimensionTechnique: 'Technique',
+  dimensionPostPotential: 'Post',
+  dimensionMoment: 'Moment',
+  postProcessing: 'Suggestions',
+  reason: 'Reason',
+  scoreLabel: 'Score',
+  backToWall: 'Back to wall',
+  keep: 'Keep (P)',
+  maybe: 'Maybe (M)',
+  reject: 'Reject (X)',
+  keyboardHint: 'J/K prev/next · P keep · M maybe · X reject · Space back',
 }
 
 const btn = {
@@ -283,22 +363,412 @@ function CreateForm({ t, onCreated, onCancel }: {
   )
 }
 
+
+const VERDICT_COLORS: Record<string, string> = {
+  keep: 'var(--dsw-static-green-500, #2f9e5f)',
+  maybe: 'var(--dsw-static-amber-500, #d09a2b)',
+  reject: 'var(--dsw-static-red-500, #cc4b3f)',
+}
+
+const DIMENSION_LABELS: Record<string, string> = {
+  composition: 'dimensionComposition',
+  light: 'dimensionLight',
+  color: 'dimensionColor',
+  technique: 'dimensionTechnique',
+  post_potential: 'dimensionPostPotential',
+  moment: 'dimensionMoment',
+}
+
+function ReviewSection({ t, projectId, version, onChanged }: {
+  t: (key: string) => string
+  projectId: string
+  version: number
+  onChanged?: () => void
+}) {
+  const [items, setItems] = useState<any[]>([])
+  const [filter, setFilter] = useState('all')
+  const [sort, setSort] = useState('score')
+  const [selected, setSelected] = useState<string[]>([])
+  const [undo, setUndo] = useState<any[]>([])
+  const [single, setSingle] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = async () => {
+    const params = new URLSearchParams({ scope: 'review', sort, limit: '200' })
+    if (filter !== 'all') params.set('verdict', filter)
+    const data = await api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`)
+    setItems(data.items)
+    setSelected(current => current.filter(id => data.items.some((item: any) => item.id === id)))
+  }
+
+  useEffect(() => {
+    load().catch(cause => setError(String(cause)))
+  }, [filter, sort, version])
+
+  const decide = async (photoIds: string[], verdict: string) => {
+    if (photoIds.length === 0) return
+    const previous: Record<string, string | null> = {}
+    for (const item of items) if (photoIds.includes(item.id)) previous[item.id] = item.humanVerdict
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/decisions`, {
+        method: 'POST',
+        body: JSON.stringify({ photoIds, verdict }),
+      })
+      setUndo(stack => [{ previous }, ...stack].slice(0, 20))
+      setSelected([])
+      await load()
+      onChanged?.()
+    } catch (cause) {
+      setError(String(cause))
+    }
+  }
+
+  const undoLast = async () => {
+    const entry = undo[0]
+    if (entry === undefined) return
+    const groups: Record<string, string[]> = {}
+    for (const [photoId, verdict] of Object.entries(entry.previous)) {
+      const key = verdict ?? 'auto'
+      groups[key] = [...(groups[key] ?? []), photoId]
+    }
+    try {
+      for (const [verdict, photoIds] of Object.entries(groups)) {
+        await api(`/photo-picker/api/projects/${projectId}/decisions`, {
+          method: 'POST',
+          body: JSON.stringify({ photoIds, verdict }),
+        })
+      }
+      setUndo(stack => stack.slice(1))
+      await load()
+      onChanged?.()
+    } catch (cause) {
+      setError(String(cause))
+    }
+  }
+
+  const toggle = (photoId: string) => setSelected(current => (
+    current.includes(photoId) ? current.filter(id => id !== photoId) : [...current, photoId]
+  ))
+
+  if (single !== null) {
+    return (
+      <PhotoSingle
+        t={t}
+        projectId={projectId}
+        items={items}
+        photoId={single}
+        version={version}
+        onNavigate={setSingle}
+        onDecide={decide}
+        onClose={() => setSingle(null)}
+      />
+    )
+  }
+
+  const filters: Array<[string, string]> = [
+    ['all', t('filterAll')],
+    ['keep', t('filterKeep')],
+    ['maybe', t('filterMaybe')],
+    ['reject', t('filterReject')],
+  ]
+
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ ...muted, fontWeight: 600 }}>{t('review')}</span>
+        {filters.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setFilter(value)}
+            style={{
+              ...chip,
+              cursor: 'pointer',
+              border: '1px solid transparent',
+              background: filter === value ? 'var(--dsw-alias-brand-primary)' : 'var(--dsw-alias-bg-layer-2)',
+              color: filter === value ? 'var(--dsw-alias-label-primary-foreground)' : 'var(--dsw-alias-label-secondary)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        <select value={sort} onChange={event => setSort(event.target.value)} style={{ ...input, padding: '4px 8px', fontSize: 12 }}>
+          <option value="score">{t('sortScore')}</option>
+          <option value="taken_at">{t('sortTaken')}</option>
+          <option value="rel_path">{t('sortPath')}</option>
+        </select>
+        <span style={{ ...muted, marginLeft: 'auto' }}>{items.length} / {t('photos')}</span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={muted}>{t('selectedCount')}: {selected.length}</span>
+        <button type="button" style={btn} disabled={selected.length === 0} onClick={() => decide(selected, 'keep')}>{t('keep')}</button>
+        <button type="button" style={btn} disabled={selected.length === 0} onClick={() => decide(selected, 'maybe')}>{t('maybe')}</button>
+        <button type="button" style={btn} disabled={selected.length === 0} onClick={() => decide(selected, 'reject')}>{t('reject')}</button>
+        <button type="button" style={btn} disabled={undo.length === 0} onClick={undoLast}>{t('undoAction')}</button>
+      </div>
+
+      {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+
+      {items.length === 0 ? (
+        <div style={{ ...muted, fontSize: 13 }}>{t('noPhotos')}</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 8 }}>
+          {items.map(item => (
+            <div key={item.id} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                title={item.relPath}
+                onClick={() => setSingle(item.id)}
+                style={{
+                  display: 'block', width: '100%', aspectRatio: '1', padding: 0,
+                  border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 8, overflow: 'hidden',
+                  background: 'var(--dsw-alias-bg-layer-2)', cursor: 'pointer', position: 'relative',
+                }}
+              >
+                <img src={`${item.thumbUrl}?v=${version}`} alt={item.relPath} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 4, background: VERDICT_COLORS[item.verdict] ?? 'var(--dsw-alias-border-l2)' }} />
+                {item.score !== null && (
+                  <span style={{ position: 'absolute', top: 6, left: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 11 }}>
+                    {Number(item.score).toFixed(1)}
+                  </span>
+                )}
+                {item.humanVerdict !== null && (
+                  <span style={{ position: 'absolute', bottom: 8, right: 6, padding: '1px 5px', borderRadius: 5, background: 'rgba(0,0,0,0.62)', color: '#fff', fontSize: 10 }}>
+                    {item.humanVerdict}
+                  </span>
+                )}
+              </button>
+              <input
+                type="checkbox"
+                checked={selected.includes(item.id)}
+                onChange={() => toggle(item.id)}
+                style={{ position: 'absolute', top: 8, right: 8, width: 16, height: 16, cursor: 'pointer' }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onDecide, onClose }: any) {
+  const [detail, setDetail] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setDetail(null)
+    api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`)
+      .then(setDetail)
+      .catch(cause => setError(String(cause)))
+  }, [photoId])
+
+  const index = items.findIndex((item: any) => item.id === photoId)
+  const move = (delta: number) => {
+    const next = items[index + delta]
+    if (next !== undefined) onNavigate(next.id)
+  }
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target !== null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      if (event.key === 'j' || event.key === 'ArrowRight') move(1)
+      else if (event.key === 'k' || event.key === 'ArrowLeft') move(-1)
+      else if (event.key === 'p') onDecide([photoId], 'keep')
+      else if (event.key === 'm') onDecide([photoId], 'maybe')
+      else if (event.key === 'x') onDecide([photoId], 'reject')
+      else if (event.key === ' ' || event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [photoId, index, items])
+
+  if (error !== null) return <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>
+  if (detail === null) return <div style={{ ...muted, fontSize: 13 }}>{t('loading')}</div>
+
+  const dimensions = detail.dimensions ?? {}
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" style={btn} onClick={onClose}>{t('backToWall')}</button>
+        <span style={muted}>{index + 1} / {items.length}</span>
+        <span style={{ ...chip, background: VERDICT_COLORS[detail.verdict] ?? 'var(--dsw-alias-bg-layer-2)', color: '#fff' }}>{detail.verdict}</span>
+        {detail.score !== null && <span style={chip}>{t('scoreLabel')}: {detail.score}</span>}
+        <span style={{ ...muted, marginLeft: 'auto' }}>{detail.relPath}</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 14, alignItems: 'start' }}>
+        <img
+          src={`${detail.previewUrl}?v=${version}`}
+          alt={detail.relPath}
+          style={{ width: '100%', maxHeight: '72vh', objectFit: 'contain', borderRadius: 10, background: 'var(--dsw-alias-bg-layer-2)' }}
+        />
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" style={btn} onClick={() => onDecide([photoId], 'keep')}>{t('keep')}</button>
+            <button type="button" style={btn} onClick={() => onDecide([photoId], 'maybe')}>{t('maybe')}</button>
+            <button type="button" style={btn} onClick={() => onDecide([photoId], 'reject')}>{t('reject')}</button>
+          </div>
+          <div style={{ ...muted, fontSize: 12 }}>{t('keyboardHint')}</div>
+          <div style={{ display: 'grid', gap: 6 }}>
+            {Object.keys(DIMENSION_LABELS).map(key => {
+              const value = dimensions[key]
+              return (
+                <div key={key} style={{ display: 'grid', gridTemplateColumns: '64px 1fr 28px', gap: 8, alignItems: 'center', fontSize: 12 }}>
+                  <span style={muted}>{t(DIMENSION_LABELS[key])}</span>
+                  <div style={{ height: 6, borderRadius: 3, background: 'var(--dsw-alias-bg-layer-2)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%`, background: 'var(--dsw-alias-brand-primary)' }} />
+                  </div>
+                  <span>{value === null || value === undefined ? '—' : value}</span>
+                </div>
+              )
+            })}
+          </div>
+          {detail.reason !== null && (
+            <div style={{ display: 'grid', gap: 4 }}>
+              <span style={{ ...muted, fontWeight: 600 }}>{t('reason')}</span>
+              <span style={{ fontSize: 13 }}>{detail.reason}</span>
+            </div>
+          )}
+          {(detail.postProcessing ?? []).length > 0 && (
+            <div style={{ display: 'grid', gap: 4 }}>
+              <span style={{ ...muted, fontWeight: 600 }}>{t('postProcessing')}</span>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {detail.postProcessing.map((code: string) => <span key={code} style={chip}>{code}</span>)}
+              </div>
+            </div>
+          )}
+          <div style={muted}>
+            {detail.width} × {detail.height}
+            {detail.group !== undefined ? ` · 组内第 ${detail.group.rank}/${detail.group.size}` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; projectId: string; onClose: () => void }) {
+  const [dest, setDest] = useState('')
+  const [buckets, setBuckets] = useState(['keep', 'maybe'])
+  const [mode, setMode] = useState('hardlink')
+  const [preview, setPreview] = useState<any>(null)
+  const [result, setResult] = useState<any>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const toggleBucket = (bucket: string) => setBuckets(current => (
+    current.includes(bucket) ? current.filter(item => item !== bucket) : [...current, bucket]
+  ))
+
+  const choose = async () => {
+    try {
+      const picked = await api('/photo-picker/api/fs/choose', { method: 'POST' })
+      setDest(picked.path)
+    } catch (cause) {
+      setError(String(cause))
+    }
+  }
+
+  const execute = async (action: 'preview' | 'run') => {
+    setBusy(true)
+    setError(null)
+    try {
+      const data = await api(`/photo-picker/api/projects/${projectId}/export/${action}`, {
+        method: 'POST',
+        body: JSON.stringify({ dest, buckets, mode }),
+      })
+      if (action === 'preview') setPreview(data)
+      else {
+        setResult(data)
+        setPreview(null)
+      }
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.42)', zIndex: 70, display: 'grid', placeItems: 'center' }}>
+      <div style={{
+        width: 'min(620px, 92vw)', maxHeight: '86vh', overflow: 'auto',
+        background: 'var(--dsw-alias-bg-overlay)', color: 'var(--dsw-alias-label-primary)',
+        border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 14, padding: 18, display: 'grid', gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <strong>{t('exportTitle')}</strong>
+          <button type="button" style={{ ...btn, marginLeft: 'auto' }} onClick={onClose}>{t('close')}</button>
+        </div>
+        <label style={{ display: 'grid', gap: 6 }}>
+          <span style={muted}>{t('exportDest')}</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              value={dest}
+              onChange={event => setDest(event.target.value)}
+              placeholder="/Volumes/…/精选"
+              style={{ ...input, flex: 1 }}
+            />
+            <button type="button" style={btn} onClick={choose}>{t('exportChoose')}</button>
+          </div>
+        </label>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={muted}>{t('exportBuckets')}</span>
+          {['keep', 'maybe', 'reject'].map(bucket => (
+            <label key={bucket} style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 13 }}>
+              <input type="checkbox" checked={buckets.includes(bucket)} onChange={() => toggleBucket(bucket)} />
+              {bucket}
+            </label>
+          ))}
+          <span style={{ ...muted, marginLeft: 8 }}>{t('exportMode')}</span>
+          <select value={mode} onChange={event => setMode(event.target.value)} style={{ ...input, padding: '4px 8px', fontSize: 12 }}>
+            <option value="hardlink">{t('exportHardlink')}</option>
+            <option value="copy">{t('exportCopy')}</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" style={btn} disabled={busy || dest === ''} onClick={() => execute('preview')}>{t('exportPreview')}</button>
+          <button type="button" style={btnPrimary} disabled={busy || dest === '' || preview === null} onClick={() => execute('run')}>{t('exportRun')}</button>
+        </div>
+        {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+        {preview !== null && (
+          <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
+            <span>{Object.entries(preview.counts).map(([bucket, count]) => `${bucket} ${count}`).join(' · ')} · {(preview.totalBytes / 1024 / 1024).toFixed(1)} MB</span>
+            <span style={muted}>
+              {t('exportSkipped')} {preview.skippedExisting} · {t('exportConflict')} {preview.conflictCount} · {preview.sameVolume ? t('exportSameVolume') : t('exportCrossVolume')}
+            </span>
+          </div>
+        )}
+        {result !== null && (
+          <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
+            <span>{t('exportResult')}: {Object.entries(result.counts).map(([bucket, count]) => `${bucket} ${count}`).join(' · ')}</span>
+            <span style={muted}>{t('manifest')}: {result.manifestPath}</span>
+            {result.failureCount > 0 && (
+              <span style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)' }}>{t('exportConflict')}: {result.failureCount}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
   const [detail, setDetail] = useState<any>(null)
-  const [photos, setPhotos] = useState<any[]>([])
   const [progress, setProgress] = useState<any>(null)
   const [checkpoints, setCheckpoints] = useState<any[]>([])
+  const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = async () => {
     try {
-      const [project, photos, points] = await Promise.all([
+      const [project, points] = await Promise.all([
         api(`/photo-picker/api/projects/${id}`),
-        api(`/photo-picker/api/projects/${id}/photos?limit=120`),
         api(`/photo-picker/api/projects/${id}/checkpoints`),
       ])
       setDetail(project)
-      setPhotos(photos)
       setCheckpoints(points)
       setError(null)
     } catch (cause) {
@@ -364,7 +834,9 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
         {detail.running !== null && (
           <button type="button" style={btn} onClick={() => run(detail.running, 'pause')}>{t('pause')}</button>
         )}
+        <button type="button" style={btn} onClick={() => setExporting(true)}>{t('export')}</button>
       </div>
+      {exporting && <ExportDialog t={t} projectId={id} onClose={() => setExporting(false)} />}
       {aiDisabled && <div style={muted}>{t('aiDisabled')}</div>}
       {progress !== null && (
         <div style={{ display: 'grid', gap: 4 }}>
@@ -409,33 +881,7 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
           ))}
         </div>
       )}
-      {photos.length === 0 ? (
-        <div style={{ ...muted, fontSize: 13 }}>{t('noPhotos')}</div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 8 }}>
-          {photos.map(photo => photo.hasThumb ? (
-            <img
-              key={photo.id}
-              src={`${photo.thumbUrl}?v=${version}`}
-              alt={photo.relPath}
-              title={photo.relPath}
-              style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2)' }}
-            />
-          ) : (
-            <div
-              key={photo.id}
-              title={photo.relPath}
-              style={{
-                aspectRatio: '1', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2)',
-                border: '1px dashed var(--dsw-alias-border-l1)', display: 'grid', placeItems: 'center',
-                padding: 6, fontSize: 11, color: 'var(--dsw-alias-label-tertiary)', textAlign: 'center', overflowWrap: 'anywhere',
-              }}
-            >
-              {photo.state}
-            </div>
-          ))}
-        </div>
-      )}
+      <ReviewSection t={t} projectId={id} version={version} onChanged={refresh} />
     </div>
   )
 }

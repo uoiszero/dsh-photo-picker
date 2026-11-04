@@ -67,11 +67,54 @@ export function createHttpHandler(service) {
 
       const photosMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos$/)
       if (photosMatch !== null && req.method === 'GET') {
-        return send(res, 200, await service.listPhotos(photosMatch[1], {
-          state: url.searchParams.get('state') ?? undefined,
-          limit: Number(url.searchParams.get('limit') ?? 60),
-          offset: Number(url.searchParams.get('offset') ?? 0),
+        const query = url.searchParams
+        return send(res, 200, await service.reviewPhotos(photosMatch[1], {
+          scope: query.get('scope') ?? undefined,
+          state: query.get('state') ?? undefined,
+          verdict: query.get('verdict') ?? undefined,
+          groupId: query.get('group') ?? undefined,
+          sort: query.get('sort') ?? undefined,
+          scoreMin: query.get('scoreMin') === null ? undefined : Number(query.get('scoreMin')),
+          scoreMax: query.get('scoreMax') === null ? undefined : Number(query.get('scoreMax')),
+          limit: Number(query.get('limit') ?? 60),
+          offset: Number(query.get('offset') ?? 0),
         }))
+      }
+
+      const photoMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)$/)
+      if (photoMatch !== null && req.method === 'GET') {
+        return send(res, 200, await service.photoDetail(photoMatch[1], photoMatch[2]))
+      }
+
+      const decisionsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/decisions$/)
+      if (decisionsMatch !== null && req.method === 'POST') {
+        const body = await readJson(req)
+        return send(res, 200, await service.setDecisions(decisionsMatch[1], {
+          photoIds: body.photoIds,
+          verdict: body.verdict,
+        }))
+      }
+
+      const statsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/stats$/)
+      if (statsMatch !== null && req.method === 'GET') {
+        return send(res, 200, await service.stats(statsMatch[1]))
+      }
+
+      const groupMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/groups\/([^/]+)$/)
+      if (groupMatch !== null && req.method === 'GET') {
+        return send(res, 200, await service.group(groupMatch[1], groupMatch[2]))
+      }
+
+      const exportPreviewMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/export\/preview$/)
+      if (exportPreviewMatch !== null && req.method === 'POST') {
+        const body = await readJson(req)
+        return send(res, 200, await service.exportPreview(exportPreviewMatch[1], body))
+      }
+
+      const exportRunMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/export\/run$/)
+      if (exportRunMatch !== null && req.method === 'POST') {
+        const body = await readJson(req)
+        return send(res, 200, await service.exportRun(exportRunMatch[1], body))
       }
 
       const actionsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/actions$/)
@@ -97,6 +140,17 @@ export function createHttpHandler(service) {
       }
       if (pathname === '/photo-picker/api/fs/choose' && req.method === 'POST') {
         return send(res, 200, { path: await service.chooseFolder() })
+      }
+
+      const previewMatch = pathname.match(/^\/photo-picker\/media\/preview\/([^/]+)\/([^/]+)$/)
+      if (previewMatch !== null) {
+        const file = await service.previewFile(previewMatch[1], previewMatch[2])
+        if (file === undefined) {
+          return send(res, 404, { error: { code: 'NOT_FOUND', message: 'preview not found' } })
+        }
+        res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=86400' })
+        createReadStream(file).pipe(res)
+        return
       }
 
       const thumbMatch = pathname.match(/^\/photo-picker\/media\/thumb\/([^/]+)\/([^/]+)$/)

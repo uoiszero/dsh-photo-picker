@@ -7,12 +7,15 @@ import os from 'node:os'
 import path from 'node:path'
 import { createHttpHandler } from './http.js'
 import { dshHome } from './paths.js'
+import { previewExport, runExport } from './export.js'
+import { renderPreview } from './images.js'
 import { runGridStage, runRankStage, runScoreStage } from './pipeline.js'
 import { ProjectStore, toProject } from './projects.js'
+import { getPhotoDetail, groupDetail, listReviewPhotos, projectStats, setHumanDecisions } from './review.js'
 import { preprocessProject } from './preprocess.js'
 import { scanProject } from './scan.js'
 import { LocalSource } from './source.js'
-import { createPhotoPickerTool } from './tools.js'
+import { createPhotoPickerExportTool, createPhotoPickerTool } from './tools.js'
 
 const execFileAsync = promisify(execFile)
 const STAGES = new Set(['scan', 'preprocess', 'grid', 'rank', 'score'])
@@ -45,6 +48,7 @@ export class PhotoPickerService extends Service {
       'photo-picker.http',
     )
     ctx.effect(() => ctx.tools.register(createPhotoPickerTool(this)), 'photo-picker.tool')
+    ctx.effect(() => ctx.tools.register(createPhotoPickerExportTool(this)), 'photo-picker.export-tool')
   }
 
   async listProjects() {
@@ -240,6 +244,55 @@ export class PhotoPickerService extends Service {
         if (this.running.get(id)?.stage === stage) this.running.delete(id)
       })
     return { started: stage }
+  }
+
+  async reviewPhotos(id, options = {}) {
+    const { db } = await this.store.open(id)
+    return listReviewPhotos(db, id, options)
+  }
+
+  async photoDetail(id, photoId) {
+    const { db } = await this.store.open(id)
+    return getPhotoDetail(db, id, photoId)
+  }
+
+  async setDecisions(id, { photoIds, verdict } = {}) {
+    const { db } = await this.store.open(id)
+    return setHumanDecisions(db, id, photoIds, verdict)
+  }
+
+  async stats(id) {
+    const { db } = await this.store.open(id)
+    return projectStats(db, id)
+  }
+
+  async group(id, groupId) {
+    const { db } = await this.store.open(id)
+    return groupDetail(db, id, groupId)
+  }
+
+  async previewFile(id, photoId) {
+    const { db, project } = await this.store.open(id)
+    const row = db.prepare('SELECT rel_path FROM photos WHERE id = ? AND project_id = ?').get(photoId, id)
+    if (row === undefined) return undefined
+    const sourcePath = path.join(project.sourcePath, row.rel_path)
+    const cachePath = path.join(project.workspaceDir, 'previews', `${photoId}.jpg`)
+    try {
+      const rendered = await renderPreview(sourcePath, cachePath)
+      return rendered.path
+    } catch {
+      return undefined
+    }
+  }
+
+  async exportPreview(id, options = {}) {
+    const { db, project } = await this.store.open(id)
+    return previewExport({ db, project, ...options })
+  }
+
+  async exportRun(id, options = {}) {
+    const { db, project } = await this.store.open(id)
+    return runExport({ db, project, ...options })
   }
 
   async chooseFolder() {

@@ -79,3 +79,49 @@ export function createPhotoPickerTool(service) {
     },
   })
 }
+
+/** 导出工具：先 preview 汇总，再 run 执行并写 manifest。 */
+export function createPhotoPickerExportTool(service) {
+  return defineTool({
+    name: 'photo_picker_export',
+    description:
+      '导出照片工作台里按判定分桶（keep / maybe / reject）的照片到本机目录：'
+      + 'action=preview 做 dry-run 汇总，action=run 执行硬链接或复制并写 manifest。'
+      + 'dest 必须是本机绝对路径；不确定时先用 preview 给用户看数量与冲突。',
+    parameters: {
+      action: {
+        type: 'string',
+        required: true,
+        enum: ['preview', 'run'],
+        description: 'preview / run',
+      },
+      project: { type: 'string', required: true, description: '项目 id 或名称' },
+      dest: { type: 'string', required: true, description: '本机导出目录绝对路径' },
+      buckets: {
+        type: 'array',
+        description: '要导出的分桶，默认 keep + maybe',
+        items: { type: 'string', enum: ['keep', 'maybe', 'reject'] },
+      },
+      mode: { type: 'string', enum: ['hardlink', 'copy'], description: '硬链接（默认）或复制' },
+      layout: { type: 'string', enum: ['mirror', 'flat'], description: '保留相对目录结构（默认）或平铺' },
+    },
+    output: {
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          result: { type: 'string', required: true },
+        },
+      },
+      render: (_args, value) => [{ type: 'text', text: value.result }],
+    },
+    async execute(args) {
+      const id = await service.resolveProject(args.project)
+      const options = { dest: args.dest, buckets: args.buckets, mode: args.mode, layout: args.layout }
+      const payload = args.action === 'preview'
+        ? await service.exportPreview(id, options)
+        : await service.exportRun(id, options)
+      return { result: JSON.stringify(payload) }
+    },
+  })
+}

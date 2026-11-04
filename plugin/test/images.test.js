@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import sharp from 'sharp'
-import { deriveImage, hammingHex } from '../src/host/images.js'
+import { deriveImage, hammingHex, renderPreview } from '../src/host/images.js'
 
 async function makeImage(file, width, height, color) {
   await sharp({ create: { width, height, channels: 3, background: color } }).jpeg().toFile(file)
@@ -34,5 +34,20 @@ test('dhash is stable for the same pixels and hammingHex counts differences', as
   const db = await deriveImage(b)
   assert.equal(da.dhash, db.dhash)
   assert.equal(hammingHex(da.dhash, db.dhash), 0)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('renderPreview caches a 1600px JPEG', async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pp-preview-'))
+  const source = path.join(dir, 'a.jpg')
+  await sharp({ create: { width: 2400, height: 1600, channels: 3, background: '#556677' } }).jpeg().toFile(source)
+  const cache = path.join(dir, 'previews', 'a.jpg')
+  const first = await renderPreview(source, cache)
+  assert.equal(first.cached, false)
+  const meta = await sharp(first.path).metadata()
+  assert.ok(meta.width <= 1600 && meta.height <= 1600)
+  assert.equal(meta.width, 1600)
+  const second = await renderPreview(source, cache)
+  assert.equal(second.cached, true)
   rmSync(dir, { recursive: true, force: true })
 })
