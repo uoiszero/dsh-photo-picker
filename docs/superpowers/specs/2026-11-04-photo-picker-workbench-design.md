@@ -75,7 +75,7 @@
 
 ### 3.2 建立方式
 
-- 用**创造者模式**会话开发：在 `photo-picker` 工作区里写 bundle，用 `plugin_manager action=install_bundle` 安装进当前 profile，用 `cordis_inspect_query` 验证注册，用已连接的 Chrome 在 Harness Web UI 里验收。
+- 用**创造者模式**会话开发：在 `dsh-photo-picker` 工作区里写 bundle，用 `plugin_manager action=install_bundle` 安装进当前 profile，用 `cordis_inspect_query` 验证注册，用已连接的 Chrome 在 Harness Web UI 里验收。
 - 当前会话不是创造者模式（工具集中无 `plugin_manager` / `cordis_inspect_*`）；开工时需新开创造者模式会话，工作目录不变。
 - 安装后影响该 profile 的所有会话，重启后仍存在。
 

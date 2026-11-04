@@ -37,8 +37,8 @@ function stub() {
     async previewFile() { return undefined },
     async exportPreview(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
     async exportRun(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
-    async listDir() { return [{ name: 'Pictures', path: '/Users/x/Pictures' }] },
-    async chooseFolder() { return '/Users/x/Pictures' },
+    async listDir() { return [{ name: 'Pictures', path: '~/Pictures' }] },
+    async chooseFolder() { return '~/Pictures' },
     async thumbFile() { return undefined },
   }
 }

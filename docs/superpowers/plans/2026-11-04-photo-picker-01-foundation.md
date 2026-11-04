@@ -1591,8 +1591,8 @@ function stub() {
     async getProjectDetail(id) { return { id, counts: {} } },
     async listPhotos() { return [] },
     async startStage(id, stage) { return { started: stage } },
-    async listDir() { return [{ name: 'Pictures', path: '/Users/x/Pictures' }] },
-    async chooseFolder() { return '/Users/x/Pictures' },
+    async listDir() { return [{ name: 'Pictures', path: '~/Pictures' }] },
+    async chooseFolder() { return '~/Pictures' },
     async thumbFile() { return undefined },
   }
 }
