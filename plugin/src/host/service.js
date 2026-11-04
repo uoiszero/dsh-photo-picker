@@ -7,7 +7,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { createHttpHandler } from './http.js'
 import { dshHome } from './paths.js'
-import { ProjectStore } from './projects.js'
+import { ProjectStore, toProject } from './projects.js'
 import { preprocessProject } from './preprocess.js'
 import { scanProject } from './scan.js'
 import { LocalSource } from './source.js'
@@ -55,7 +55,11 @@ export class PhotoPickerService extends Service {
   }
 
   async getProjectDetail(id) {
-    const { db, project } = await this.store.open(id)
+    const { db } = await this.store.open(id)
+    // 阶段会直接改 projects 行，句柄里的快照可能已过期，这里每次重新读。
+    const fresh = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
+    if (fresh === undefined) throw new Error(`unknown project: ${id}`)
+    const project = toProject(fresh)
     const counts = Object.fromEntries(
       db.prepare('SELECT state, COUNT(*) AS n FROM photos WHERE project_id = ? GROUP BY state')
         .all(id).map(row => [row.state, row.n]),

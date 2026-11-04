@@ -5,7 +5,7 @@ import { closeDb, openDb } from './db.js'
 import { defaultWorkspaceRoot, slugify } from './paths.js'
 import { readRegistry, writeRegistry } from './registry.js'
 
-function toProject(row) {
+export function toProject(row) {
   return {
     id: row.id,
     name: row.name,
