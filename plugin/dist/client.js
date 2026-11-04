@@ -75,6 +75,8 @@ var zh = {
   statusScored: "\u5DF2\u8BC4\u5206",
   statusPaused: "\u5DF2\u6682\u505C",
   statusFailed: "\u5931\u8D25",
+  stageScan: "\u626B\u63CF",
+  stagePreprocess: "\u9884\u5904\u7406",
   stageGrid: "\u7F51\u683C\u7C97\u7B5B",
   stageRank: "\u7EC4\u5185\u6392\u5E8F",
   stageScore: "\u5355\u5F20\u7CBE\u8BC4",
@@ -115,6 +117,8 @@ var en = {
   statusScored: "Scored",
   statusPaused: "Paused",
   statusFailed: "Failed",
+  stageScan: "Scan",
+  stagePreprocess: "Preprocess",
   stageGrid: "Grid triage",
   stageRank: "Rank group",
   stageScore: "Score photo",
@@ -179,8 +183,8 @@ function statusLabel(t, status) {
 }
 function stageLabel(t, stage) {
   const keys = {
-    scan: "scan",
-    preprocess: "preprocess",
+    scan: "stageScan",
+    preprocess: "stagePreprocess",
     grid: "stageGrid",
     rank: "stageRank",
     score: "stageScore"

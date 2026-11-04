@@ -39,6 +39,8 @@ const zh = {
   statusScored: '已评分',
   statusPaused: '已暂停',
   statusFailed: '失败',
+  stageScan: '扫描',
+  stagePreprocess: '预处理',
   stageGrid: '网格粗筛',
   stageRank: '组内排序',
   stageScore: '单张精评',
@@ -80,6 +82,8 @@ const en = {
   statusScored: 'Scored',
   statusPaused: 'Paused',
   statusFailed: 'Failed',
+  stageScan: 'Scan',
+  stagePreprocess: 'Preprocess',
   stageGrid: 'Grid triage',
   stageRank: 'Rank group',
   stageScore: 'Score photo',
@@ -152,7 +156,7 @@ function statusLabel(t: (key: string) => string, status: string) {
 
 function stageLabel(t: (key: string) => string, stage: string) {
   const keys: Record<string, string> = {
-    scan: 'scan', preprocess: 'preprocess', grid: 'stageGrid', rank: 'stageRank', score: 'stageScore',
+    scan: 'stageScan', preprocess: 'stagePreprocess', grid: 'stageGrid', rank: 'stageRank', score: 'stageScore',
   }
   return keys[stage] === undefined ? stage : t(keys[stage])
 }
