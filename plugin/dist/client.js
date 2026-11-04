@@ -142,7 +142,34 @@ var zh = {
   calibrationApply: "\u5E94\u7528\u5EFA\u8BAE\u9608\u503C",
   calibrationApplied: "\u5DF2\u5E94\u7528\u5230\u9879\u76EE",
   calibrationNoSample: "\u8FD8\u6CA1\u6709\u5DF2\u8BC4\u5206\u7684\u7167\u7247\uFF0C\u5148\u8DD1\u4E00\u6B21\u5355\u5F20\u7CBE\u8BC4\u518D\u6821\u51C6\u3002",
-  calibrationLast: "\u4E0A\u6B21\u6821\u51C6"
+  calibrationLast: "\u4E0A\u6B21\u6821\u51C6",
+  settings: "\u8BBE\u7F6E",
+  settingsTitle: "\u9879\u76EE\u8BBE\u7F6E",
+  settingsBasic: "\u57FA\u7840",
+  model: "\u6A21\u578B",
+  concurrency: "\u5E76\u53D1",
+  gridSize: "\u7F51\u683C\u89C4\u683C",
+  gridCols: "\u5217",
+  gridRows: "\u884C",
+  thresholds: "\u5224\u5B9A\u9608\u503C",
+  thresholdKeep: "keep \u9608\u503C",
+  thresholdMaybe: "maybe \u9608\u503C",
+  grouping: "\u5206\u7EC4\u53C2\u6570",
+  burstSeconds: "\u8FDE\u62CD\u65F6\u95F4\u7A97\uFF08\u79D2\uFF09",
+  burstHamming: "\u8FDE\u62CD\u6C49\u660E\u8DDD\u79BB",
+  sceneSeconds: "\u540C\u573A\u666F\u65F6\u95F4\u7A97\uFF08\u79D2\uFF09",
+  sceneHamming: "\u540C\u573A\u666F\u6C49\u660E\u8DDD\u79BB",
+  runOptions: "\u8FD0\u884C\u9009\u9879",
+  stagePause: "\u9636\u6BB5\u95F4\u6682\u505C",
+  offpeak: "\u53EA\u5728\u79BB\u5CF0\u65F6\u6BB5\u8C03\u7528",
+  promptSection: "\u63D0\u793A\u8BCD",
+  viewPrompt: "\u67E5\u770B\u63D0\u793A\u8BCD\u5168\u6587",
+  save: "\u4FDD\u5B58\u8BBE\u7F6E",
+  saved: "\u5DF2\u4FDD\u5B58",
+  settingsHint: "\u9608\u503C\u3001\u5206\u7EC4\u53C2\u6570\u4E0E\u63D0\u793A\u8BCD\u6539\u52A8\u5F71\u54CD\u540E\u7EED\u9636\u6BB5\uFF1B\u5206\u7EC4\u53C2\u6570\u9700\u8981\u91CD\u8DD1\u9884\u5904\u7406\u624D\u751F\u6548\u3002",
+  rerunStages: "\u91CD\u8DD1\u53D7\u5F71\u54CD\u9636\u6BB5",
+  rerun: "\u91CD\u8DD1",
+  settingsNoImageModel: "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u7247\u8F93\u5165\uFF0CAI \u9636\u6BB5\u4F1A\u88AB\u7981\u7528\u3002"
 };
 var en = {
   title: "Photo Picker",
@@ -243,7 +270,34 @@ var en = {
   calibrationApply: "Apply suggested threshold",
   calibrationApplied: "Applied to project",
   calibrationNoSample: "No scored photos yet. Run single-photo scoring first.",
-  calibrationLast: "Previous calibration"
+  calibrationLast: "Previous calibration",
+  settings: "Settings",
+  settingsTitle: "Project settings",
+  settingsBasic: "Basics",
+  model: "Model",
+  concurrency: "Concurrency",
+  gridSize: "Grid size",
+  gridCols: "Columns",
+  gridRows: "Rows",
+  thresholds: "Verdict thresholds",
+  thresholdKeep: "Keep threshold",
+  thresholdMaybe: "Maybe threshold",
+  grouping: "Grouping",
+  burstSeconds: "Burst window (s)",
+  burstHamming: "Burst hamming",
+  sceneSeconds: "Scene window (s)",
+  sceneHamming: "Scene hamming",
+  runOptions: "Run options",
+  stagePause: "Pause between stages",
+  offpeak: "Only call during off-peak hours",
+  promptSection: "Prompts",
+  viewPrompt: "View full prompts",
+  save: "Save settings",
+  saved: "Saved",
+  settingsHint: "Thresholds, grouping and prompt changes affect later stages; grouping needs a preprocess re-run.",
+  rerunStages: "Re-run affected stages",
+  rerun: "Re-run",
+  settingsNoImageModel: "The current model does not accept image input; AI stages will be disabled."
 };
 var btn = {
   background: "var(--dsw-alias-bg-layer-1)",
@@ -853,11 +907,120 @@ function CalibrationSection({ t, projectId, onApplied }) {
     }
   ), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("reject") }, t("reject")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => setPhase("idle") }, t("close")))), phase === "report" && report !== null && summary(report));
 }
+function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
+  const [form, setForm] = (0, import_react.useState)(() => ({
+    theme: detail.theme ?? "mixed",
+    modelId: detail.modelId ?? "deepseek-flash",
+    concurrency: String(detail.concurrency ?? 8),
+    budgetCny: String(detail.budgetCny ?? 30),
+    gridCols: String(detail.gridCols ?? 4),
+    gridRows: String(detail.gridRows ?? 4),
+    thresholdKeep: String(detail.thresholdKeep ?? 7.5),
+    thresholdMaybe: String(detail.thresholdMaybe ?? 6),
+    groupBurstSeconds: String(detail.groupBurstSeconds ?? 2),
+    groupBurstHamming: String(detail.groupBurstHamming ?? 12),
+    groupSceneSeconds: String(detail.groupSceneSeconds ?? 60),
+    groupSceneHamming: String(detail.groupSceneHamming ?? 6),
+    stagePause: detail.stagePause === true,
+    offpeakOnly: detail.offpeakOnly === true
+  }));
+  const [prompt, setPrompt] = (0, import_react.useState)(null);
+  const [models, setModels] = (0, import_react.useState)([]);
+  const [busy, setBusy] = (0, import_react.useState)(false);
+  const [saved, setSaved] = (0, import_react.useState)(false);
+  const [error, setError] = (0, import_react.useState)(null);
+  (0, import_react.useEffect)(() => {
+    api(`/photo-picker/api/prompt?project=${detail.id}`).then(setPrompt).catch(() => {
+    });
+    api(`/photo-picker/api/models?route=${encodeURIComponent(detail.modelRoute ?? "deepseek-official")}`).then((data) => setModels(data.models ?? [])).catch(() => {
+    });
+  }, [detail.id]);
+  const set = (key, value) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setSaved(false);
+  };
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/photo-picker/api/projects/${detail.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          theme: form.theme,
+          modelId: form.modelId,
+          concurrency: Number(form.concurrency),
+          budgetCny: Number(form.budgetCny),
+          gridCols: Number(form.gridCols),
+          gridRows: Number(form.gridRows),
+          thresholdKeep: Number(form.thresholdKeep),
+          thresholdMaybe: Number(form.thresholdMaybe),
+          groupBurstSeconds: Number(form.groupBurstSeconds),
+          groupBurstHamming: Number(form.groupBurstHamming),
+          groupSceneSeconds: Number(form.groupSceneSeconds),
+          groupSceneHamming: Number(form.groupSceneHamming),
+          stagePause: form.stagePause,
+          offpeakOnly: form.offpeakOnly
+        })
+      });
+      setSaved(true);
+      onSaved?.();
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const label = { display: "grid", gap: 4, fontSize: 12, color: "var(--dsw-alias-label-secondary)" };
+  const row = { display: "flex", gap: 8, alignItems: "center" };
+  const numberInput = { ...input, width: 88, padding: "5px 8px" };
+  return /* @__PURE__ */ h(
+    "div",
+    {
+      onClick: onClose,
+      style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.28)", zIndex: 80 }
+    },
+    /* @__PURE__ */ h(
+      "div",
+      {
+        onClick: (event) => event.stopPropagation(),
+        style: {
+          position: "absolute",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: "min(440px, 94vw)",
+          background: "var(--dsw-alias-bg-overlay)",
+          color: "var(--dsw-alias-label-primary)",
+          borderLeft: "1px solid var(--dsw-alias-border-l1)",
+          padding: 18,
+          overflow: "auto",
+          display: "grid",
+          gap: 14,
+          alignContent: "start"
+        }
+      },
+      /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center" } }, /* @__PURE__ */ h("strong", null, t("settingsTitle")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, marginLeft: "auto" }, onClick: onClose }, t("close"))),
+      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("settingsBasic")), /* @__PURE__ */ h("label", { style: label }, t("theme"), /* @__PURE__ */ h("select", { value: form.theme, onChange: (event) => set("theme", event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: label }, t("model"), /* @__PURE__ */ h("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), style: input }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
+        const supportsImage = Array.isArray(model.inputModalities) ? model.inputModalities.includes("image") : true;
+        return /* @__PURE__ */ h("option", { key: model.id, value: model.id, disabled: !supportsImage }, model.name ?? model.id, supportsImage ? "" : ` \u2014 ${t("settingsNoImageModel")}`);
+      }))), /* @__PURE__ */ h("div", { style: { ...row } }, /* @__PURE__ */ h("label", { style: label }, t("concurrency"), /* @__PURE__ */ h("input", { value: form.concurrency, onChange: (event) => set("concurrency", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("budget"), /* @__PURE__ */ h("input", { value: form.budgetCny, onChange: (event) => set("budgetCny", event.target.value), style: numberInput })))),
+      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("gridSize"), " / ", t("thresholds")), /* @__PURE__ */ h("div", { style: row }, /* @__PURE__ */ h("label", { style: label }, t("gridCols"), /* @__PURE__ */ h("input", { value: form.gridCols, onChange: (event) => set("gridCols", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("gridRows"), /* @__PURE__ */ h("input", { value: form.gridRows, onChange: (event) => set("gridRows", event.target.value), style: numberInput }))), /* @__PURE__ */ h("div", { style: row }, /* @__PURE__ */ h("label", { style: label }, t("thresholdKeep"), /* @__PURE__ */ h("input", { value: form.thresholdKeep, onChange: (event) => set("thresholdKeep", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("thresholdMaybe"), /* @__PURE__ */ h("input", { value: form.thresholdMaybe, onChange: (event) => set("thresholdMaybe", event.target.value), style: numberInput })))),
+      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("grouping")), /* @__PURE__ */ h("div", { style: row }, /* @__PURE__ */ h("label", { style: label }, t("burstSeconds"), /* @__PURE__ */ h("input", { value: form.groupBurstSeconds, onChange: (event) => set("groupBurstSeconds", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("burstHamming"), /* @__PURE__ */ h("input", { value: form.groupBurstHamming, onChange: (event) => set("groupBurstHamming", event.target.value), style: numberInput }))), /* @__PURE__ */ h("div", { style: row }, /* @__PURE__ */ h("label", { style: label }, t("sceneSeconds"), /* @__PURE__ */ h("input", { value: form.groupSceneSeconds, onChange: (event) => set("groupSceneSeconds", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("sceneHamming"), /* @__PURE__ */ h("input", { value: form.groupSceneHamming, onChange: (event) => set("groupSceneHamming", event.target.value), style: numberInput })))),
+      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("runOptions")), /* @__PURE__ */ h("label", { style: { display: "flex", gap: 6, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: form.stagePause, onChange: (event) => set("stagePause", event.target.checked) }), t("stagePause")), /* @__PURE__ */ h("label", { style: { display: "flex", gap: 6, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: form.offpeakOnly, onChange: (event) => set("offpeakOnly", event.target.checked) }), t("offpeak"))),
+      prompt !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("promptSection"), " \xB7 ", prompt.version), /* @__PURE__ */ h("details", null, /* @__PURE__ */ h("summary", { style: { cursor: "pointer", fontSize: 12 } }, t("viewPrompt")), /* @__PURE__ */ h("pre", { style: { whiteSpace: "pre-wrap", fontSize: 11, lineHeight: 1.5, background: "var(--dsw-alias-bg-layer-2)", padding: 10, borderRadius: 8, marginTop: 6 } }, prompt.prompts.gridUser, "\n\n---\n\n", prompt.prompts.rankUser, "\n\n---\n\n", prompt.prompts.scoreUser))),
+      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("rerunStages")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, ["preprocess", "grid", "rank", "score"].map((stage) => /* @__PURE__ */ h("button", { key: stage, type: "button", style: btn, onClick: () => onRunStage?.(stage) }, t("rerun"), " ", stageLabel(t, stage))))),
+      /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 12 } }, t("settingsHint")),
+      error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error),
+      /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: save }, t("save")), saved && /* @__PURE__ */ h("span", { style: { ...muted, fontSize: 12 } }, t("saved")))
+    )
+  );
+}
 function ProjectDetail({ t, id }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
   const [progress, setProgress] = (0, import_react.useState)(null);
   const [checkpoints, setCheckpoints] = (0, import_react.useState)([]);
   const [exporting, setExporting] = (0, import_react.useState)(false);
+  const [settingsOpen, setSettingsOpen] = (0, import_react.useState)(false);
   const [error, setError] = (0, import_react.useState)(null);
   const refresh = async () => {
     try {
@@ -897,7 +1060,16 @@ function ProjectDetail({ t, id }) {
   const version = detail.updatedAt ?? 0;
   const aiDisabled = detail.ai?.hasImageModel === false;
   const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0;
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, state, ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("grid") }, t("stageGrid")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("rank") }, t("stageRank")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("score") }, t("stageScore")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, state, ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("grid") }, t("stageGrid")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("rank") }, t("stageRank")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("score") }, t("stageScore")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && detail !== null && /* @__PURE__ */ h(
+    SettingsDrawer,
+    {
+      t,
+      detail: { ...detail, id },
+      onClose: () => setSettingsOpen(false),
+      onSaved: refresh,
+      onRunStage: (stage) => run(stage)
+    }
+  ), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
     border: "1px solid var(--dsw-alias-border-l1)",
     borderRadius: 10,
     padding: 12,

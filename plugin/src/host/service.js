@@ -7,6 +7,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { createHttpHandler } from './http.js'
 import { dshHome } from './paths.js'
+import { isPeakHour } from './cost.js'
 import { previewExport, runExport } from './export.js'
 import { renderPreview } from './images.js'
 import { runGridStage, runRankStage, runScoreStage } from './pipeline.js'
@@ -18,6 +19,10 @@ import {
   getPhotoDetail, groupDetail, listGroups, listReviewPhotos, projectStats, setHumanDecisions,
 } from './review.js'
 import { preprocessProject } from './preprocess.js'
+import {
+  GRID_SYSTEM, PROMPT_VERSION, RANK_SYSTEM, SCORE_SYSTEM,
+  gridUserPrompt, rankUserPrompt, scoreUserPrompt,
+} from './prompts.js'
 import { scanProject } from './scan.js'
 import { LocalSource } from './source.js'
 import { createPhotoPickerExportTool, createPhotoPickerTool } from './tools.js'
@@ -206,6 +211,9 @@ export class PhotoPickerService extends Service {
     if (AI_STAGES.has(stage)) {
       const capable = await this.imageCapable(project)
       if (!capable) throw stageError(`model ${project.modelId} does not accept image input`, 'MODEL_NO_IMAGE_INPUT', 400)
+      if (project.offpeakOnly && isPeakHour(new Date())) {
+        throw stageError('off-peak only is enabled; retry after 18:00', 'OFFPEAK_BLOCKED', 409)
+      }
     }
 
     const controller = new AbortController()
@@ -298,7 +306,11 @@ export class PhotoPickerService extends Service {
   }
 
   async updateSettings(id, patch = {}) {
-    const { db } = await this.store.open(id)
+    const { db, project } = await this.store.open(id)
+    if (patch.modelId !== undefined) {
+      const capable = await this.imageCapable({ modelRoute: project.modelRoute, modelId: String(patch.modelId) })
+      if (!capable) throw stageError(`model ${patch.modelId} does not accept image input`, 'BAD_SETTING', 400)
+    }
     const fields = {
       theme: ['theme', value => typeof value === 'string'],
       budgetCny: ['budget_cny', value => Number.isFinite(Number(value)) && Number(value) >= 0],
@@ -309,6 +321,12 @@ export class PhotoPickerService extends Service {
       thresholdMaybe: ['threshold_maybe', value => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 10],
       stagePause: ['stage_pause', value => typeof value === 'boolean' || value === 0 || value === 1],
       offpeakOnly: ['offpeak_only', value => typeof value === 'boolean' || value === 0 || value === 1],
+      groupBurstSeconds: ['group_burst_seconds', value => Number.isFinite(Number(value)) && Number(value) >= 0],
+      groupBurstHamming: ['group_burst_hamming', value => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 64],
+      groupSceneSeconds: ['group_scene_seconds', value => Number.isFinite(Number(value)) && Number(value) >= 0],
+      groupSceneHamming: ['group_scene_hamming', value => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 64],
+      promptVersion: ['prompt_version', value => typeof value === 'string' && /^v\d+$/.test(value)],
+      modelId: ['model_id', value => typeof value === 'string' && value.length > 0],
     }
     const sets = []
     const params = []
@@ -353,6 +371,36 @@ export class PhotoPickerService extends Service {
   async exportRun(id, options = {}) {
     const { db, project } = await this.store.open(id)
     return runExport({ db, project, ...options })
+  }
+
+  async promptInfo(projectId) {
+    let project
+    if (projectId !== undefined) {
+      const opened = await this.store.open(projectId)
+      project = opened.project
+    }
+    const theme = project?.theme ?? 'mixed'
+    const cols = project?.gridCols ?? 4
+    const rows = project?.gridRows ?? 4
+    return {
+      version: PROMPT_VERSION,
+      prompts: {
+        gridSystem: GRID_SYSTEM,
+        gridUser: gridUserPrompt({ count: cols * rows, cols, rows, theme }),
+        rankSystem: RANK_SYSTEM,
+        rankUser: rankUserPrompt({ count: 6 }),
+        scoreSystem: SCORE_SYSTEM,
+        scoreUser: scoreUserPrompt({ theme }),
+      },
+    }
+  }
+
+  async models(route = 'deepseek-official') {
+    try {
+      return { route, models: await this.ctx.llm.listModels(route) }
+    } catch (error) {
+      return { route, models: [], error: String(error?.message ?? error) }
+    }
   }
 
   async chooseFolder() {

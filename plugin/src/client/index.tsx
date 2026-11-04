@@ -107,6 +107,33 @@ const zh = {
   calibrationApplied: '已应用到项目',
   calibrationNoSample: '还没有已评分的照片，先跑一次单张精评再校准。',
   calibrationLast: '上次校准',
+  settings: '设置',
+  settingsTitle: '项目设置',
+  settingsBasic: '基础',
+  model: '模型',
+  concurrency: '并发',
+  gridSize: '网格规格',
+  gridCols: '列',
+  gridRows: '行',
+  thresholds: '判定阈值',
+  thresholdKeep: 'keep 阈值',
+  thresholdMaybe: 'maybe 阈值',
+  grouping: '分组参数',
+  burstSeconds: '连拍时间窗（秒）',
+  burstHamming: '连拍汉明距离',
+  sceneSeconds: '同场景时间窗（秒）',
+  sceneHamming: '同场景汉明距离',
+  runOptions: '运行选项',
+  stagePause: '阶段间暂停',
+  offpeak: '只在离峰时段调用',
+  promptSection: '提示词',
+  viewPrompt: '查看提示词全文',
+  save: '保存设置',
+  saved: '已保存',
+  settingsHint: '阈值、分组参数与提示词改动影响后续阶段；分组参数需要重跑预处理才生效。',
+  rerunStages: '重跑受影响阶段',
+  rerun: '重跑',
+  settingsNoImageModel: '当前模型不支持图片输入，AI 阶段会被禁用。',
 }
 
 const en = {
@@ -209,6 +236,33 @@ const en = {
   calibrationApplied: 'Applied to project',
   calibrationNoSample: 'No scored photos yet. Run single-photo scoring first.',
   calibrationLast: 'Previous calibration',
+  settings: 'Settings',
+  settingsTitle: 'Project settings',
+  settingsBasic: 'Basics',
+  model: 'Model',
+  concurrency: 'Concurrency',
+  gridSize: 'Grid size',
+  gridCols: 'Columns',
+  gridRows: 'Rows',
+  thresholds: 'Verdict thresholds',
+  thresholdKeep: 'Keep threshold',
+  thresholdMaybe: 'Maybe threshold',
+  grouping: 'Grouping',
+  burstSeconds: 'Burst window (s)',
+  burstHamming: 'Burst hamming',
+  sceneSeconds: 'Scene window (s)',
+  sceneHamming: 'Scene hamming',
+  runOptions: 'Run options',
+  stagePause: 'Pause between stages',
+  offpeak: 'Only call during off-peak hours',
+  promptSection: 'Prompts',
+  viewPrompt: 'View full prompts',
+  save: 'Save settings',
+  saved: 'Saved',
+  settingsHint: 'Thresholds, grouping and prompt changes affect later stages; grouping needs a preprocess re-run.',
+  rerunStages: 'Re-run affected stages',
+  rerun: 'Re-run',
+  settingsNoImageModel: 'The current model does not accept image input; AI stages will be disabled.',
 }
 
 const btn = {
@@ -1115,11 +1169,223 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
   )
 }
 
+
+function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
+  const [form, setForm] = useState<any>(() => ({
+    theme: detail.theme ?? 'mixed',
+    modelId: detail.modelId ?? 'deepseek-flash',
+    concurrency: String(detail.concurrency ?? 8),
+    budgetCny: String(detail.budgetCny ?? 30),
+    gridCols: String(detail.gridCols ?? 4),
+    gridRows: String(detail.gridRows ?? 4),
+    thresholdKeep: String(detail.thresholdKeep ?? 7.5),
+    thresholdMaybe: String(detail.thresholdMaybe ?? 6),
+    groupBurstSeconds: String(detail.groupBurstSeconds ?? 2),
+    groupBurstHamming: String(detail.groupBurstHamming ?? 12),
+    groupSceneSeconds: String(detail.groupSceneSeconds ?? 60),
+    groupSceneHamming: String(detail.groupSceneHamming ?? 6),
+    stagePause: detail.stagePause === true,
+    offpeakOnly: detail.offpeakOnly === true,
+  }))
+  const [prompt, setPrompt] = useState<any>(null)
+  const [models, setModels] = useState<any[]>([])
+  const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    api(`/photo-picker/api/prompt?project=${detail.id}`).then(setPrompt).catch(() => {})
+    api(`/photo-picker/api/models?route=${encodeURIComponent(detail.modelRoute ?? 'deepseek-official')}`)
+      .then(data => setModels(data.models ?? []))
+      .catch(() => {})
+  }, [detail.id])
+
+  const set = (key: string, value: any) => {
+    setForm((current: any) => ({ ...current, [key]: value }))
+    setSaved(false)
+  }
+
+  const save = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api(`/photo-picker/api/projects/${detail.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          theme: form.theme,
+          modelId: form.modelId,
+          concurrency: Number(form.concurrency),
+          budgetCny: Number(form.budgetCny),
+          gridCols: Number(form.gridCols),
+          gridRows: Number(form.gridRows),
+          thresholdKeep: Number(form.thresholdKeep),
+          thresholdMaybe: Number(form.thresholdMaybe),
+          groupBurstSeconds: Number(form.groupBurstSeconds),
+          groupBurstHamming: Number(form.groupBurstHamming),
+          groupSceneSeconds: Number(form.groupSceneSeconds),
+          groupSceneHamming: Number(form.groupSceneHamming),
+          stagePause: form.stagePause,
+          offpeakOnly: form.offpeakOnly,
+        }),
+      })
+      setSaved(true)
+      onSaved?.()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const label = { display: 'grid', gap: 4, fontSize: 12, color: 'var(--dsw-alias-label-secondary)' }
+  const row = { display: 'flex', gap: 8, alignItems: 'center' }
+  const numberInput = { ...input, width: 88, padding: '5px 8px' }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.28)', zIndex: 80 }}
+    >
+      <div
+        onClick={event => event.stopPropagation()}
+        style={{
+          position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(440px, 94vw)',
+          background: 'var(--dsw-alias-bg-overlay)', color: 'var(--dsw-alias-label-primary)',
+          borderLeft: '1px solid var(--dsw-alias-border-l1)', padding: 18, overflow: 'auto',
+          display: 'grid', gap: 14, alignContent: 'start',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <strong>{t('settingsTitle')}</strong>
+          <button type="button" style={{ ...btn, marginLeft: 'auto' }} onClick={onClose}>{t('close')}</button>
+        </div>
+
+        <div style={{ display: 'grid', gap: 10 }}>
+          <span style={{ ...muted, fontWeight: 600 }}>{t('settingsBasic')}</span>
+          <label style={label}>{t('theme')}
+            <select value={form.theme} onChange={event => set('theme', event.target.value)} style={input}>
+              <option value="mixed">{t('themeMixed')}</option>
+              <option value="portrait">{t('themePortrait')}</option>
+              <option value="landscape">{t('themeLandscape')}</option>
+              <option value="event">{t('themeEvent')}</option>
+            </select>
+          </label>
+          <label style={label}>{t('model')}
+            <select value={form.modelId} onChange={event => set('modelId', event.target.value)} style={input}>
+              {(models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model: any) => {
+                const supportsImage = Array.isArray(model.inputModalities)
+                  ? model.inputModalities.includes('image')
+                  : true
+                return (
+                  <option key={model.id} value={model.id} disabled={!supportsImage}>
+                    {model.name ?? model.id}{supportsImage ? '' : ` — ${t('settingsNoImageModel')}`}
+                  </option>
+                )
+              })}
+            </select>
+          </label>
+          <div style={{ ...row }}>
+            <label style={label}>{t('concurrency')}
+              <input value={form.concurrency} onChange={event => set('concurrency', event.target.value)} style={numberInput} />
+            </label>
+            <label style={label}>{t('budget')}
+              <input value={form.budgetCny} onChange={event => set('budgetCny', event.target.value)} style={numberInput} />
+            </label>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gap: 10 }}>
+          <span style={{ ...muted, fontWeight: 600 }}>{t('gridSize')} / {t('thresholds')}</span>
+          <div style={row}>
+            <label style={label}>{t('gridCols')}
+              <input value={form.gridCols} onChange={event => set('gridCols', event.target.value)} style={numberInput} />
+            </label>
+            <label style={label}>{t('gridRows')}
+              <input value={form.gridRows} onChange={event => set('gridRows', event.target.value)} style={numberInput} />
+            </label>
+          </div>
+          <div style={row}>
+            <label style={label}>{t('thresholdKeep')}
+              <input value={form.thresholdKeep} onChange={event => set('thresholdKeep', event.target.value)} style={numberInput} />
+            </label>
+            <label style={label}>{t('thresholdMaybe')}
+              <input value={form.thresholdMaybe} onChange={event => set('thresholdMaybe', event.target.value)} style={numberInput} />
+            </label>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gap: 10 }}>
+          <span style={{ ...muted, fontWeight: 600 }}>{t('grouping')}</span>
+          <div style={row}>
+            <label style={label}>{t('burstSeconds')}
+              <input value={form.groupBurstSeconds} onChange={event => set('groupBurstSeconds', event.target.value)} style={numberInput} />
+            </label>
+            <label style={label}>{t('burstHamming')}
+              <input value={form.groupBurstHamming} onChange={event => set('groupBurstHamming', event.target.value)} style={numberInput} />
+            </label>
+          </div>
+          <div style={row}>
+            <label style={label}>{t('sceneSeconds')}
+              <input value={form.groupSceneSeconds} onChange={event => set('groupSceneSeconds', event.target.value)} style={numberInput} />
+            </label>
+            <label style={label}>{t('sceneHamming')}
+              <input value={form.groupSceneHamming} onChange={event => set('groupSceneHamming', event.target.value)} style={numberInput} />
+            </label>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gap: 6 }}>
+          <span style={{ ...muted, fontWeight: 600 }}>{t('runOptions')}</span>
+          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
+            <input type="checkbox" checked={form.stagePause} onChange={event => set('stagePause', event.target.checked)} />
+            {t('stagePause')}
+          </label>
+          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
+            <input type="checkbox" checked={form.offpeakOnly} onChange={event => set('offpeakOnly', event.target.checked)} />
+            {t('offpeak')}
+          </label>
+        </div>
+
+        {prompt !== null && (
+          <div style={{ display: 'grid', gap: 6 }}>
+            <span style={{ ...muted, fontWeight: 600 }}>{t('promptSection')} · {prompt.version}</span>
+            <details>
+              <summary style={{ cursor: 'pointer', fontSize: 12 }}>{t('viewPrompt')}</summary>
+              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 11, lineHeight: 1.5, background: 'var(--dsw-alias-bg-layer-2)', padding: 10, borderRadius: 8, marginTop: 6 }}>
+                {prompt.prompts.gridUser}{"\n\n---\n\n"}{prompt.prompts.rankUser}{"\n\n---\n\n"}{prompt.prompts.scoreUser}
+              </pre>
+            </details>
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gap: 6 }}>
+          <span style={{ ...muted, fontWeight: 600 }}>{t('rerunStages')}</span>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {['preprocess', 'grid', 'rank', 'score'].map(stage => (
+              <button key={stage} type="button" style={btn} onClick={() => onRunStage?.(stage)}>
+                {t('rerun')} {stageLabel(t, stage)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ ...muted, fontSize: 12 }}>{t('settingsHint')}</div>
+        {error !== null && <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button type="button" style={btnPrimary} disabled={busy} onClick={save}>{t('save')}</button>
+          {saved && <span style={{ ...muted, fontSize: 12 }}>{t('saved')}</span>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
   const [detail, setDetail] = useState<any>(null)
   const [progress, setProgress] = useState<any>(null)
   const [checkpoints, setCheckpoints] = useState<any[]>([])
   const [exporting, setExporting] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = async () => {
@@ -1195,8 +1461,18 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
           <button type="button" style={btn} onClick={() => run(detail.running, 'pause')}>{t('pause')}</button>
         )}
         <button type="button" style={btn} onClick={() => setExporting(true)}>{t('export')}</button>
+        <button type="button" style={btn} onClick={() => setSettingsOpen(true)}>{t('settings')}</button>
       </div>
       {exporting && <ExportDialog t={t} projectId={id} onClose={() => setExporting(false)} />}
+      {settingsOpen && detail !== null && (
+        <SettingsDrawer
+          t={t}
+          detail={{ ...detail, id }}
+          onClose={() => setSettingsOpen(false)}
+          onSaved={refresh}
+          onRunStage={(stage: string) => run(stage)}
+        />
+      )}
       {aiDisabled && <div style={muted}>{t('aiDisabled')}</div>}
       {progress !== null && (
         <div style={{ display: 'grid', gap: 4 }}>

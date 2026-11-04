@@ -30,6 +30,8 @@ function stub() {
     async calibrate(id, labels) { return { id: 'cal1', sampleSize: (labels ?? []).length } },
     async calibrationReport(id) { return { id: 'cal1', sampleSize: 3 } },
     async updateSettings(id, patch) { return { id, thresholdKeep: patch.thresholdKeep } },
+    async promptInfo(projectId) { return { version: 'v1', project: projectId ?? null, prompts: { gridUser: 'x' } } },
+    async models(route) { return { route, models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }] } },
     async previewFile() { return undefined },
     async exportPreview(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
     async exportRun(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
@@ -171,5 +173,19 @@ test('groups, calibration and settings routes answer JSON', async () => {
       body: JSON.stringify({ thresholdKeep: 7.2 }),
     })
     assert.deepEqual(await patched.json(), { id: 'p1', thresholdKeep: 7.2 })
+  })
+})
+
+test('prompt and model catalog routes answer JSON', async () => {
+  await withServer(async origin => {
+    const prompt = await fetch(`${origin}/photo-picker/api/prompt?project=p1`)
+    const promptBody = await prompt.json()
+    assert.equal(promptBody.version, 'v1')
+    assert.equal(promptBody.project, 'p1')
+
+    const models = await fetch(`${origin}/photo-picker/api/models?route=deepseek-official`)
+    const modelsBody = await models.json()
+    assert.equal(modelsBody.route, 'deepseek-official')
+    assert.equal(modelsBody.models[0].id, 'deepseek-flash')
   })
 })
