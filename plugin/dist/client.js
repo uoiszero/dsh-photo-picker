@@ -93,6 +93,10 @@ var zh = {
   sortPath: "\u6309\u8DEF\u5F84",
   sortGroup: "\u6309\u5206\u7EC4",
   autoRun: "\u81EA\u52A8\u8DD1\uFF08\u626B\u63CF\u2192\u7CBE\u8BC4\uFF09",
+  singleStep: "\u5355\u6B65\u8FD0\u884C",
+  autoDoneToast: "\u81EA\u52A8\u8DD1\u5B8C\u6210\uFF1A{stages}",
+  autoPausedToast: "\u81EA\u52A8\u8DD1\u5DF2\u6682\u505C\uFF1A\u5DF2\u5B8C\u6210 {stages}\uFF0C\u4E0B\u4E00\u9636\u6BB5 {next}",
+  autoFailedToast: "\u81EA\u52A8\u8DD1\u5931\u8D25\uFF1A{error}",
   pipelineDone: "\u81EA\u52A8\u8DD1\u5B8C\u6210",
   pipelinePaused: "\u81EA\u52A8\u8DD1\u5DF2\u6682\u505C",
   pipelineFailed: "\u81EA\u52A8\u8DD1\u5931\u8D25",
@@ -270,6 +274,10 @@ var en = {
   sortPath: "By path",
   sortGroup: "By group",
   autoRun: "Auto run (scan\u2192score)",
+  singleStep: "Single steps",
+  autoDoneToast: "Auto run finished: {stages}",
+  autoPausedToast: "Auto run paused after {stages}; next stage {next}",
+  autoFailedToast: "Auto run failed: {error}",
   pipelineDone: "Auto run finished",
   pipelinePaused: "Auto run paused",
   pipelineFailed: "Auto run failed",
@@ -1220,6 +1228,8 @@ function ProjectDetail({ t, id }) {
   const [progress, setProgress] = (0, import_react.useState)(null);
   const [checkpoints, setCheckpoints] = (0, import_react.useState)([]);
   const [pipelineEvent, setPipelineEvent] = (0, import_react.useState)(null);
+  const [singleStepsOpen, setSingleStepsOpen] = (0, import_react.useState)(false);
+  const [noticeDismissed, setNoticeDismissed] = (0, import_react.useState)(false);
   const [exporting, setExporting] = (0, import_react.useState)(false);
   const [settingsOpen, setSettingsOpen] = (0, import_react.useState)(false);
   const [error, setError] = (0, import_react.useState)(null);
@@ -1257,6 +1267,11 @@ function ProjectDetail({ t, id }) {
       setError(String(cause));
     }
   };
+  (0, import_react.useEffect)(() => {
+    if (pipelineEvent !== null && pipelineEvent.stage === "pipeline" && (pipelineEvent.result !== void 0 || pipelineEvent.error !== void 0)) {
+      setNoticeDismissed(false);
+    }
+  }, [pipelineEvent]);
   const runAll = async () => {
     try {
       setPipelineEvent({ stage: "pipeline", phase: "start" });
@@ -1271,9 +1286,54 @@ function ProjectDetail({ t, id }) {
   if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
   const counts = detail.counts ?? {};
   const version = detail.updatedAt ?? 0;
+  let pipelineNotice = null;
+  if (pipelineEvent !== null && pipelineEvent.stage === "pipeline") {
+    if (pipelineEvent.error !== void 0) {
+      pipelineNotice = {
+        kind: "failed",
+        text: t("autoFailedToast").replace("{error}", String(pipelineEvent.error))
+      };
+    } else if (pipelineEvent.result !== void 0) {
+      const completed = (pipelineEvent.result.completed ?? []).map((stage) => stageLabel(t, stage)).join(" \u2192 ");
+      if (pipelineEvent.result.reason === "paused") {
+        pipelineNotice = {
+          kind: "paused",
+          text: t("autoPausedToast").replace("{stages}", completed || "\u2014").replace("{next}", pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? stageLabel(t, pipelineEvent.result.stoppedAt) : "\u2014")
+        };
+      } else {
+        pipelineNotice = { kind: "done", text: t("autoDoneToast").replace("{stages}", completed) };
+      }
+    }
+  }
   const aiDisabled = detail.ai?.hasImageModel === false;
   const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0;
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, stateLabel(t, state), ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("scan") }, t("scan")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run("preprocess") }, t("preprocess")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("grid") }, t("stageGrid")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("rank") }, t("stageRank")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: aiDisabled, onClick: () => run("score") }, t("stageScore")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: detail.running !== null, onClick: runAll }, t("autoRun")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && detail !== null && /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, stateLabel(t, state), ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: detail.running !== null, onClick: runAll }, t("autoRun")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("div", { style: { position: "relative" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSingleStepsOpen((open) => !open) }, t("singleStep"), " ", singleStepsOpen ? "\u25B4" : "\u25BE"), singleStepsOpen && /* @__PURE__ */ h("div", { style: {
+    position: "absolute",
+    top: "calc(100% + 6px)",
+    left: 0,
+    zIndex: 20,
+    display: "grid",
+    gap: 6,
+    minWidth: 168,
+    padding: 8,
+    background: "var(--dsw-alias-bg-overlay)",
+    border: "1px solid var(--dsw-alias-border-l1)",
+    borderRadius: 10,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
+  } }, ["scan", "preprocess", "grid", "rank", "score"].map((stage) => /* @__PURE__ */ h(
+    "button",
+    {
+      key: stage,
+      type: "button",
+      style: { ...btn, width: "100%", textAlign: "left" },
+      disabled: aiDisabled && ["grid", "rank", "score"].includes(stage),
+      onClick: () => {
+        setSingleStepsOpen(false);
+        run(stage);
+      }
+    },
+    stage === "scan" ? t("scan") : stage === "preprocess" ? t("preprocess") : stageLabel(t, stage)
+  )))), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && detail !== null && /* @__PURE__ */ h(
     SettingsDrawer,
     {
       t,
@@ -1282,7 +1342,7 @@ function ProjectDetail({ t, id }) {
       onSaved: refresh,
       onRunStage: (stage) => run(stage)
     }
-  ), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), pipelineEvent !== null && /* @__PURE__ */ h("div", { style: muted }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
+  ), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), pipelineEvent !== null && /* @__PURE__ */ h("div", { style: muted }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).map((stage) => stageLabel(t, stage)).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
     border: "1px solid var(--dsw-alias-border-l1)",
     borderRadius: 10,
     padding: 12,
@@ -1296,7 +1356,32 @@ function ProjectDetail({ t, id }) {
       alt: pid,
       style: { width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 6, background: "var(--dsw-alias-bg-layer-2)" }
     }
-  )))))), /* @__PURE__ */ h(ReviewSection, { t, projectId: id, version, onChanged: refresh }), /* @__PURE__ */ h(CalibrationSection, { t, projectId: id, onApplied: refresh }));
+  )))))), /* @__PURE__ */ h(ReviewSection, { t, projectId: id, version, onChanged: refresh }), /* @__PURE__ */ h(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h(
+    "div",
+    {
+      "aria-live": "polite",
+      style: {
+        position: "fixed",
+        right: 24,
+        bottom: 24,
+        zIndex: 95,
+        maxWidth: 380,
+        display: "flex",
+        gap: 10,
+        alignItems: "flex-start",
+        padding: "12px 14px",
+        background: "var(--dsw-alias-bg-overlay)",
+        color: "var(--dsw-alias-label-primary)",
+        border: "1px solid var(--dsw-alias-border-l1)",
+        borderLeft: `4px solid ${pipelineNotice.kind === "done" ? "var(--dsw-static-green-500, #2f9e5f)" : pipelineNotice.kind === "paused" ? "var(--dsw-static-amber-500, #d09a2b)" : "var(--dsw-static-red-500, #cc4b3f)"}`,
+        borderRadius: 10,
+        boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
+        fontSize: 13
+      }
+    },
+    /* @__PURE__ */ h("span", { style: { flex: 1 } }, pipelineNotice.text),
+    /* @__PURE__ */ h("button", { type: "button", style: { ...btn, padding: "2px 8px", fontSize: 12 }, onClick: () => setNoticeDismissed(true) }, t("close"))
+  ));
 }
 function Workbench({ t }) {
   (0, import_react.useSyncExternalStore)(subscribeLanguage, getLanguage);

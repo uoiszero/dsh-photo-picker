@@ -1180,6 +1180,8 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
   const [progress, setProgress] = useState<any>(null)
   const [checkpoints, setCheckpoints] = useState<any[]>([])
   const [pipelineEvent, setPipelineEvent] = useState<any>(null)
+  const [singleStepsOpen, setSingleStepsOpen] = useState(false)
+  const [noticeDismissed, setNoticeDismissed] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1221,6 +1223,13 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
     }
   }
 
+  useEffect(() => {
+    if (pipelineEvent !== null && pipelineEvent.stage === 'pipeline'
+      && (pipelineEvent.result !== undefined || pipelineEvent.error !== undefined)) {
+      setNoticeDismissed(false)
+    }
+  }, [pipelineEvent])
+
   const runAll = async () => {
     try {
       setPipelineEvent({ stage: 'pipeline', phase: 'start' })
@@ -1237,6 +1246,27 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
 
   const counts = detail.counts ?? {}
   const version = detail.updatedAt ?? 0
+  let pipelineNotice: { kind: 'done' | 'paused' | 'failed', text: string } | null = null
+  if (pipelineEvent !== null && pipelineEvent.stage === 'pipeline') {
+    if (pipelineEvent.error !== undefined) {
+      pipelineNotice = {
+        kind: 'failed',
+        text: t('autoFailedToast').replace('{error}', String(pipelineEvent.error)),
+      }
+    } else if (pipelineEvent.result !== undefined) {
+      const completed = (pipelineEvent.result.completed ?? []).map((stage: string) => stageLabel(t, stage)).join(' → ')
+      if (pipelineEvent.result.reason === 'paused') {
+        pipelineNotice = {
+          kind: 'paused',
+          text: t('autoPausedToast')
+            .replace('{stages}', completed || '—')
+            .replace('{next}', pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== undefined ? stageLabel(t, pipelineEvent.result.stoppedAt) : '—'),
+        }
+      } else {
+        pipelineNotice = { kind: 'done', text: t('autoDoneToast').replace('{stages}', completed) }
+      }
+    }
+  }
   const aiDisabled = detail.ai?.hasImageModel === false
   const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0
 
@@ -1260,16 +1290,36 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button type="button" style={btn} onClick={() => run('scan')}>{t('scan')}</button>
-        <button type="button" style={btn} onClick={() => run('preprocess')}>{t('preprocess')}</button>
-        <button type="button" style={btn} disabled={aiDisabled} onClick={() => run('grid')}>{t('stageGrid')}</button>
-        <button type="button" style={btn} disabled={aiDisabled} onClick={() => run('rank')}>{t('stageRank')}</button>
-        <button type="button" style={btn} disabled={aiDisabled} onClick={() => run('score')}>{t('stageScore')}</button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button type="button" style={btnPrimary} disabled={detail.running !== null} onClick={runAll}>{t('autoRun')}</button>
         {detail.running !== null && (
           <button type="button" style={btn} onClick={() => run(detail.running, 'pause')}>{t('pause')}</button>
         )}
-        <button type="button" style={btnPrimary} disabled={detail.running !== null} onClick={runAll}>{t('autoRun')}</button>
+        <div style={{ position: 'relative' }}>
+          <button type="button" style={btn} onClick={() => setSingleStepsOpen(open => !open)}>
+            {t('singleStep')} {singleStepsOpen ? '▴' : '▾'}
+          </button>
+          {singleStepsOpen && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 20,
+              display: 'grid', gap: 6, minWidth: 168, padding: 8,
+              background: 'var(--dsw-alias-bg-overlay)', border: '1px solid var(--dsw-alias-border-l1)',
+              borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+            }}>
+              {(['scan', 'preprocess', 'grid', 'rank', 'score'] as string[]).map(stage => (
+                <button
+                  key={stage}
+                  type="button"
+                  style={{ ...btn, width: '100%', textAlign: 'left' }}
+                  disabled={aiDisabled && ['grid', 'rank', 'score'].includes(stage)}
+                  onClick={() => { setSingleStepsOpen(false); run(stage) }}
+                >
+                  {stage === 'scan' ? t('scan') : stage === 'preprocess' ? t('preprocess') : stageLabel(t, stage)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button type="button" style={btn} onClick={() => setExporting(true)}>{t('export')}</button>
         <button type="button" style={btn} onClick={() => setSettingsOpen(true)}>{t('settings')}</button>
       </div>
@@ -1301,7 +1351,7 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
           {pipelineEvent.error !== undefined
             ? `${t('pipelineFailed')}: ${pipelineEvent.error}`
             : pipelineEvent.stage === 'pipeline' && pipelineEvent.result !== undefined
-              ? `${pipelineEvent.result.reason === 'paused' ? t('pipelinePaused') : t('pipelineDone')}: ${(pipelineEvent.result.completed ?? []).join(' → ')}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== undefined ? ` · ${t('nextStage')} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ''}`
+              ? `${pipelineEvent.result.reason === 'paused' ? t('pipelinePaused') : t('pipelineDone')}: ${(pipelineEvent.result.completed ?? []).map((stage: string) => stageLabel(t, stage)).join(' → ')}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== undefined ? ` · ${t('nextStage')} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ''}`
               : `${t('autoRun')}: ${stageLabel(t, pipelineEvent.stage)} · ${phaseLabel(t, pipelineEvent.phase)}`}
         </div>
       )}
@@ -1338,6 +1388,24 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
       )}
       <ReviewSection t={t} projectId={id} version={version} onChanged={refresh} />
       <CalibrationSection t={t} projectId={id} onApplied={refresh} />
+      {pipelineNotice !== null && !noticeDismissed && (
+        <div
+          aria-live="polite"
+          style={{
+            position: 'fixed', right: 24, bottom: 24, zIndex: 95, maxWidth: 380,
+            display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px',
+            background: 'var(--dsw-alias-bg-overlay)', color: 'var(--dsw-alias-label-primary)',
+            border: '1px solid var(--dsw-alias-border-l1)',
+            borderLeft: `4px solid ${pipelineNotice.kind === 'done' ? 'var(--dsw-static-green-500, #2f9e5f)' : pipelineNotice.kind === 'paused' ? 'var(--dsw-static-amber-500, #d09a2b)' : 'var(--dsw-static-red-500, #cc4b3f)'}`,
+            borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.22)', fontSize: 13,
+          }}
+        >
+          <span style={{ flex: 1 }}>{pipelineNotice.text}</span>
+          <button type="button" style={{ ...btn, padding: '2px 8px', fontSize: 12 }} onClick={() => setNoticeDismissed(true)}>
+            {t('close')}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
