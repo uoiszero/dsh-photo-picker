@@ -47,7 +47,7 @@
 1. 克隆并安装依赖：
 
 ```bash
-git clone https://github.com/<your-account>/photo-picker.git
+git clone https://github.com/uoiszero/photo-picker.git
 cd photo-picker
 npm install
 ```
