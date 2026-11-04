@@ -1,0 +1,20 @@
+{
+  "name": "photo-picker-workbench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test plugin/test/*.test.js",
+    "build:client": "node scripts/build-client.mjs",
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "acceptance:1": "node scripts/acceptance-phase1.mjs"
+  },
+  "dependencies": {
+    "exifr": "^7.1.3",
+    "nanoid": "^6.0.2",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-tools": "file:../deepseek-harness/packages/core/tools",
+    "esbuild": "^0.28.2"
+  }
+}
