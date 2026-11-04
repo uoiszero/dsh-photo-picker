@@ -217,6 +217,10 @@ var zh = {
   phaseDone: "\u5B8C\u6210",
   language: "\u754C\u9762\u8BED\u8A00",
   languageAuto: "\u8DDF\u968F\u6D4F\u89C8\u5668",
+  history: "\u8FD0\u884C\u8BB0\u5F55",
+  samples: "\u62BD\u6837",
+  clearSelection: "\u6E05\u7A7A",
+  reviewEmpty: "\u6CA1\u6709\u7B26\u5408\u5F53\u524D\u7B5B\u9009\u7684\u7167\u7247",
   namePlaceholder: "2024 \u5A5A\u793C",
   destPlaceholder: "/Volumes/\u2026/\u7CBE\u9009",
   groupRank: "\u7EC4\u5185\u7B2C {rank}/{size}",
@@ -398,6 +402,10 @@ var en = {
   phaseDone: "done",
   language: "Language",
   languageAuto: "Follow browser",
+  history: "Run history",
+  samples: "Samples",
+  clearSelection: "Clear",
+  reviewEmpty: "No photos match this filter",
   namePlaceholder: "2024 wedding",
   destPlaceholder: "/Volumes/\u2026/selects",
   groupRank: "rank {rank}/{size} in group",
@@ -442,44 +450,426 @@ function translate(language, key) {
   return dictionary[key] ?? en[key] ?? zh[key] ?? key;
 }
 
+// plugin/src/client/theme.js
+var STYLES = `
+.pp-page {
+  height: 100%;
+  min-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.pp-page *, .pp-page *::before, .pp-page *::after { box-sizing: border-box; }
+.pp-page img { display: block; }
+.pp-page ::selection { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 26%, transparent); }
+.pp-page ::-webkit-scrollbar { width: 10px; height: 10px; }
+.pp-page ::-webkit-scrollbar-thumb {
+  background: var(--dsw-alias-border-l2); border-radius: 999px;
+  border: 2px solid var(--dsw-alias-bg-base);
+}
+.pp-page ::-webkit-scrollbar-track { background: transparent; }
+.pp-page button { transition: background-color .15s ease, border-color .15s ease, transform .1s ease, box-shadow .15s ease; }
+.pp-page button:not(:disabled):hover { filter: brightness(.985); }
+.pp-page button:not(:disabled):active { transform: translateY(1px); }
+.pp-page button:disabled { opacity: .45; cursor: not-allowed; }
+.pp-page button:focus-visible, .pp-page input:focus-visible, .pp-page select:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px;
+}
+.pp-page summary { outline: none; }
+
+.pp-shell { max-width: 1180px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 44px) 72px; }
+
+.pp-header {
+  display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap;
+  padding: 30px 0 22px;
+}
+.pp-title-wrap { display: flex; align-items: flex-start; gap: 12px; }
+.pp-mark {
+  width: 38px; height: 38px; flex: none; border-radius: 11px;
+  display: grid; place-items: center; color: var(--dsw-alias-brand-primary);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 9%, var(--dsw-alias-bg-layer-2));
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 18%, var(--dsw-alias-border-l1));
+}
+.pp-title { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -.015em; }
+.pp-subtitle { margin: 3px 0 0; color: var(--dsw-alias-label-secondary); font-size: 13px; max-width: 620px; }
+.pp-header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pp-lang {
+  border: 1px solid var(--dsw-alias-border-l1); background: transparent;
+  color: var(--dsw-alias-label-secondary); border-radius: 999px;
+  padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.pp-lang:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l2); }
+
+.pp-muted { color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.pp-chip {
+  display: inline-flex; align-items: center; background: var(--dsw-alias-bg-layer-2);
+  border-radius: 999px; padding: 2px 9px; font-size: 11px;
+  color: var(--dsw-alias-label-secondary); line-height: 1.6; white-space: nowrap;
+}
+.pp-error { color: var(--dsw-alias-state-danger-primary, #d0453a); font-size: 12px; }
+.pp-section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  color: var(--dsw-alias-label-secondary); text-transform: uppercase;
+}
+.pp-card {
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 14px;
+}
+.pp-panel { padding: 16px; display: grid; gap: 12px; }
+
+.pp-projects { display: grid; gap: 10px; }
+.pp-project {
+  display: grid; gap: 8px; width: 100%; text-align: left; padding: 16px 18px;
+  border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px;
+  background: var(--dsw-alias-bg-layer-1); color: inherit; font: inherit;
+  cursor: pointer;
+}
+.pp-project:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-border-l1));
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .07); transform: translateY(-1px);
+}
+.pp-project-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pp-project-name { font-size: 15px; font-weight: 650; }
+.pp-chevron { margin-left: auto; color: var(--dsw-alias-label-secondary); font-size: 15px; }
+.pp-project-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px; color: var(--dsw-alias-label-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pp-project-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.pp-empty {
+  display: grid; gap: 12px; justify-items: center; text-align: center;
+  padding: 56px 24px; border: 1px dashed var(--dsw-alias-border-l2);
+  border-radius: 16px; background: var(--dsw-alias-bg-layer-1);
+}
+.pp-empty-icon {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-brand-primary);
+}
+.pp-empty h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.pp-empty p { margin: 0; color: var(--dsw-alias-label-secondary); font-size: 13px; max-width: 420px; }
+
+.pp-summary {
+  padding: 18px 20px; display: grid; gap: 16px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--dsw-alias-brand-primary) 4%, var(--dsw-alias-bg-layer-1)) 0%,
+      var(--dsw-alias-bg-layer-1) 180px);
+}
+.pp-summary-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pp-project-title { font-size: 20px; font-weight: 650; letter-spacing: -.01em; }
+.pp-pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+  border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 1.5;
+  background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+}
+.pp-pill[data-tone="keep"] { background: color-mix(in srgb, #2f9e5f 16%, transparent); color: #237a49; }
+.pp-pill[data-tone="maybe"] { background: color-mix(in srgb, #d09a2b 18%, transparent); color: #8a6415; }
+.pp-pill[data-tone="reject"] { background: color-mix(in srgb, #cc4b3f 14%, transparent); color: #9c352c; }
+.pp-pill[data-tone="live"] { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent); color: var(--dsw-alias-brand-primary); }
+.pp-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px; color: var(--dsw-alias-label-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+.pp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+.pp-stat {
+  display: grid; gap: 1px; padding: 10px 12px; border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+.pp-stat-value { font-size: 20px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.pp-stat-label { font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pp-actions-end { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pp-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 25;
+  display: grid; gap: 4px; min-width: 180px; padding: 6px;
+  background: var(--dsw-alias-bg-overlay); border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 12px; box-shadow: 0 16px 40px rgba(0, 0, 0, .18);
+}
+.pp-menu button { justify-content: flex-start !important; text-align: left; }
+
+.pp-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.pp-step {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px;
+  border-radius: 999px; background: var(--dsw-alias-bg-layer-2);
+  font-size: 12px; color: var(--dsw-alias-label-secondary);
+}
+.pp-step strong { font-weight: 600; color: var(--dsw-alias-label-primary); }
+.pp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dsw-alias-border-l2); flex: none; }
+.pp-dot[data-status="done"] { background: #2f9e5f; }
+.pp-dot[data-status="running"] { background: var(--dsw-alias-brand-primary); animation: pp-pulse 1.2s ease-in-out infinite; }
+.pp-dot[data-status="paused"] { background: #d09a2b; }
+.pp-dot[data-status="failed"], .pp-dot[data-status="cancelled"] { background: #cc4b3f; }
+
+.pp-progress { display: grid; gap: 5px; }
+.pp-progress-track { height: 6px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; }
+.pp-progress-fill {
+  height: 100%; border-radius: 999px; background: var(--dsw-alias-brand-primary);
+  transition: width .3s ease;
+}
+
+.pp-history { overflow: hidden; }
+.pp-history > summary {
+  display: flex; align-items: center; gap: 8px; padding: 14px 18px;
+  cursor: pointer; list-style: none; font-size: 13px; font-weight: 600;
+}
+.pp-history > summary::-webkit-details-marker { display: none; }
+.pp-history > summary::after { content: '\u2304'; margin-left: auto; color: var(--dsw-alias-label-secondary); transition: transform .15s; }
+.pp-history[open] > summary::after { transform: rotate(180deg); }
+.pp-history-body { border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-history-row {
+  display: grid; grid-template-columns: 96px 88px 1fr auto; gap: 10px;
+  align-items: center; padding: 10px 18px; font-size: 12px;
+  border-top: 1px solid var(--dsw-alias-border-l1);
+}
+.pp-history-row:first-child { border-top: 0; }
+.pp-history-row strong { font-weight: 600; }
+.pp-history-samples { padding: 0 18px 12px; }
+.pp-history-samples > summary { cursor: pointer; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-history-samples > div { display: grid; grid-template-columns: repeat(8, minmax(0, 84px)); gap: 8px; margin-top: 8px; }
+.pp-history-samples img {
+  width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 7px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.pp-review { display: grid; gap: 12px; }
+.pp-toolbar {
+  position: sticky; top: 0; z-index: 12;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; border-radius: 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 86%, transparent);
+  backdrop-filter: blur(12px);
+}
+.pp-seg {
+  display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+.pp-seg button {
+  border: 0 !important; background: transparent !important; padding: 5px 11px !important;
+  border-radius: 999px !important; font-size: 12px !important; font-weight: 500;
+  color: var(--dsw-alias-label-secondary) !important; cursor: pointer; box-shadow: none !important;
+}
+.pp-seg button.active {
+  background: var(--dsw-alias-bg-layer-1) !important; color: var(--dsw-alias-label-primary) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .1) !important;
+}
+.pp-toolbar select { padding: 5px 8px !important; font-size: 12px !important; }
+
+.pp-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 10px; }
+.pp-tile-wrap { position: relative; }
+.pp-tile {
+  display: block; width: 100%; padding: 0 !important; border-radius: 12px !important;
+  border: 1px solid var(--dsw-alias-border-l1) !important; overflow: hidden;
+  background: var(--dsw-alias-bg-layer-2) !important; cursor: pointer; position: relative;
+}
+.pp-tile:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(0, 0, 0, .14); }
+.pp-tile.selected { border-color: var(--dsw-alias-brand-primary) !important; box-shadow: 0 0 0 2px var(--dsw-alias-brand-primary); }
+.pp-tile img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.pp-tile-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
+.pp-tile-score {
+  position: absolute; top: 8px; left: 8px; padding: 2px 8px; border-radius: 999px;
+  background: rgba(0, 0, 0, .62); color: #fff; font-size: 11px; font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+.pp-tile-human {
+  position: absolute; right: 8px; bottom: 9px; padding: 2px 7px; border-radius: 999px;
+  background: rgba(0, 0, 0, .62); color: #fff; font-size: 10px;
+}
+.pp-check {
+  appearance: none; -webkit-appearance: none;
+  position: absolute; top: 8px; right: 8px; width: 20px; height: 20px;
+  margin: 0; cursor: pointer; border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, .92);
+  background: rgba(0, 0, 0, .3); backdrop-filter: blur(6px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+  opacity: 0; transition: opacity .15s ease, background-color .15s ease, border-color .15s ease;
+}
+.pp-tile-wrap:hover .pp-check,
+.pp-tile-wrap:focus-within .pp-check,
+.pp-check:checked { opacity: 1; }
+.pp-check:checked {
+  background-color: var(--dsw-alias-brand-primary);
+  border-color: var(--dsw-alias-brand-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.2 6.3 4.8 8.8 9.8 3.4' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 12px 12px; background-position: center; background-repeat: no-repeat;
+}
+@media (hover: none) { .pp-check { opacity: 1; } }
+.pp-batch {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  z-index: 45; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 12px; border-radius: 999px;
+  background: var(--dsw-alias-bg-overlay); border: 1px solid var(--dsw-alias-border-l1);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .28);
+}
+.pp-batch .pp-muted { padding-left: 4px; }
+
+.pp-single { display: grid; gap: 12px; }
+.pp-single-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pp-single-body {
+  display: grid; grid-template-columns: minmax(0, 1fr) 308px;
+  gap: 16px; align-items: start;
+}
+.pp-stage {
+  display: grid; place-items: center; min-height: 320px; padding: 14px;
+  border-radius: 16px; background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l1);
+}
+.pp-stage img {
+  max-width: 100%; max-height: 72vh; border-radius: 10px;
+  object-fit: contain;
+}
+.pp-meters { display: grid; gap: 8px; }
+.pp-meter {
+  display: grid; grid-template-columns: 58px 1fr 24px; gap: 8px;
+  align-items: center; font-size: 12px;
+}
+.pp-meter-track { height: 6px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; }
+.pp-meter-fill { height: 100%; border-radius: 999px; background: var(--dsw-alias-brand-primary); }
+.pp-kbd {
+  font-size: 11px; line-height: 1.6; color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2); border-radius: 9px; padding: 7px 9px;
+}
+.pp-reason { font-size: 13px; line-height: 1.65; }
+.pp-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.pp-compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.pp-compare-card {
+  position: relative; padding: 0 !important; overflow: hidden; cursor: pointer;
+  border-radius: 12px !important; border: 2px solid transparent !important;
+  background: var(--dsw-alias-bg-layer-2) !important;
+}
+.pp-compare-card.selected {
+  border-color: var(--dsw-alias-brand-primary) !important;
+  box-shadow: 0 0 0 2px var(--dsw-alias-brand-primary);
+}
+.pp-compare-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.pp-compare-badge {
+  position: absolute; top: 8px; left: 8px; padding: 2px 8px; border-radius: 999px;
+  background: rgba(0, 0, 0, .62); color: #fff; font-size: 11px; font-weight: 600;
+}
+
+.pp-overlay {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+  padding: 20px; background: rgba(0, 0, 0, .38); backdrop-filter: blur(3px);
+}
+.pp-modal {
+  width: min(680px, 94vw); max-height: 88vh; overflow: auto;
+  display: grid; gap: 14px; padding: 20px;
+  background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary);
+  border: 1px solid var(--dsw-alias-border-l1); border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .3);
+  animation: pp-rise .18s ease;
+}
+.pp-modal-head { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 650; }
+.pp-modal-head button { margin-left: auto; }
+.pp-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 80;
+  width: min(460px, 96vw); overflow: auto; display: grid; gap: 16px; align-content: start;
+  padding: 20px; background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary);
+  border-left: 1px solid var(--dsw-alias-border-l1);
+  box-shadow: -24px 0 70px rgba(0, 0, 0, .25);
+  animation: pp-slide .18s ease;
+}
+.pp-form { display: grid; gap: 12px; }
+.pp-field { display: grid; gap: 5px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.pp-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.pp-row .pp-field { flex: 1; min-width: 96px; }
+.pp-callout {
+  padding: 10px 12px; border-radius: 10px; background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 1.6;
+}
+.pp-form pre {
+  white-space: pre-wrap; font-size: 11px; line-height: 1.55; margin: 6px 0 0;
+  padding: 10px; border-radius: 8px; background: var(--dsw-alias-bg-layer-2);
+  max-height: 260px; overflow: auto;
+}
+.pp-checks { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.pp-checks label { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+
+.pp-toast {
+  position: fixed; right: 24px; bottom: 24px; z-index: 95; max-width: 380px;
+  display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px;
+  background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary);
+  border: 1px solid var(--dsw-alias-border-l1); border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .26); font-size: 13px;
+  animation: pp-rise .18s ease;
+}
+.pp-toast[data-kind="done"] { border-left: 4px solid #2f9e5f; }
+.pp-toast[data-kind="paused"] { border-left: 4px solid #d09a2b; }
+.pp-toast[data-kind="failed"] { border-left: 4px solid #cc4b3f; }
+
+@keyframes pp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes pp-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes pp-slide { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 880px) {
+  .pp-single-body { grid-template-columns: 1fr; }
+  .pp-wall { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-page *, .pp-page *::before, .pp-page *::after {
+    animation: none !important; transition: none !important;
+  }
+}
+`;
+function installStyles() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById("dsh-photo-picker-styles") !== null) return;
+  const style = document.createElement("style");
+  style.id = "dsh-photo-picker-styles";
+  style.textContent = STYLES;
+  document.head.appendChild(style);
+}
+
 // plugin/src/client/index.tsx
 var h = import_react.default.createElement;
 var Fragment = import_react.default.Fragment;
 var NS = "photoPicker";
 var PANEL_ID = "photo-picker";
 var btn = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
   background: "var(--dsw-alias-bg-layer-1)",
   color: "var(--dsw-alias-label-primary)",
   border: "1px solid var(--dsw-alias-border-l1)",
-  borderRadius: 8,
-  padding: "6px 12px",
+  borderRadius: 10,
+  padding: "7px 13px",
   fontSize: 13,
-  lineHeight: 1.4,
-  cursor: "pointer"
+  fontWeight: 500,
+  lineHeight: 1.3,
+  cursor: "pointer",
+  whiteSpace: "nowrap"
 };
 var btnPrimary = {
   ...btn,
   background: "var(--dsw-alias-button-primary-fill)",
   color: "var(--dsw-alias-label-primary-foreground)",
-  border: "1px solid transparent"
+  border: "1px solid transparent",
+  fontWeight: 600
 };
 var input = {
-  background: "var(--dsw-alias-bg-layer-1)",
+  background: "var(--dsw-alias-bg-base)",
   color: "var(--dsw-alias-label-primary)",
   border: "1px solid var(--dsw-alias-border-l1)",
-  borderRadius: 8,
+  borderRadius: 9,
   padding: "7px 10px",
   fontSize: 13,
   minWidth: 0
 };
 var muted = { color: "var(--dsw-alias-label-secondary)", fontSize: 12 };
-var chip = {
-  background: "var(--dsw-alias-bg-layer-2)",
-  borderRadius: 6,
-  padding: "2px 8px",
-  fontSize: 12,
-  color: "var(--dsw-alias-label-secondary)"
-};
 async function api(path, init) {
   const response = await fetch(path, {
     headers: { "content-type": "application/json" },
@@ -615,7 +1005,7 @@ function CreateForm({ t, onCreated, onCancel }) {
       setBusy(false);
     }
   };
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 14, maxWidth: 640, border: "1px solid var(--dsw-alias-border-l1)", background: "var(--dsw-alias-bg-layer-1)", borderRadius: 12, padding: 16 } }, /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("folder")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { className: "pp-card pp-panel", style: { maxWidth: 700 } }, /* @__PURE__ */ h("div", { className: "pp-form" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("folder")), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h(
     "input",
     {
       value: folder,
@@ -623,15 +1013,15 @@ function CreateForm({ t, onCreated, onCancel }) {
       placeholder: "/Users/\u2026/Pictures",
       style: { ...input, flex: 1 }
     }
-  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("choose")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => browse(folder) }, t("browse")))), dirs.length > 0 && /* @__PURE__ */ h("div", { style: { maxHeight: 200, overflow: "auto", border: "1px solid var(--dsw-alias-border-l1)", borderRadius: 8 } }, dirs.map((dir) => /* @__PURE__ */ h(
+  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("choose")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => browse(folder) }, t("browse")))), dirs.length > 0 && /* @__PURE__ */ h("div", { className: "pp-card", style: { maxHeight: 220, overflow: "auto", padding: 4 } }, dirs.map((dir) => /* @__PURE__ */ h(
     "div",
     {
       key: dir.path,
       onClick: () => browse(dir.path),
-      style: { padding: "6px 10px", cursor: "pointer", fontSize: 13 }
+      style: { padding: "7px 10px", cursor: "pointer", fontSize: 13, borderRadius: 8 }
     },
     dir.name
-  ))), /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("name")), /* @__PURE__ */ h("input", { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder"), style: input })), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 14 } }, /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("theme")), /* @__PURE__ */ h("select", { value: theme, onChange: (event) => setTheme(event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("budget")), /* @__PURE__ */ h("input", { value: budget, onChange: (event) => setBudget(event.target.value), style: { ...input, width: 100 } }))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || folder === "", onClick: create }, busy ? t("creating") : t("create")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onCancel }, t("back"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error));
+  ))), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("name")), /* @__PURE__ */ h("input", { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder"), style: input })), /* @__PURE__ */ h("div", { className: "pp-row" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("theme")), /* @__PURE__ */ h("select", { value: theme, onChange: (event) => setTheme(event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { className: "pp-field", style: { maxWidth: 140 } }, /* @__PURE__ */ h("span", null, t("budget")), /* @__PURE__ */ h("input", { value: budget, onChange: (event) => setBudget(event.target.value), style: input }))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || folder === "", onClick: create }, busy ? t("creating") : t("create")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onCancel }, t("back"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error)));
 }
 var VERDICT_COLORS = {
   keep: "var(--dsw-static-green-500, #2f9e5f)",
@@ -745,53 +1135,43 @@ function ReviewSection({ t, projectId, version, onChanged }) {
     ["maybe", verdictLabel(t, "maybe")],
     ["reject", verdictLabel(t, "reject")]
   ];
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("review")), filters.map(([value, label]) => /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("section", { className: "pp-review" }, /* @__PURE__ */ h("div", { className: "pp-toolbar" }, /* @__PURE__ */ h("span", { className: "pp-section-title" }, t("review")), /* @__PURE__ */ h("div", { className: "pp-seg" }, filters.map(([value, label]) => /* @__PURE__ */ h(
     "button",
     {
       key: value,
       type: "button",
-      onClick: () => setFilter(value),
-      style: {
-        ...chip,
-        cursor: "pointer",
-        border: "1px solid transparent",
-        background: filter === value ? "var(--dsw-alias-brand-primary)" : "var(--dsw-alias-bg-layer-2)",
-        color: filter === value ? "var(--dsw-alias-label-primary-foreground)" : "var(--dsw-alias-label-secondary)"
-      }
+      className: filter === value ? "active" : "",
+      onClick: () => setFilter(value)
     },
     label
-  )), /* @__PURE__ */ h("select", { value: sort, onChange: (event) => setSort(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h("option", { value: "rel_path" }, t("sortPath"))), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, items.length, " / ", t("photos"))), /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("selectedCount"), ": ", selected.length), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: selected.length === 0, onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: undo.length === 0, onClick: undoLast }, t("undoAction"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), items.length === 0 ? /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("noPhotos")) : /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(132px, 1fr))", gap: 8 } }, items.map((item) => /* @__PURE__ */ h("div", { key: item.id, style: { position: "relative" } }, /* @__PURE__ */ h(
+  ))), /* @__PURE__ */ h("select", { value: sort, onChange: (event) => setSort(event.target.value), style: { ...input, padding: "5px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h("option", { value: "rel_path" }, t("sortPath"))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, items.length, " ", t("photos")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: undo.length === 0, onClick: undoLast }, t("undoAction"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), items.length === 0 ? /* @__PURE__ */ h("div", { className: "pp-empty", style: { padding: "44px 20px" } }, /* @__PURE__ */ h("h2", null, t("reviewEmpty")), filter !== "all" && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setFilter("all") }, t("filterAll"))) : /* @__PURE__ */ h("div", { className: "pp-wall" }, items.map((item) => /* @__PURE__ */ h("div", { className: "pp-tile-wrap", key: item.id }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
+      className: `pp-tile${selected.includes(item.id) ? " selected" : ""}`,
       title: item.relPath,
-      onClick: () => setSingle(item.id),
-      style: {
-        display: "block",
-        width: "100%",
-        aspectRatio: "1",
-        padding: 0,
-        border: "1px solid var(--dsw-alias-border-l1)",
-        borderRadius: 8,
-        overflow: "hidden",
-        background: "var(--dsw-alias-bg-layer-2)",
-        cursor: "pointer",
-        position: "relative"
-      }
+      onClick: () => setSingle(item.id)
     },
-    /* @__PURE__ */ h("img", { src: `${item.thumbUrl}?v=${version}`, alt: item.relPath, style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }),
-    /* @__PURE__ */ h("span", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 4, background: VERDICT_COLORS[item.verdict] ?? "var(--dsw-alias-border-l2)" } }),
-    item.score !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", top: 6, left: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 11 } }, Number(item.score).toFixed(1)),
-    item.humanVerdict !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", bottom: 8, right: 6, padding: "1px 5px", borderRadius: 5, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 10 } }, verdictLabel(t, item.humanVerdict))
+    /* @__PURE__ */ h("img", { src: `${item.thumbUrl}?v=${version}`, alt: item.relPath, loading: "lazy" }),
+    /* @__PURE__ */ h(
+      "span",
+      {
+        className: "pp-tile-bar",
+        style: { background: VERDICT_COLORS[item.verdict] ?? "var(--dsw-alias-border-l2)" }
+      }
+    ),
+    item.score !== null && /* @__PURE__ */ h("span", { className: "pp-tile-score" }, Number(item.score).toFixed(1)),
+    item.humanVerdict !== null && /* @__PURE__ */ h("span", { className: "pp-tile-human" }, verdictLabel(t, item.humanVerdict))
   ), /* @__PURE__ */ h(
     "input",
     {
+      className: "pp-check",
       type: "checkbox",
       checked: selected.includes(item.id),
       onChange: () => toggle(item.id),
-      style: { position: "absolute", top: 8, right: 8, width: 16, height: 16, cursor: "pointer" }
+      "aria-label": item.relPath
     }
-  )))));
+  )))), selected.length > 0 && /* @__PURE__ */ h("div", { className: "pp-batch" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSelected([]) }, t("clearSelection"))));
 }
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
@@ -823,17 +1203,10 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   if (error !== null) return /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error);
   if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
   const dimensions = detail.dimensions ?? {};
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { style: muted }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { style: { ...chip, background: VERDICT_COLORS[detail.verdict] ?? "var(--dsw-alias-bg-layer-2)", color: "#fff" } }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h("span", { style: chip }, t("scoreLabel"), ": ", detail.score), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 280px", gap: 14, alignItems: "start" } }, /* @__PURE__ */ h(
-    "img",
-    {
-      src: `${detail.previewUrl}?v=${version}`,
-      alt: detail.relPath,
-      style: { width: "100%", maxHeight: "72vh", objectFit: "contain", borderRadius: 10, background: "var(--dsw-alias-bg-layer-2)" }
-    }
-  ), /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 12 } }, t("keyboardHint")), /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, Object.keys(DIMENSION_LABELS).map((key) => {
+  return /* @__PURE__ */ h("section", { className: "pp-single" }, /* @__PURE__ */ h("div", { className: "pp-single-head" }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, "\u2190 ", t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { className: "pp-single-body" }, /* @__PURE__ */ h("div", { className: "pp-stage" }, /* @__PURE__ */ h("img", { src: `${detail.previewUrl}?v=${version}`, alt: detail.relPath })), /* @__PURE__ */ h("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
-    return /* @__PURE__ */ h("div", { key, style: { display: "grid", gridTemplateColumns: "64px 1fr 28px", gap: 8, alignItems: "center", fontSize: 12 } }, /* @__PURE__ */ h("span", { style: muted }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h("div", { style: { height: 6, borderRadius: 3, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%`, background: "var(--dsw-alias-brand-primary)" } })), /* @__PURE__ */ h("span", null, value === null || value === void 0 ? "\u2014" : value));
-  })), detail.reason !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("reason")), /* @__PURE__ */ h("span", { style: { fontSize: 13 } }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("postProcessing")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, detail.postProcessing.map((code) => /* @__PURE__ */ h("span", { key: code, style: chip }, code)))), /* @__PURE__ */ h("div", { style: muted }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));
+    return /* @__PURE__ */ h("div", { key, className: "pp-meter" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h("div", { className: "pp-meter-track" }, /* @__PURE__ */ h("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h("span", null, value === null || value === void 0 ? "\u2014" : value));
+  })), detail.reason !== null && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));
 }
 function ExportDialog({ t, projectId, onClose }) {
   const [dest, setDest] = (0, import_react.useState)("");
@@ -871,18 +1244,7 @@ function ExportDialog({ t, projectId, onClose }) {
       setBusy(false);
     }
   };
-  return /* @__PURE__ */ h("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.42)", zIndex: 70, display: "grid", placeItems: "center" } }, /* @__PURE__ */ h("div", { style: {
-    width: "min(620px, 92vw)",
-    maxHeight: "86vh",
-    overflow: "auto",
-    background: "var(--dsw-alias-bg-overlay)",
-    color: "var(--dsw-alias-label-primary)",
-    border: "1px solid var(--dsw-alias-border-l1)",
-    borderRadius: 14,
-    padding: 18,
-    display: "grid",
-    gap: 12
-  } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center" } }, /* @__PURE__ */ h("strong", null, t("exportTitle")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, marginLeft: "auto" }, onClick: onClose }, t("close"))), /* @__PURE__ */ h("label", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: muted }, t("exportDest")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { className: "pp-overlay", onClick: onClose }, /* @__PURE__ */ h("div", { className: "pp-modal", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ h("div", { className: "pp-modal-head" }, /* @__PURE__ */ h("span", null, t("exportTitle")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("close"))), /* @__PURE__ */ h("div", { className: "pp-form" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("exportDest")), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h(
     "input",
     {
       value: dest,
@@ -890,7 +1252,7 @@ function ExportDialog({ t, projectId, onClose }) {
       placeholder: t("destPlaceholder"),
       style: { ...input, flex: 1 }
     }
-  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("exportChoose")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: muted }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, style: { display: "flex", gap: 4, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket))), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy")))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), preview !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("span", { style: muted }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4, fontSize: 13 } }, /* @__PURE__ */ h("span", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("span", { style: muted }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", null, /* @__PURE__ */ h(
+  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("exportChoose")))), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy"))))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
@@ -901,7 +1263,7 @@ function ExportDialog({ t, projectId, onClose }) {
       }).catch((cause) => setError(String(cause)))
     },
     t("revealInFinder")
-  )), result.failureCount > 0 && /* @__PURE__ */ h("span", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)" } }, t("exportConflict"), ": ", result.failureCount))));
+  )), result.failureCount > 0 && /* @__PURE__ */ h("div", { className: "pp-error", style: { marginTop: 4 } }, t("exportConflict"), ": ", result.failureCount))));
 }
 function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onDecided }) {
   const [groups, setGroups] = (0, import_react.useState)([]);
@@ -987,42 +1349,27 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
   const pageCount = Math.max(1, Math.ceil(detail.members.length / 6));
   const pageStart = page * 6;
   const visible = detail.members.slice(pageStart, pageStart + 6);
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 12 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("backToWall")), /* @__PURE__ */ h("span", { style: chip }, kindLabel), /* @__PURE__ */ h("span", { style: chip }, detail.size, " ", t("photos")), pageCount > 1 && /* @__PURE__ */ h("span", { style: chip }, page + 1, " / ", pageCount), /* @__PURE__ */ h("span", { style: muted }, index >= 0 ? `${index + 1} / ${groups.length}` : ""), /* @__PURE__ */ h("div", { style: { marginLeft: "auto", display: "flex", gap: 6 } }, pageCount > 1 && /* @__PURE__ */ h(Fragment, null, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: page === 0, onClick: () => {
+  return /* @__PURE__ */ h("section", { className: "pp-single" }, /* @__PURE__ */ h("div", { className: "pp-single-head" }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, "\u2190 ", t("backToWall")), /* @__PURE__ */ h("span", { className: "pp-chip" }, kindLabel), /* @__PURE__ */ h("span", { className: "pp-chip" }, detail.size, " ", t("photos")), pageCount > 1 && /* @__PURE__ */ h("span", { className: "pp-chip" }, page + 1, " / ", pageCount), /* @__PURE__ */ h("span", { className: "pp-muted" }, index >= 0 ? `${index + 1} / ${groups.length}` : ""), /* @__PURE__ */ h("div", { style: { marginLeft: "auto", display: "flex", gap: 6 } }, pageCount > 1 && /* @__PURE__ */ h(Fragment, null, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: page === 0, onClick: () => {
     setPage(page - 1);
     setSelected(pageStart - 6);
   } }, "\u2039"), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: page >= pageCount - 1, onClick: () => {
     setPage(page + 1);
     setSelected(pageStart + 6);
-  } }, "\u203A")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: index <= 0, onClick: () => switchGroup(-1) }, "\u2190"), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: index < 0 || index >= groups.length - 1, onClick: () => switchGroup(1) }, "\u2192"))), /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 } }, visible.map((member, localPosition) => {
+  } }, "\u203A")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: index <= 0, onClick: () => switchGroup(-1) }, "\u2190"), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: index < 0 || index >= groups.length - 1, onClick: () => switchGroup(1) }, "\u2192"))), /* @__PURE__ */ h("div", { className: "pp-compare-grid" }, visible.map((member, localPosition) => {
     const position = pageStart + localPosition;
     return /* @__PURE__ */ h(
       "button",
       {
         key: member.id,
         type: "button",
-        onClick: () => setSelected(position),
-        style: {
-          padding: 0,
-          overflow: "hidden",
-          borderRadius: 10,
-          cursor: "pointer",
-          position: "relative",
-          border: position === selected ? "2px solid var(--dsw-alias-brand-primary)" : "1px solid var(--dsw-alias-border-l1)",
-          background: "var(--dsw-alias-bg-layer-2)"
-        }
+        className: `pp-compare-card${position === selected ? " selected" : ""}`,
+        onClick: () => setSelected(position)
       },
-      /* @__PURE__ */ h(
-        "img",
-        {
-          src: `${member.thumbUrl}?v=${version}`,
-          alt: member.relPath,
-          style: { width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block" }
-        }
-      ),
-      /* @__PURE__ */ h("span", { style: { position: "absolute", top: 6, left: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 11 } }, "#", position + 1, member.score !== null && member.score !== void 0 ? ` \xB7 ${Number(member.score).toFixed(1)}` : ""),
-      member.humanVerdict !== null && /* @__PURE__ */ h("span", { style: { position: "absolute", bottom: 6, right: 6, padding: "1px 6px", borderRadius: 6, background: "rgba(0,0,0,0.62)", color: "#fff", fontSize: 10 } }, verdictLabel(t, member.humanVerdict))
+      /* @__PURE__ */ h("img", { src: `${member.thumbUrl}?v=${version}`, alt: member.relPath, loading: "lazy" }),
+      /* @__PURE__ */ h("span", { className: "pp-compare-badge" }, "#", position + 1, member.score !== null && member.score !== void 0 ? ` \xB7 ${Number(member.score).toFixed(1)}` : ""),
+      member.humanVerdict !== null && /* @__PURE__ */ h("span", { className: "pp-pill", style: { position: "absolute", right: 8, bottom: 8, background: "rgba(0,0,0,.62)", color: "#fff" } }, verdictLabel(t, member.humanVerdict))
     );
-  })), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: confirm }, t("groupConfirm")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => decide("reject", detail.members.map((member) => member.id)) }, t("groupRejectAll"))), /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 12 } }, t("groupHint")));
+  })), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: confirm }, t("groupConfirm")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => decide("reject", detail.members.map((member) => member.id)) }, t("groupRejectAll"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("groupHint")));
 }
 function CalibrationSection({ t, projectId, onApplied }) {
   const [phase, setPhase] = (0, import_react.useState)("idle");
@@ -1106,15 +1453,13 @@ function CalibrationSection({ t, projectId, onApplied }) {
       setBusy(false);
     }
   };
-  const summary = (data) => /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6, fontSize: 13 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", null, t("calibrationPrecision"), ": ", (data.keep?.precision ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationRecall"), ": ", (data.keep?.recall ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationF1"), ": ", (data.keep?.f1 ?? 0).toFixed(2)), /* @__PURE__ */ h("span", null, t("calibrationAgreement"), ": ", ((data.agreement ?? 0) * 100).toFixed(0), "%")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: chip }, t("calibrationSuggested"), ": ", verdictLabel(t, "keep"), " \u2265 ", data.suggestedKeep, " \xB7 ", verdictLabel(t, "maybe"), " \u2265 ", data.suggestedMaybe), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: apply2 }, applied ? t("calibrationApplied") : t("calibrationApply"))));
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("calibration")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: start }, t("calibrationStart")), phase === "idle" && latest?.metrics !== null && latest?.metrics !== void 0 && /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, t("calibrationLast"), ": ", latest.sampleSize, " ", t("photos"))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), phase === "idle" && latest?.metrics !== null && latest?.metrics !== void 0 && summary(latest.metrics), phase === "blind" && items[index] !== void 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("span", { style: chip }, t("calibrationProgress").replace("{n}", String(index + 1)).replace("{total}", String(items.length))), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, t("calibrationHint"))), /* @__PURE__ */ h(
-    "img",
-    {
-      src: items[index].previewUrl,
-      alt: items[index].relPath,
-      style: { width: "100%", maxHeight: "62vh", objectFit: "contain", borderRadius: 10, background: "var(--dsw-alias-bg-layer-2)" }
-    }
-  ), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("reject") }, t("reject")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => setPhase("idle") }, t("close")))), phase === "report" && report !== null && summary(report));
+  const summary = (data) => /* @__PURE__ */ h("div", { style: { display: "grid", gap: 12 } }, /* @__PURE__ */ h("div", { className: "pp-stats" }, [
+    [t("calibrationPrecision"), (data.keep?.precision ?? 0).toFixed(2)],
+    [t("calibrationRecall"), (data.keep?.recall ?? 0).toFixed(2)],
+    [t("calibrationF1"), (data.keep?.f1 ?? 0).toFixed(2)],
+    [t("calibrationAgreement"), `${((data.agreement ?? 0) * 100).toFixed(0)}%`]
+  ].map(([label2, value]) => /* @__PURE__ */ h("div", { className: "pp-stat", key: String(label2) }, /* @__PURE__ */ h("span", { className: "pp-stat-value" }, value), /* @__PURE__ */ h("span", { className: "pp-stat-label" }, label2)))), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h("span", { className: "pp-chip" }, t("calibrationSuggested"), ": ", verdictLabel(t, "keep"), " \u2265 ", data.suggestedKeep, " \xB7 ", verdictLabel(t, "maybe"), " \u2265 ", data.suggestedMaybe), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: apply2 }, applied ? t("calibrationApplied") : t("calibrationApply"))));
+  return /* @__PURE__ */ h("section", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h("div", { className: "pp-section-title" }, t("calibration")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: start }, t("calibrationStart")), phase === "idle" && latest?.metrics !== null && latest?.metrics !== void 0 && /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, t("calibrationLast"), ": ", latest.sampleSize, " ", t("photos"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), phase === "idle" && latest?.metrics !== null && latest?.metrics !== void 0 && summary(latest.metrics), phase === "blind" && items[index] !== void 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 12 } }, /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h("span", { className: "pp-chip" }, t("calibrationProgress").replace("{n}", String(index + 1)).replace("{total}", String(items.length))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, t("calibrationHint"))), /* @__PURE__ */ h("div", { className: "pp-stage", style: { minHeight: 0, padding: 10 } }, /* @__PURE__ */ h("img", { src: items[index].previewUrl, alt: items[index].relPath })), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => label("reject") }, t("reject")), /* @__PURE__ */ h("span", { style: { flex: 1 } }), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => setPhase("idle") }, t("close")))), phase === "report" && report !== null && summary(report));
 }
 function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
   const [form, setForm] = (0, import_react.useState)(() => ({
@@ -1179,53 +1524,14 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
       setBusy(false);
     }
   };
-  const label = { display: "grid", gap: 4, fontSize: 12, color: "var(--dsw-alias-label-secondary)" };
-  const row = { display: "flex", gap: 8, alignItems: "center" };
-  const numberInput = { ...input, width: 88, padding: "5px 8px" };
-  return /* @__PURE__ */ h(
-    "div",
-    {
-      onClick: onClose,
-      style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.28)", zIndex: 80 }
-    },
-    /* @__PURE__ */ h(
-      "div",
-      {
-        onClick: (event) => event.stopPropagation(),
-        style: {
-          position: "absolute",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: "min(440px, 94vw)",
-          background: "var(--dsw-alias-bg-overlay)",
-          color: "var(--dsw-alias-label-primary)",
-          borderLeft: "1px solid var(--dsw-alias-border-l1)",
-          padding: 18,
-          overflow: "auto",
-          display: "grid",
-          gap: 14,
-          alignContent: "start"
-        }
-      },
-      /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center" } }, /* @__PURE__ */ h("strong", null, t("settingsTitle")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, marginLeft: "auto" }, onClick: onClose }, t("close"))),
-      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("settingsBasic")), /* @__PURE__ */ h("label", { style: label }, t("theme"), /* @__PURE__ */ h("select", { value: form.theme, onChange: (event) => set("theme", event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { style: label }, t("model"), /* @__PURE__ */ h("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), style: input }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
-        const supportsImage = Array.isArray(model.inputModalities) ? model.inputModalities.includes("image") : true;
-        return /* @__PURE__ */ h("option", { key: model.id, value: model.id, disabled: !supportsImage }, model.name ?? model.id, supportsImage ? "" : ` \u2014 ${t("settingsNoImageModel")}`);
-      }))), /* @__PURE__ */ h("div", { style: { ...row } }, /* @__PURE__ */ h("label", { style: label }, t("concurrency"), /* @__PURE__ */ h("input", { value: form.concurrency, onChange: (event) => set("concurrency", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("budget"), /* @__PURE__ */ h("input", { value: form.budgetCny, onChange: (event) => set("budgetCny", event.target.value), style: numberInput })))),
-      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("gridSize"), " / ", t("thresholds")), /* @__PURE__ */ h("div", { style: row }, /* @__PURE__ */ h("label", { style: label }, t("gridCols"), /* @__PURE__ */ h("input", { value: form.gridCols, onChange: (event) => set("gridCols", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("gridRows"), /* @__PURE__ */ h("input", { value: form.gridRows, onChange: (event) => set("gridRows", event.target.value), style: numberInput }))), /* @__PURE__ */ h("div", { style: row }, /* @__PURE__ */ h("label", { style: label }, t("thresholdKeep"), /* @__PURE__ */ h("input", { value: form.thresholdKeep, onChange: (event) => set("thresholdKeep", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("thresholdMaybe"), /* @__PURE__ */ h("input", { value: form.thresholdMaybe, onChange: (event) => set("thresholdMaybe", event.target.value), style: numberInput })))),
-      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 10 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("grouping")), /* @__PURE__ */ h("div", { style: row }, /* @__PURE__ */ h("label", { style: label }, t("burstSeconds"), /* @__PURE__ */ h("input", { value: form.groupBurstSeconds, onChange: (event) => set("groupBurstSeconds", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("burstHamming"), /* @__PURE__ */ h("input", { value: form.groupBurstHamming, onChange: (event) => set("groupBurstHamming", event.target.value), style: numberInput }))), /* @__PURE__ */ h("div", { style: row }, /* @__PURE__ */ h("label", { style: label }, t("sceneSeconds"), /* @__PURE__ */ h("input", { value: form.groupSceneSeconds, onChange: (event) => set("groupSceneSeconds", event.target.value), style: numberInput })), /* @__PURE__ */ h("label", { style: label }, t("sceneHamming"), /* @__PURE__ */ h("input", { value: form.groupSceneHamming, onChange: (event) => set("groupSceneHamming", event.target.value), style: numberInput })))),
-      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("runOptions")), /* @__PURE__ */ h("label", { style: { display: "flex", gap: 6, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: form.stagePause, onChange: (event) => set("stagePause", event.target.checked) }), t("stagePause")), /* @__PURE__ */ h("label", { style: { display: "flex", gap: 6, alignItems: "center", fontSize: 13 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: form.offpeakOnly, onChange: (event) => set("offpeakOnly", event.target.checked) }), t("offpeak"))),
-      prompt !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("promptSection"), " \xB7 ", prompt.version), /* @__PURE__ */ h("details", null, /* @__PURE__ */ h("summary", { style: { cursor: "pointer", fontSize: 12 } }, t("viewPrompt")), /* @__PURE__ */ h("pre", { style: { whiteSpace: "pre-wrap", fontSize: 11, lineHeight: 1.5, background: "var(--dsw-alias-bg-layer-2)", padding: 10, borderRadius: 8, marginTop: 6 } }, prompt.prompts.gridUser, "\n\n---\n\n", prompt.prompts.rankUser, "\n\n---\n\n", prompt.prompts.scoreUser))),
-      /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("rerunStages")), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, ["preprocess", "grid", "rank", "score"].map((stage) => /* @__PURE__ */ h("button", { key: stage, type: "button", style: btn, onClick: () => onRunStage?.(stage) }, t("rerun"), " ", stageLabel(t, stage))))),
-      /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 12 } }, t("settingsHint")),
-      error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error),
-      /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: save }, t("save")), saved && /* @__PURE__ */ h("span", { style: { ...muted, fontSize: 12 } }, t("saved")))
-    )
-  );
+  return /* @__PURE__ */ h("div", { onClick: onClose, style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.32)", zIndex: 80 } }, /* @__PURE__ */ h("div", { className: "pp-drawer", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ h("div", { className: "pp-modal-head" }, /* @__PURE__ */ h("span", null, t("settingsTitle")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, t("close"))), /* @__PURE__ */ h("div", { className: "pp-form" }, /* @__PURE__ */ h("div", { className: "pp-section-title" }, t("settingsBasic")), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("theme")), /* @__PURE__ */ h("select", { value: form.theme, onChange: (event) => set("theme", event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("model")), /* @__PURE__ */ h("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), style: input }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
+    const supportsImage = Array.isArray(model.inputModalities) ? model.inputModalities.includes("image") : true;
+    return /* @__PURE__ */ h("option", { key: model.id, value: model.id, disabled: !supportsImage }, model.name ?? model.id, supportsImage ? "" : ` \u2014 ${t("settingsNoImageModel")}`);
+  }))), /* @__PURE__ */ h("div", { className: "pp-row" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("concurrency")), /* @__PURE__ */ h("input", { value: form.concurrency, onChange: (event) => set("concurrency", event.target.value), style: input })), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("budget")), /* @__PURE__ */ h("input", { value: form.budgetCny, onChange: (event) => set("budgetCny", event.target.value), style: input }))), /* @__PURE__ */ h("div", { className: "pp-section-title" }, t("gridSize"), " / ", t("thresholds")), /* @__PURE__ */ h("div", { className: "pp-row" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("gridCols")), /* @__PURE__ */ h("input", { value: form.gridCols, onChange: (event) => set("gridCols", event.target.value), style: input })), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("gridRows")), /* @__PURE__ */ h("input", { value: form.gridRows, onChange: (event) => set("gridRows", event.target.value), style: input }))), /* @__PURE__ */ h("div", { className: "pp-row" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("thresholdKeep")), /* @__PURE__ */ h("input", { value: form.thresholdKeep, onChange: (event) => set("thresholdKeep", event.target.value), style: input })), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("thresholdMaybe")), /* @__PURE__ */ h("input", { value: form.thresholdMaybe, onChange: (event) => set("thresholdMaybe", event.target.value), style: input }))), /* @__PURE__ */ h("div", { className: "pp-section-title" }, t("grouping")), /* @__PURE__ */ h("div", { className: "pp-row" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("burstSeconds")), /* @__PURE__ */ h("input", { value: form.groupBurstSeconds, onChange: (event) => set("groupBurstSeconds", event.target.value), style: input })), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("burstHamming")), /* @__PURE__ */ h("input", { value: form.groupBurstHamming, onChange: (event) => set("groupBurstHamming", event.target.value), style: input }))), /* @__PURE__ */ h("div", { className: "pp-row" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("sceneSeconds")), /* @__PURE__ */ h("input", { value: form.groupSceneSeconds, onChange: (event) => set("groupSceneSeconds", event.target.value), style: input })), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("sceneHamming")), /* @__PURE__ */ h("input", { value: form.groupSceneHamming, onChange: (event) => set("groupSceneHamming", event.target.value), style: input }))), /* @__PURE__ */ h("div", { className: "pp-section-title" }, t("runOptions")), /* @__PURE__ */ h("div", { className: "pp-checks" }, /* @__PURE__ */ h("label", null, /* @__PURE__ */ h("input", { type: "checkbox", checked: form.stagePause, onChange: (event) => set("stagePause", event.target.checked) }), t("stagePause")), /* @__PURE__ */ h("label", null, /* @__PURE__ */ h("input", { type: "checkbox", checked: form.offpeakOnly, onChange: (event) => set("offpeakOnly", event.target.checked) }), t("offpeak"))), prompt !== null && /* @__PURE__ */ h("details", null, /* @__PURE__ */ h("summary", { className: "pp-muted", style: { cursor: "pointer" } }, t("promptSection"), " \xB7 ", prompt.version, " \xB7 ", t("viewPrompt")), /* @__PURE__ */ h("pre", null, prompt.prompts.gridUser, "\n\n---\n\n", prompt.prompts.rankUser, "\n\n---\n\n", prompt.prompts.scoreUser)), /* @__PURE__ */ h("div", { className: "pp-section-title" }, t("rerunStages")), /* @__PURE__ */ h("div", { className: "pp-actions" }, ["preprocess", "grid", "rank", "score"].map((stage) => /* @__PURE__ */ h("button", { key: stage, type: "button", style: btn, onClick: () => onRunStage?.(stage) }, t("rerun"), " ", stageLabel(t, stage)))), /* @__PURE__ */ h("div", { className: "pp-callout" }, t("settingsHint")), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), /* @__PURE__ */ h("div", { className: "pp-modal-foot" }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: save }, t("save")), saved && /* @__PURE__ */ h("span", { className: "pp-muted" }, t("saved"))))));
 }
 function ProjectDetail({ t, id }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
+  const [stats, setStats] = (0, import_react.useState)(null);
   const [progress, setProgress] = (0, import_react.useState)(null);
   const [checkpoints, setCheckpoints] = (0, import_react.useState)([]);
   const [pipelineEvent, setPipelineEvent] = (0, import_react.useState)(null);
@@ -1236,12 +1542,14 @@ function ProjectDetail({ t, id }) {
   const [error, setError] = (0, import_react.useState)(null);
   const refresh = async () => {
     try {
-      const [project, points] = await Promise.all([
+      const [project, points, statistics] = await Promise.all([
         api(`/photo-picker/api/projects/${id}`),
-        api(`/photo-picker/api/projects/${id}/checkpoints`)
+        api(`/photo-picker/api/projects/${id}/checkpoints`),
+        api(`/photo-picker/api/projects/${id}/stats`)
       ]);
       setDetail(project);
       setCheckpoints(points);
+      setStats(statistics);
       setError(null);
     } catch (cause) {
       setError(String(cause));
@@ -1284,9 +1592,28 @@ function ProjectDetail({ t, id }) {
       setError(String(cause));
     }
   };
-  if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
+  if (detail === null) {
+    return /* @__PURE__ */ h("div", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("loading")));
+  }
   const counts = detail.counts ?? {};
+  const verdicts = stats?.verdicts ?? {};
   const version = detail.updatedAt ?? 0;
+  const aiDisabled = detail.ai?.hasImageModel === false;
+  const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0;
+  const stages = ["scan", "preprocess", "grid", "rank", "score"];
+  const stageStatus = {};
+  for (const checkpoint of checkpoints) stageStatus[checkpoint.stage] = checkpoint.status;
+  const activeStage = detail.running === "pipeline" ? progress?.stage : detail.running;
+  const runningLabel = detail.running === null ? null : detail.running === "pipeline" ? t("autoRun") : stageLabel(t, detail.running);
+  const spent = Number(detail.cost?.spentCny ?? 0);
+  const budget = Number(detail.cost?.budgetCny ?? 0);
+  const statItems = [
+    { key: "scored", label: t("stateScored"), value: String(counts.scored ?? 0) },
+    { key: "keep", label: verdictLabel(t, "keep"), value: String(verdicts.keep ?? 0) },
+    { key: "maybe", label: verdictLabel(t, "maybe"), value: String(verdicts.maybe ?? 0) },
+    { key: "reject", label: verdictLabel(t, "reject"), value: String(verdicts.reject ?? 0) },
+    { key: "spent", label: t("spent"), value: `\xA5${spent.toFixed(2)}`, hint: `/ \xA5${budget}` }
+  ];
   let pipelineNotice = null;
   if (pipelineEvent !== null && pipelineEvent.stage === "pipeline") {
     if (pipelineEvent.error !== void 0) {
@@ -1306,27 +1633,12 @@ function ProjectDetail({ t, id }) {
       }
     }
   }
-  const aiDisabled = detail.ai?.hasImageModel === false;
-  const percent = progress?.total ? Math.min(100, Math.round((progress.done ?? 0) / progress.total * 100)) : 0;
-  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 6 } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", { style: { fontSize: 16 } }, detail.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, detail.status)), /* @__PURE__ */ h("span", { style: muted }, detail.sourcePath)), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, Object.entries(counts).map(([state, count]) => /* @__PURE__ */ h("span", { key: state, style: chip }, stateLabel(t, state), ": ", String(count))), /* @__PURE__ */ h("span", { style: chip }, t("spent"), ": \xA5", Number(detail.cost?.spentCny ?? 0).toFixed(4), " / \xA5", Number(detail.cost?.budgetCny ?? 0).toFixed(0)), detail.running !== null && /* @__PURE__ */ h("span", { style: { ...chip, color: "var(--dsw-alias-brand-primary)" } }, t("running"), ": ", detail.running))), /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: detail.running !== null, onClick: runAll }, t("autoRun")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("div", { style: { position: "relative" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSingleStepsOpen((open) => !open) }, t("singleStep"), " ", singleStepsOpen ? "\u25B4" : "\u25BE"), singleStepsOpen && /* @__PURE__ */ h("div", { style: {
-    position: "absolute",
-    top: "calc(100% + 6px)",
-    left: 0,
-    zIndex: 20,
-    display: "grid",
-    gap: 6,
-    minWidth: 168,
-    padding: 8,
-    background: "var(--dsw-alias-bg-overlay)",
-    border: "1px solid var(--dsw-alias-border-l1)",
-    borderRadius: 10,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
-  } }, ["scan", "preprocess", "grid", "rank", "score"].map((stage) => /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ h("section", { className: "pp-card pp-summary" }, /* @__PURE__ */ h("div", { className: "pp-summary-top" }, /* @__PURE__ */ h("strong", { className: "pp-project-title" }, detail.name), /* @__PURE__ */ h("span", { className: "pp-pill" }, statusLabel(t, detail.status)), runningLabel !== null && /* @__PURE__ */ h("span", { className: "pp-pill", "data-tone": "live" }, t("running"), " \xB7 ", runningLabel), /* @__PURE__ */ h("span", { className: "pp-path", style: { marginLeft: "auto", maxWidth: "46%" }, title: detail.sourcePath }, detail.sourcePath)), /* @__PURE__ */ h("div", { className: "pp-stats" }, statItems.map((item) => /* @__PURE__ */ h("div", { className: "pp-stat", key: item.key }, /* @__PURE__ */ h("span", { className: "pp-stat-value" }, item.value), /* @__PURE__ */ h("span", { className: "pp-stat-label" }, item.label, item.hint !== void 0 ? ` ${item.hint}` : "")))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: detail.running !== null, onClick: runAll }, t("autoRun")), detail.running !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h("div", { style: { position: "relative" } }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSingleStepsOpen((open) => !open) }, t("singleStep"), " ", singleStepsOpen ? "\u25B4" : "\u25BE"), singleStepsOpen && /* @__PURE__ */ h("div", { className: "pp-menu" }, stages.map((stage) => /* @__PURE__ */ h(
     "button",
     {
       key: stage,
       type: "button",
-      style: { ...btn, width: "100%", textAlign: "left" },
+      style: btn,
       disabled: aiDisabled && ["grid", "rank", "score"].includes(stage),
       onClick: () => {
         setSingleStepsOpen(false);
@@ -1334,7 +1646,10 @@ function ProjectDetail({ t, id }) {
       }
     },
     stage === "scan" ? t("scan") : stage === "preprocess" ? t("preprocess") : stageLabel(t, stage)
-  )))), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && detail !== null && /* @__PURE__ */ h(
+  )))), /* @__PURE__ */ h("span", { style: { flex: 1 } }), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSettingsOpen(true) }, t("settings"))), /* @__PURE__ */ h("div", { className: "pp-steps" }, stages.map((stage) => {
+    const status = stage === activeStage ? "running" : stageStatus[stage] ?? "pending";
+    return /* @__PURE__ */ h("span", { className: "pp-step", key: stage, title: runStatusLabel(t, status) }, /* @__PURE__ */ h("span", { className: "pp-dot", "data-status": status }), /* @__PURE__ */ h("strong", null, stageLabel(t, stage)), /* @__PURE__ */ h("span", null, runStatusLabel(t, status)));
+  })), detail.running !== null && /* @__PURE__ */ h("div", { className: "pp-progress" }, /* @__PURE__ */ h("div", { className: "pp-muted" }, activeStage !== void 0 && activeStage !== null ? stageLabel(t, activeStage) : t("running"), " ", progress?.done ?? 0, "/", progress?.total ?? "?", progress?.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : ""), /* @__PURE__ */ h("div", { className: "pp-progress-track" }, /* @__PURE__ */ h("div", { className: "pp-progress-fill", style: { width: `${percent}%` } }))), pipelineEvent !== null && /* @__PURE__ */ h("div", { className: "pp-muted" }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).map((stage) => stageLabel(t, stage)).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), aiDisabled && /* @__PURE__ */ h("div", { className: "pp-callout" }, t("aiDisabled"))), exporting && /* @__PURE__ */ h(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && /* @__PURE__ */ h(
     SettingsDrawer,
     {
       t,
@@ -1343,46 +1658,23 @@ function ProjectDetail({ t, id }) {
       onSaved: refresh,
       onRunStage: (stage) => run(stage)
     }
-  ), aiDisabled && /* @__PURE__ */ h("div", { style: muted }, t("aiDisabled")), progress !== null && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 4 } }, /* @__PURE__ */ h("div", { style: muted }, stageLabel(t, progress.stage), " ", progress.done ?? 0, "/", progress.total ?? "?", progress.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : "", progress.error !== void 0 && progress.error !== null ? ` \xB7 ${String(progress.error)}` : ""), /* @__PURE__ */ h("div", { style: { height: 4, borderRadius: 2, background: "var(--dsw-alias-bg-layer-2)", overflow: "hidden" } }, /* @__PURE__ */ h("div", { style: { height: "100%", width: `${percent}%`, background: "var(--dsw-alias-brand-primary)" } }))), pipelineEvent !== null && /* @__PURE__ */ h("div", { style: muted }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).map((stage) => stageLabel(t, stage)).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error), checkpoints.length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, /* @__PURE__ */ h("span", { style: { ...muted, fontWeight: 600 } }, t("checkpoint")), checkpoints.map((cp) => /* @__PURE__ */ h("div", { key: cp.stage, style: {
-    border: "1px solid var(--dsw-alias-border-l1)",
-    borderRadius: 10,
-    padding: 12,
-    display: "grid",
-    gap: 8
-  } }, /* @__PURE__ */ h("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ h("strong", null, stageLabel(t, cp.stage)), /* @__PURE__ */ h("span", { style: chip }, runStatusLabel(t, cp.status)), /* @__PURE__ */ h("span", { style: chip }, "\xA5", Number(cp.costCny ?? 0).toFixed(4)), /* @__PURE__ */ h("span", { style: { ...muted, marginLeft: "auto" } }, summarizeStats(t, cp.stats))), (cp.sampleIds ?? []).length > 0 && /* @__PURE__ */ h("div", { style: { display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 6 } }, cp.sampleIds.map((pid) => /* @__PURE__ */ h(
+  ), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), checkpoints.length > 0 && /* @__PURE__ */ h("details", { className: "pp-card pp-history" }, /* @__PURE__ */ h("summary", null, /* @__PURE__ */ h("span", null, t("history")), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: 6 } }, checkpoints.filter((checkpoint) => checkpoint.status === "done").length, " / ", checkpoints.length)), /* @__PURE__ */ h("div", { className: "pp-history-body" }, checkpoints.map((checkpoint) => /* @__PURE__ */ h("div", { key: checkpoint.stage }, /* @__PURE__ */ h("div", { className: "pp-history-row" }, /* @__PURE__ */ h("strong", null, stageLabel(t, checkpoint.stage)), /* @__PURE__ */ h("span", { className: "pp-pill" }, runStatusLabel(t, checkpoint.status)), /* @__PURE__ */ h("span", { className: "pp-muted" }, summarizeStats(t, checkpoint.stats)), /* @__PURE__ */ h("span", { className: "pp-chip" }, "\xA5", Number(checkpoint.costCny ?? 0).toFixed(4))), (checkpoint.sampleIds ?? []).length > 0 && /* @__PURE__ */ h("details", { className: "pp-history-samples" }, /* @__PURE__ */ h("summary", null, t("samples"), " \xB7 ", checkpoint.sampleIds.length), /* @__PURE__ */ h("div", null, checkpoint.sampleIds.map((pid) => /* @__PURE__ */ h(
     "img",
     {
       key: pid,
       src: `/photo-picker/media/thumb/${id}/${pid}?v=${version}`,
       alt: pid,
-      style: { width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 6, background: "var(--dsw-alias-bg-layer-2)" }
+      loading: "lazy"
     }
-  )))))), /* @__PURE__ */ h(ReviewSection, { t, projectId: id, version, onChanged: refresh }), /* @__PURE__ */ h(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h(
-    "div",
+  )))))))), /* @__PURE__ */ h(ReviewSection, { t, projectId: id, version, onChanged: refresh }), /* @__PURE__ */ h(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h(
+    "button",
     {
-      "aria-live": "polite",
-      style: {
-        position: "fixed",
-        right: 24,
-        bottom: 24,
-        zIndex: 95,
-        maxWidth: 380,
-        display: "flex",
-        gap: 10,
-        alignItems: "flex-start",
-        padding: "12px 14px",
-        background: "var(--dsw-alias-bg-overlay)",
-        color: "var(--dsw-alias-label-primary)",
-        border: "1px solid var(--dsw-alias-border-l1)",
-        borderLeft: `4px solid ${pipelineNotice.kind === "done" ? "var(--dsw-static-green-500, #2f9e5f)" : pipelineNotice.kind === "paused" ? "var(--dsw-static-amber-500, #d09a2b)" : "var(--dsw-static-red-500, #cc4b3f)"}`,
-        borderRadius: 10,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
-        fontSize: 13
-      }
+      type: "button",
+      style: { ...btn, padding: "2px 8px", fontSize: 12 },
+      onClick: () => setNoticeDismissed(true)
     },
-    /* @__PURE__ */ h("span", { style: { flex: 1 } }, pipelineNotice.text),
-    /* @__PURE__ */ h("button", { type: "button", style: { ...btn, padding: "2px 8px", fontSize: 12 }, onClick: () => setNoticeDismissed(true) }, t("close"))
-  ));
+    t("close")
+  )));
 }
 function Workbench({ t }) {
   (0, import_react.useSyncExternalStore)(subscribeLanguage, getLanguage);
@@ -1403,27 +1695,19 @@ function Workbench({ t }) {
     reload();
   }, []);
   const list = projects ?? [];
-  return /* @__PURE__ */ h("div", { style: {
-    width: "100%",
-    height: "100%",
-    overflow: "auto",
-    background: "var(--dsw-alias-bg-base)",
-    color: "var(--dsw-alias-label-primary)",
-    fontSize: 14,
-    lineHeight: 1.6
-  } }, /* @__PURE__ */ h("div", { style: { maxWidth: 960, margin: "0 auto", padding: "0 clamp(24px, 4vw, 48px) 48px" } }, /* @__PURE__ */ h("div", { style: { display: "flex", alignItems: "center", gap: 12, paddingTop: 28, marginBottom: 24 } }, /* @__PURE__ */ h("div", { style: { display: "grid", gap: 2 } }, /* @__PURE__ */ h("h1", { style: { margin: 0, fontSize: 20, fontWeight: 600 } }, t("title")), /* @__PURE__ */ h("span", { style: muted }, t("subtitle"))), /* @__PURE__ */ h("div", { style: { marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" } }, /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { className: "pp-page" }, /* @__PURE__ */ h("div", { className: "pp-shell" }, /* @__PURE__ */ h("header", { className: "pp-header" }, /* @__PURE__ */ h("div", { className: "pp-title-wrap" }, /* @__PURE__ */ h("span", { className: "pp-mark", "aria-hidden": "true" }, /* @__PURE__ */ h("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none" }, /* @__PURE__ */ h("circle", { cx: "12", cy: "12", r: "8.4", stroke: "currentColor", strokeWidth: "1.6" }), /* @__PURE__ */ h("path", { d: "M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }), /* @__PURE__ */ h("circle", { cx: "12", cy: "12", r: "2.6", stroke: "currentColor", strokeWidth: "1.4" }))), /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("h1", { className: "pp-title" }, t("title")), /* @__PURE__ */ h("p", { className: "pp-subtitle" }, t("subtitle")))), /* @__PURE__ */ h("div", { className: "pp-header-actions" }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
-      style: { ...btn, padding: "5px 10px", fontSize: 12 },
+      className: "pp-lang",
       title: t("language"),
       onClick: () => setLanguage(getLanguage() === "zh" ? "en" : "zh")
     },
     getLanguage() === "zh" ? "EN" : "\u4E2D"
-  ), selected !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSelected(null) }, t("back")), /* @__PURE__ */ h("button", { type: "button", style: selected !== null ? btn : btnPrimary, onClick: () => {
+  ), selected !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSelected(null) }, t("back")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, onClick: () => {
     setCreating(true);
     setSelected(null);
-  } }, t("newProject")))), error !== null && /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12, marginBottom: 12 } }, error), selected !== null ? /* @__PURE__ */ h(ProjectDetail, { t, id: selected }) : creating ? /* @__PURE__ */ h(
+  } }, t("newProject")))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error", style: { marginBottom: 12 } }, error), selected !== null ? /* @__PURE__ */ h(ProjectDetail, { t, id: selected }) : creating ? /* @__PURE__ */ h(
     CreateForm,
     {
       t,
@@ -1434,32 +1718,17 @@ function Workbench({ t }) {
       },
       onCancel: () => setCreating(false)
     }
-  ) : projects === null ? /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading")) : list.length === 0 ? /* @__PURE__ */ h("div", { style: {
-    display: "grid",
-    gap: 12,
-    placeItems: "start",
-    border: "1px dashed var(--dsw-alias-border-l2)",
-    borderRadius: 12,
-    padding: 24,
-    color: "var(--dsw-alias-label-secondary)",
-    fontSize: 13
-  } }, /* @__PURE__ */ h("span", null, t("empty")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, onClick: () => setCreating(true) }, t("newProject"))) : /* @__PURE__ */ h("div", { style: { display: "grid", gap: 8 } }, list.map((project) => /* @__PURE__ */ h(
+  ) : projects === null ? /* @__PURE__ */ h("div", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("loading"))) : list.length === 0 ? /* @__PURE__ */ h("div", { className: "pp-empty" }, /* @__PURE__ */ h("div", { className: "pp-empty-icon" }, /* @__PURE__ */ h("svg", { width: "26", height: "26", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h("circle", { cx: "12", cy: "12", r: "8.4", stroke: "currentColor", strokeWidth: "1.6" }), /* @__PURE__ */ h("path", { d: "M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }), /* @__PURE__ */ h("circle", { cx: "12", cy: "12", r: "2.6", stroke: "currentColor", strokeWidth: "1.4" }))), /* @__PURE__ */ h("h2", null, t("empty")), /* @__PURE__ */ h("p", null, t("subtitle")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, onClick: () => setCreating(true) }, t("newProject"))) : /* @__PURE__ */ h("div", { className: "pp-projects" }, list.map((project) => /* @__PURE__ */ h(
     "button",
     {
       type: "button",
+      className: "pp-project",
       key: project.id,
-      onClick: () => setSelected(project.id),
-      style: {
-        ...btn,
-        textAlign: "left",
-        display: "grid",
-        gap: 4,
-        padding: "12px 14px",
-        borderRadius: 10
-      }
+      onClick: () => setSelected(project.id)
     },
-    /* @__PURE__ */ h("span", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ h("strong", { style: { fontSize: 14 } }, project.name), /* @__PURE__ */ h("span", { style: chip }, statusLabel(t, project.status))),
-    /* @__PURE__ */ h("span", { style: muted }, project.sourcePath, " \xB7 ", Object.entries(project.counts ?? {}).map(([state, n]) => `${stateLabel(t, state)} ${String(n)}`).join("  "))
+    /* @__PURE__ */ h("span", { className: "pp-project-top" }, /* @__PURE__ */ h("strong", { className: "pp-project-name" }, project.name), /* @__PURE__ */ h("span", { className: "pp-pill" }, statusLabel(t, project.status)), /* @__PURE__ */ h("span", { className: "pp-chevron" }, "\u2192")),
+    /* @__PURE__ */ h("span", { className: "pp-project-path", title: project.sourcePath }, project.sourcePath),
+    /* @__PURE__ */ h("span", { className: "pp-project-meta" }, Object.entries(project.counts ?? {}).map(([state, n]) => /* @__PURE__ */ h("span", { className: "pp-chip", key: state }, stateLabel(t, state), " ", String(n))), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("spent"), " \xA5", Number(project.cost?.spentCny ?? 0).toFixed(4)))
   )))));
 }
 function PhotoPickerIcon({ size }) {
@@ -1468,6 +1737,7 @@ function PhotoPickerIcon({ size }) {
 }
 var inject = ["slots", "locale"];
 function apply(ctx) {
+  installStyles();
   const t = (key) => translate(getLanguage(), key);
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), "photo-picker.locale");
   ctx.slots.inject("main", () => ctx.slots.register(

@@ -47,7 +47,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 ## 工程约定
 
 - **Host**：`plugin/src/host/*.js`，ESM，无 TypeScript；SQLite schema 集中在 `db.js`，新增表/列用 `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE` 并保持向后兼容（项目库在用户目录，不能重建）。
-- **Client**：`plugin/src/client/index.tsx` + `locales.js`；Theme 用 `--dsw-alias-*` token，不要硬编码浅色/深色。
+- **Client**：`plugin/src/client/index.tsx` + `locales.js` + `theme.js`（一次性注入的 `.pp-` 样式）；Theme 用 `--dsw-alias-*` token，不要硬编码浅色/深色。
 - **测试**：`plugin/test/*.test.js`，用 `node:test` + `node:assert/strict`；纯函数优先单测，流水线用 fake LLM（参考 `pipeline.test.js` / `acceptance-phase2.mjs`）。
 - **不要引入网络依赖到测试**；新功能要有对应测试或验收脚本。
 - 提交信息沿用 `feat:` / `fix:` / `docs:` / `test:` / `chore:`。
