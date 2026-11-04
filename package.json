@@ -1,7 +1,9 @@
 {
   "name": "photo-picker-workbench",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
+  "description": "DSH 照片工作台：本机照片扫描、AI 分层筛选、人工复核与导出。",
   "scripts": {
     "test": "node --test plugin/test/*.test.js",
     "build:client": "node scripts/build-client.mjs",

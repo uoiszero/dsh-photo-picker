@@ -1,6 +1,6 @@
 {
   "name": "dsh-photo-picker",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -23,7 +23,9 @@
     "nanoid": "^5.0.0"
   },
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "immediately": true,
@@ -33,5 +35,6 @@
         "@deepseek-ai/dsh-client-locale"
       ]
     }
-  }
+  },
+  "description": "DSH photo picker workbench: scan, AI triage, review and export."
 }
