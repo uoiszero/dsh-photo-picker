@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import {
   canonicalPathKey,
   createPlatform,
@@ -70,11 +71,18 @@ test('chooseFolder parses the selected path and rejects an empty selection', asy
   })
   assert.equal(await darwin.chooseFolder(), '/photos/me/Pictures/旅行 2024')
 
+  const windowsScripts = []
   const windows = createPlatform({
     platform: 'win32',
-    run: fakeRun(() => ({ stdout: '"C:\\photos\\张三\\Pictures\\旅行 2024"\r\n' })).run,
+    run: async (file, args) => {
+      const fileIndex = args.indexOf('-File')
+      windowsScripts.push(readFileSync(args[fileIndex + 1], 'utf8'))
+      return { stdout: '"C:\\photos\\张三\\Pictures\\旅行 2024"\r\n' }
+    },
   })
   assert.equal(await windows.chooseFolder(), 'C:\\photos\\张三\\Pictures\\旅行 2024')
+  assert.match(windowsScripts[0], /TopMost = \$true/)
+  assert.match(windowsScripts[0], /ShowDialog\(\$owner\)/)
 
   const cancelled = createPlatform({
     platform: 'darwin',
@@ -156,4 +164,29 @@ test('portable paths survive Chinese, spaces and long Windows paths', () => {
   assert.ok(absolute.length > 260)
   assert.ok(absolute.endsWith('IMG_0001.HEIC'))
   assert.equal(isSameOrInside('C:\\Photos', absolute, 'win32'), true)
+})
+
+test('chooseFolder is single-flight while a dialog is open', async () => {
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  const calls = []
+  const windows = createPlatform({
+    platform: 'win32',
+    run: async (file, args) => {
+      calls.push(args)
+      await gate
+      return { stdout: 'C:\\photos\\single' }
+    },
+  })
+  const first = windows.chooseFolder()
+  const second = windows.chooseFolder()
+  for (let attempt = 0; attempt < 50 && calls.length === 0; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 10))
+  }
+  assert.equal(calls.length, 1)
+  release()
+  const [a, b] = await Promise.all([first, second])
+  assert.equal(a, 'C:\\photos\\single')
+  assert.equal(a, b)
+  assert.equal(calls.length, 1)
 })

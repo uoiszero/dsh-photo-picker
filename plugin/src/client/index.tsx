@@ -147,6 +147,7 @@ function CreateForm({ t, onCreated, onCancel }: {
   const [theme, setTheme] = useState('mixed')
   const [budget, setBudget] = useState('30')
   const [busy, setBusy] = useState(false)
+  const [choosing, setChoosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const browse = async (path: string) => {
@@ -160,12 +161,16 @@ function CreateForm({ t, onCreated, onCancel }: {
   }
 
   const choose = async () => {
+    if (choosing) return
+    setChoosing(true)
     try {
       const result = await api('/photo-picker/api/fs/choose', { method: 'POST' })
       setFolder(result.path)
       setError(null)
     } catch (cause) {
       setError(String(cause))
+    } finally {
+      setChoosing(false)
     }
   }
 
@@ -202,7 +207,9 @@ function CreateForm({ t, onCreated, onCancel }: {
               placeholder="/Users/…/Pictures"
               style={{ ...input, flex: 1 }}
             />
-            <button type="button" style={btn} onClick={choose}>{t('choose')}</button>
+            <button type="button" style={btn} disabled={choosing} onClick={choose}>
+              {choosing ? t('choosingFolder') : t('choose')}
+            </button>
             <button type="button" style={btn} onClick={() => browse(folder)}>{t('browse')}</button>
           </div>
         </label>
@@ -562,6 +569,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
   const [preview, setPreview] = useState<any>(null)
   const [result, setResult] = useState<any>(null)
   const [busy, setBusy] = useState(false)
+  const [choosing, setChoosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const toggleBucket = (bucket: string) => setBuckets(current => (
@@ -569,11 +577,15 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
   ))
 
   const choose = async () => {
+    if (choosing) return
+    setChoosing(true)
     try {
       const picked = await api('/photo-picker/api/fs/choose', { method: 'POST' })
       setDest(picked.path)
     } catch (cause) {
       setError(String(cause))
+    } finally {
+      setChoosing(false)
     }
   }
 
@@ -615,7 +627,9 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
                 placeholder={t('destPlaceholder')}
                 style={{ ...input, flex: 1 }}
               />
-              <button type="button" style={btn} onClick={choose}>{t('exportChoose')}</button>
+              <button type="button" style={btn} disabled={choosing} onClick={choose}>
+                {choosing ? t('choosingFolder') : t('exportChoose')}
+              </button>
             </div>
           </label>
           <div className="pp-row" style={{ alignItems: 'center' }}>
