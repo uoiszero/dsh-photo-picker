@@ -3,6 +3,7 @@ import { copyFile, link, mkdir, stat, writeFile } from 'node:fs/promises'
 import { createReadStream } from 'node:fs'
 import path from 'node:path'
 import { nanoid } from 'nanoid'
+import { isSameOrInside } from './platform.js'
 
 const BUCKETS = ['keep', 'maybe', 'reject']
 const MODES = ['hardlink', 'copy']
@@ -34,7 +35,8 @@ function sourceOf(project) {
 
 function assertDestOutsideSource(project, dest) {
   const source = path.resolve(sourceOf(project))
-  if (dest === source || dest.startsWith(`${source}${path.sep}`)) {
+  // Windows 盘符/UNC 大小写不敏感，不能用字符串前缀比较。
+  if (isSameOrInside(source, dest)) {
     throw httpError('dest must not be inside the photo source directory', 'DEST_INSIDE_SOURCE')
   }
 }

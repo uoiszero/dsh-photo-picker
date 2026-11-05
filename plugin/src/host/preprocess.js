@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { fromPortablePath } from './platform.js'
 import { nanoid } from 'nanoid'
 import { deriveImage, hammingHex } from './images.js'
 
@@ -80,7 +81,7 @@ export async function preprocessProject({
 
   let done = 0
   for (const row of pending) {
-    const absolute = path.join(sourceRoot, row.rel_path)
+    const absolute = fromPortablePath(sourceRoot, row.rel_path)
     try {
       const sha = await sha256File(absolute)
       const duplicateOf = seen.get(sha)
@@ -93,7 +94,7 @@ export async function preprocessProject({
       seen.set(sha, row.id)
       const derived = await deriveImage(absolute)
       const thumbRel = `thumbs/${row.id}.webp`
-      await writeFile(path.join(workspaceDir, thumbRel), derived.thumb)
+      await writeFile(fromPortablePath(workspaceDir, thumbRel), derived.thumb)
       db.prepare(`
         UPDATE photos SET sha256 = ?, width = ?, height = ?, dhash = ?, blur_score = ?,
           clip_low = ?, clip_high = ?, thumb_path = ?

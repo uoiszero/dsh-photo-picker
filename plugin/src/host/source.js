@@ -1,6 +1,7 @@
 import { createReadStream } from 'node:fs'
 import { access, opendir, stat } from 'node:fs/promises'
 import path from 'node:path'
+import { fromPortablePath } from './platform.js'
 
 const FORMATS = new Map([
   ['.jpg', 'jpeg'], ['.jpeg', 'jpeg'], ['.jpe', 'jpeg'],
@@ -32,7 +33,7 @@ export class LocalSource {
   }
 
   async stat(relPath) {
-    return stat(path.join(this.root, relPath))
+    return stat(this.absolute(relPath))
   }
 
   openRead(relPath) {
@@ -40,7 +41,7 @@ export class LocalSource {
   }
 
   absolute(relPath) {
-    return path.join(this.root, relPath)
+    return fromPortablePath(this.root, relPath)
   }
 
   async has(relPath) {

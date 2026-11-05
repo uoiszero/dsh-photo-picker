@@ -1,7 +1,5 @@
 import { Service } from '@deepseek-ai/cordis'
 import { EventEmitter } from 'node:events'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -10,6 +8,7 @@ import { dshHome } from './paths.js'
 import { isPeakHour } from './cost.js'
 import { previewExport, runExport } from './export.js'
 import { renderPreview } from './images.js'
+import { fromPortablePath, platform } from './platform.js'
 import { runPipeline } from './orchestrator.js'
 import { runGridStage, runRankStage, runScoreStage } from './pipeline.js'
 import { ProjectStore, toProject } from './projects.js'
@@ -28,7 +27,6 @@ import { scanProject } from './scan.js'
 import { LocalSource } from './source.js'
 import { createPhotoPickerExportTool, createPhotoPickerTool } from './tools.js'
 
-const execFileAsync = promisify(execFile)
 const STAGES = new Set(['scan', 'preprocess', 'grid', 'rank', 'score'])
 const AI_STAGES = new Set(['grid', 'rank', 'score'])
 
@@ -168,7 +166,7 @@ export class PhotoPickerService extends Service {
     const { db, project } = await this.store.open(id)
     const row = db.prepare('SELECT thumb_path FROM photos WHERE id = ? AND project_id = ?').get(photoId, id)
     if (row === undefined || row.thumb_path === null) return undefined
-    return path.join(project.workspaceDir, row.thumb_path)
+    return fromPortablePath(project.workspaceDir, row.thumb_path)
   }
 
   /** 阶段统计与抽样（检查点卡片）。 */
@@ -328,7 +326,7 @@ export class PhotoPickerService extends Service {
     } catch {
       throw stageError(`path not found: ${target}`, 'NOT_FOUND', 404)
     }
-    await execFileAsync('open', info.isDirectory() ? [target] : ['-R', target], { timeout: 30_000 })
+    await platform.revealPath(target, info.isDirectory())
     return { revealed: target }
   }
 
@@ -426,7 +424,7 @@ export class PhotoPickerService extends Service {
     const { db, project } = await this.store.open(id)
     const row = db.prepare('SELECT rel_path FROM photos WHERE id = ? AND project_id = ?').get(photoId, id)
     if (row === undefined) return undefined
-    const sourcePath = path.join(project.sourcePath, row.rel_path)
+    const sourcePath = fromPortablePath(project.sourcePath, row.rel_path)
     const cachePath = path.join(project.workspaceDir, 'previews', `${photoId}.jpg`)
     try {
       const rendered = await renderPreview(sourcePath, cachePath)
@@ -477,14 +475,7 @@ export class PhotoPickerService extends Service {
   }
 
   async chooseFolder() {
-    const { stdout } = await execFileAsync(
-      'osascript',
-      ['-e', 'POSIX path of (choose folder)'],
-      { timeout: 120_000 },
-    )
-    const selected = stdout.trim()
-    if (selected === '') throw new Error('no folder selected')
-    return selected
+    return platform.chooseFolder()
   }
 
   async listDir(dir) {
