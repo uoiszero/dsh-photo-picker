@@ -42,6 +42,7 @@ test('sampleCalibration returns a blind stratified sample', () => {
     assert.match(item.thumbUrl, /^\/photo-picker\/media\/thumb\/p1\//)
     assert.match(item.previewUrl, /^\/photo-picker\/media\/preview\/p1\//)
   }
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -73,6 +74,7 @@ test('computeCalibration reports keep precision/recall/F1, agreement and a sugge
   assert.equal(report.suggestedMaybe, 5.5)
   const best = report.thresholdCurve.find(point => point.threshold === 7)
   assert.equal(best.f1, 0.8)
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -89,5 +91,6 @@ test('saveCalibrationReport persists and lastCalibrationReport reads it back', (
   assert.equal(latest.suggestedThreshold, report.suggestedKeep)
   assert.equal(latest.metrics.keep.f1, 1)
   assert.equal(lastCalibrationReport(db, 'missing'), null)
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })

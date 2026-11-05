@@ -55,6 +55,7 @@ test('previewExport summarizes buckets, bytes and conflicts', async () => {
   assert.equal(second.conflictCount, 1)
   assert.equal(second.conflicts[0].reason, 'size_mismatch')
 
+  db.close()
   rmSync(base, { recursive: true, force: true })
 })
 
@@ -85,6 +86,7 @@ test('runExport hardlinks buckets, writes manifests and never writes the source'
   assert.equal(rerun.skipped, 3)
   assert.equal(rerun.failures.length, 0)
 
+  db.close()
   rmSync(base, { recursive: true, force: true })
 })
 
@@ -96,6 +98,7 @@ test('runExport copy mode duplicates files', async () => {
   const destFile = path.join(dest, 'maybe', 'c.jpg')
   assert.ok(statSync(destFile).isFile())
   assert.notEqual(statSync(destFile).ino, statSync(path.join(source, 'c.jpg')).ino)
+  db.close()
   rmSync(base, { recursive: true, force: true })
 })
 
@@ -107,6 +110,7 @@ test('export refuses a destination inside the source', async () => {
     error => error.code === 'DEST_INSIDE_SOURCE',
   )
   assert.equal(statSync(source).isDirectory(), true)
+  db.close()
   rmSync(base, { recursive: true, force: true })
 })
 
@@ -126,5 +130,6 @@ test('export ignores grid_rejected and technically filtered photos', async () =>
   const preview = await previewExport({ db, project, dest })
   assert.equal(preview.total, 3)
   assert.deepEqual(preview.counts, { keep: 2, maybe: 1 })
+  db.close()
   rmSync(base, { recursive: true, force: true })
 })
