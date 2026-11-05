@@ -182,7 +182,7 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 82 个单元/集成测试（node:test）
+npm test                 # 83 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
@@ -243,6 +243,7 @@ docs/superpowers/           # 设计 spec 与执行计划
 ## 已知限制
 
 - 目前仅支持 **macOS**（Windows 支持在后续计划中）；Windows 不是当前的一等公民。
+- **Windows 系统目录对话框可能显示在 DSH 窗口下层**（UTM + Win11 ARM 上已复现）：已加 TopMost owner 与单飞防止重复弹窗，但个别窗口环境仍需 `Alt+Tab` 或最小化 DSH 才能看到对话框。
 - **网络源（SMB/NFS）尚未实现**（计划中的下一块）：目前只支持已挂载到本机路径的目录。
 - 图墙一次最多取 200 张，尚未做虚拟滚动；超大项目建议用筛选收敛。
 - 组对比每页 6 张，超过需要翻页。

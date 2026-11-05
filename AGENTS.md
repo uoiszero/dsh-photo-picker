@@ -15,7 +15,7 @@
 
 ```bash
 npm install              # 依赖（sharp/exifr/nanoid/esbuild；类型检查用 tsc）
-npm test                 # 全部 node:test（82 个）
+npm test                 # 全部 node:test（83 个）
 npm run typecheck        # tsc --noEmit（TSX 只转译、esbuild 不做类型检查）
 npm run build:client     # plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # /tmp/pp-fixtures（120 张测试图）
@@ -81,6 +81,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - 组对比每页 6 张；`groupDetail` 的成员按分数降序，名次从 1 开始。
 - 平台相关副作用必须走 `src/host/platform.js`（`sips`/`osascript`/`open`、WIC、`explorer`），不要散落在业务代码；测试用 `createPlatform({ platform, run, spawnProcess })` 注入假实现。
 - Windows 路径比较用 `isSameOrInside`（盘符/UNC/大小写），相对路径入库用 `toPortablePath`，拼回绝对路径用 `fromPortablePath`；不要用字符串前缀比较。
+- Windows 原生目录选择：UTM + Win11 ARM 上 `FolderBrowserDialog` 仍可能出现在 DSH 下层；`platform.js` 已用 TopMost owner + 单飞，仍以 `Alt+Tab` / 最小化 DSH 为兜底。不要为这个问题再叠加新的选择器实现。
 - `check:hygiene` 会扫 `/Users/<name>/` 和 `C:\Users\<name>\`：测试 fixture 用 `/photos/...`、`C:\photos\...` 这类中性路径。
 - esbuild 会自动读根 `tsconfig.json`：`scripts/build-client.mjs` 已传 `tsconfigRaw: {}` 隔离。否则调整 `strict` / `module` 等选项会悄悄改变 bundle 字节（例如多出 `"use strict"`），让 CI 的产物同步校验误报。
 
