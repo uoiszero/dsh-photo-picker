@@ -40,11 +40,27 @@ try {
 `
 
 const FOLDER_PICKER = `Add-Type -AssemblyName System.Windows.Forms
-$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = 'Select photo folder'
-$dialog.ShowNewFolderButton = $true
-if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-  [Console]::Out.Write($dialog.SelectedPath)
+Add-Type -AssemblyName System.Drawing
+# 隐藏的 TopMost owner：对话框没有 owner 时会跑到 DSH 窗口下层，甚至被完全盖住。
+$owner = New-Object System.Windows.Forms.Form
+$owner.Text = 'dsh-photo-picker'
+$owner.ShowInTaskbar = $false
+$owner.FormBorderStyle = 'None'
+$owner.StartPosition = 'CenterScreen'
+$owner.Size = New-Object System.Drawing.Size(1, 1)
+$owner.Opacity = 0
+$owner.TopMost = $true
+$owner.Show()
+try {
+  $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+  $dialog.Description = 'Select photo folder'
+  $dialog.ShowNewFolderButton = $true
+  if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) {
+    [Console]::Out.Write($dialog.SelectedPath)
+  }
+} finally {
+  $owner.Close()
+  $owner.Dispose()
 }
 `
 
@@ -148,30 +164,42 @@ export function createPlatform({
     throw unsupported('image size probe', name)
   }
 
-  async function chooseFolder() {
+  // 用户重复点击时复用同一个选择请求，避免同时开出多个系统对话框。
+  let folderPick = null
+
+  async function pickFolder() {
     if (isMac) {
       const { stdout } = await run(
         'osascript',
         ['-e', 'POSIX path of (choose folder)'],
         { timeout: 120_000 },
       )
+      return stdout
+    }
+    if (isWindows) {
+      return await withTempScript(FOLDER_PICKER, async ({ file }) => {
+        const { stdout } = await run(
+          'powershell.exe',
+          ['-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', file],
+          { timeout: 120_000 },
+        )
+        return stdout
+      })
+    }
+    throw unsupported('native folder picker', name)
+  }
+
+  async function chooseFolder() {
+    if (folderPick !== null) return folderPick
+    folderPick = (async () => {
+      const stdout = await pickFolder()
       const selected = parseChosenPath(stdout)
       if (selected === '') throw new Error('no folder selected')
       return selected
-    }
-    if (isWindows) {
-      const selected = await withTempScript(FOLDER_PICKER, async ({ file }) => {
-        const { stdout } = await run(
-          'powershell.exe',
-          ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', file],
-          { timeout: 120_000 },
-        )
-        return parseChosenPath(stdout)
-      })
-      if (selected === '') throw new Error('no folder selected')
-      return selected
-    }
-    throw unsupported('native folder picker', name)
+    })().finally(() => {
+      folderPick = null
+    })
+    return folderPick
   }
 
   async function revealPath(target, isDirectory = false) {

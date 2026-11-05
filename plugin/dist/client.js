@@ -47,6 +47,7 @@ var zh = {
   newProject: "\u65B0\u5EFA\u9879\u76EE",
   folder: "\u7167\u7247\u6587\u4EF6\u5939",
   choose: "\u7528\u7CFB\u7EDF\u5BF9\u8BDD\u6846\u9009\u62E9",
+  choosingFolder: "\u6B63\u5728\u9009\u62E9\u2026",
   browse: "\u6D4F\u89C8",
   name: "\u9879\u76EE\u540D",
   theme: "\u9898\u6750",
@@ -232,6 +233,7 @@ var en = {
   newProject: "New project",
   folder: "Photo folder",
   choose: "Choose with system dialog",
+  choosingFolder: "Choosing\u2026",
   browse: "Browse",
   name: "Project name",
   theme: "Theme",
@@ -966,6 +968,7 @@ function CreateForm({ t, onCreated, onCancel }) {
   const [theme, setTheme] = (0, import_react.useState)("mixed");
   const [budget, setBudget] = (0, import_react.useState)("30");
   const [busy, setBusy] = (0, import_react.useState)(false);
+  const [choosing, setChoosing] = (0, import_react.useState)(false);
   const [error, setError] = (0, import_react.useState)(null);
   const browse = async (path) => {
     try {
@@ -977,12 +980,16 @@ function CreateForm({ t, onCreated, onCancel }) {
     }
   };
   const choose = async () => {
+    if (choosing) return;
+    setChoosing(true);
     try {
       const result = await api("/photo-picker/api/fs/choose", { method: "POST" });
       setFolder(result.path);
       setError(null);
     } catch (cause) {
       setError(String(cause));
+    } finally {
+      setChoosing(false);
     }
   };
   const create = async () => {
@@ -1013,7 +1020,7 @@ function CreateForm({ t, onCreated, onCancel }) {
       placeholder: "/Users/\u2026/Pictures",
       style: { ...input, flex: 1 }
     }
-  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("choose")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => browse(folder) }, t("browse")))), dirs.length > 0 && /* @__PURE__ */ h("div", { className: "pp-card", style: { maxHeight: 220, overflow: "auto", padding: 4 } }, dirs.map((dir) => /* @__PURE__ */ h(
+  ), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("choose")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => browse(folder) }, t("browse")))), dirs.length > 0 && /* @__PURE__ */ h("div", { className: "pp-card", style: { maxHeight: 220, overflow: "auto", padding: 4 } }, dirs.map((dir) => /* @__PURE__ */ h(
     "div",
     {
       key: dir.path,
@@ -1215,14 +1222,19 @@ function ExportDialog({ t, projectId, onClose }) {
   const [preview, setPreview] = (0, import_react.useState)(null);
   const [result, setResult] = (0, import_react.useState)(null);
   const [busy, setBusy] = (0, import_react.useState)(false);
+  const [choosing, setChoosing] = (0, import_react.useState)(false);
   const [error, setError] = (0, import_react.useState)(null);
   const toggleBucket = (bucket) => setBuckets((current) => current.includes(bucket) ? current.filter((item) => item !== bucket) : [...current, bucket]);
   const choose = async () => {
+    if (choosing) return;
+    setChoosing(true);
     try {
       const picked = await api("/photo-picker/api/fs/choose", { method: "POST" });
       setDest(picked.path);
     } catch (cause) {
       setError(String(cause));
+    } finally {
+      setChoosing(false);
     }
   };
   const execute = async (action) => {
@@ -1252,7 +1264,7 @@ function ExportDialog({ t, projectId, onClose }) {
       placeholder: t("destPlaceholder"),
       style: { ...input, flex: 1 }
     }
-  ), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: choose }, t("exportChoose")))), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy"))))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h(
+  ), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("exportChoose")))), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy"))))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
