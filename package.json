@@ -5,7 +5,7 @@
   "type": "module",
   "description": "DSH 照片工作台：本机照片扫描、AI 分层筛选、人工复核与导出。",
   "scripts": {
-    "test": "node --test plugin/test/*.test.js",
+    "test": "node --test \"plugin/test/**/*.test.js\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build:client": "node scripts/build-client.mjs",
     "fixtures": "node scripts/make-fixtures.mjs",

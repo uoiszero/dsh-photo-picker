@@ -30,6 +30,7 @@ test('createProject validates the source and persists a registry entry', async (
   const listed = await store.list()
   assert.equal(listed.length, 1)
   assert.equal(listed[0].id, created.id)
+  store.close(created.id)
   rmSync(base, { recursive: true, force: true })
 })
 

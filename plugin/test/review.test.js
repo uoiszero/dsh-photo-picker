@@ -67,6 +67,7 @@ test('listReviewPhotos resolves human > ai > maybe and hides filtered states by 
   const rejected = all.items.find(item => item.id === 'e')
   assert.equal(rejected.verdict, 'reject') // 读取 AI 决策，而不是默认 maybe
 
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -83,6 +84,7 @@ test('getPhotoDetail returns the group ranking', () => {
   assert.equal(best.group.size, 2)
   const worse = getPhotoDetail(db, 'p1', 'g2')
   assert.equal(worse.group.rank, 2)
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -104,6 +106,7 @@ test('setHumanDecisions writes human rows and rejects unknown verdicts', () => {
   const cleared = setHumanDecisions(db, 'p1', ['a'], 'auto')
   assert.deepEqual(cleared.updated, [{ photoId: 'a', verdict: null }])
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM decisions WHERE photo_id = 'a'").get().n, 0)
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -122,6 +125,7 @@ test('projectStats counts verdicts and buckets scores', () => {
   const buckets = Object.fromEntries(stats.histogram.map(item => [item.bucket, item.count]))
   assert.equal(buckets[8], 1)
   assert.equal(buckets[6], 2)
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -141,5 +145,6 @@ test('listGroups returns sizes and member thumbnails', () => {
   assert.equal(groups.items[0].size, 3)
   assert.equal(groups.items[0].thumbUrls.length, 3)
   assert.match(groups.items[0].thumbUrls[0], /\/media\/thumb\/p1\/m1$/)
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })

@@ -165,7 +165,7 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 71 个单元/集成测试（node:test）
+npm test                 # 82 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
@@ -189,6 +189,7 @@ GitHub Actions（`.github/workflows/ci.yml`）在 push 到 `main` 与 PR 上跑�
 | --- | --- |
 | `checks`（ubuntu） | `npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端，并断言 `plugin/dist/client.js` 与源码同步 |
 | `acceptance`（ubuntu） | fixture + `acceptance:1/2/4`（假 LLM，零费用、无密钥） |
+| `windows` | `npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端（Windows 路径与平台层回归） |
 | `macOS` | 主平台回归：测试 + 三个验收脚本 |
 
 `main` 已启用规则集：改动必须走 PR，上表三个 job 全绿才能合并；禁止强推和删除分支。发布 tag 不受规则集限制。
@@ -214,7 +215,7 @@ docs/superpowers/           # 设计 spec 与执行计划
 ## 后续计划
 
 1. **Windows 系统支持**
-   当前依赖 macOS 的 `sips`（HEIC/RAW 解码）、`osascript`（选文件夹）和 `open`（在 Finder 中显示）。下一步会把这些能力抽象成平台适配层，补上 Windows 的图片解码、原生目录选择与资源管理器集成，并在 CI 里覆盖两个平台。
+   当前依赖 macOS 的 `sips`（HEIC/RAW 解码）、`osascript`（选文件夹）和 `open`（在 Finder 中显示）。已完成平台适配层（macOS / Windows 双实现）与 `windows-latest` CI；Windows 侧走 WIC 解码、PowerShell 目录选择与 `explorer /select`，原生对话框、HEIC/RAW 扩展与长路径仍需在 Windows 虚拟机上做真机验收。
 
 2. **更精确的修图建议（PS Actions）**
    现在只给出白名单形式的后期代码（`crop_right`、`exposure_+0.3`、`straighten_+1.5` 等）。计划让模型输出更具体的参数与区域，并生成可直接执行的 Photoshop Action（`.atn`）或脚本，把「建议」变成「一键套用」。

@@ -110,6 +110,7 @@ test('runGridStage selects cells, rejects the rest and records costs', async () 
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM decisions WHERE source = 'ai' AND verdict = 'reject'").get().n, 16)
   assert.equal(db.prepare("SELECT status FROM stage_runs WHERE stage = 'grid'").get().status, 'done')
   assert.equal(db.prepare('SELECT status FROM projects WHERE id = ?').get('p1').status, 'gridded')
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -132,6 +133,7 @@ test('runGridStage retries unparseable grids and keeps their photos as grid_erro
     db.prepare('SELECT status FROM grids ORDER BY seq').all().map(row => row.status),
     ['parse_failed', 'parse_failed'],
   )
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -149,6 +151,7 @@ test('runGridStage pauses when the budget is exhausted', async () => {
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM grids').get().n, 1)
   assert.equal(db.prepare("SELECT status FROM stage_runs WHERE stage = 'grid'").get().status, 'paused')
   assert.equal(db.prepare('SELECT status FROM projects WHERE id = ?').get('p1').status, 'paused')
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -168,6 +171,7 @@ test('runRankStage keeps the best frame and rejects the rest of the group', asyn
   assert.equal(assessment.target_kind, 'group')
   assert.equal(assessment.target_id, 'g1')
   assert.ok(assessment.cost_cny > 0)
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -194,6 +198,7 @@ test('runScoreStage writes verdicts and never overwrites a human decision', asyn
   assert.deepEqual({ verdict: decisions.p0.verdict, source: decisions.p0.source }, { verdict: 'keep', source: 'ai' })
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM assessments WHERE stage = 'single'").get().n, 2)
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM photos WHERE state = 'scored'").get().n, 2)
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -211,5 +216,6 @@ test('runScoreStage retries bad JSON and records a maybe decision on failure', a
   assert.equal(llm.calls.length, 2)
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM errors').get().n, 1)
   assert.equal(db.prepare('SELECT verdict FROM decisions').get().verdict, 'maybe')
+  db.close()
   rmSync(dir, { recursive: true, force: true })
 })

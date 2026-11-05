@@ -1,35 +1,17 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
-import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { access, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
-
-const execFileAsync = promisify(execFile)
+import { platform } from './platform.js'
 
 const THUMB_EDGE = 384
 const METRIC_EDGE = 800
 const DECODE_EDGE = 1200
 const PREVIEW_EDGE = 1600
 
-/** HEIC/RAW 用 macOS 的 sips 转出临时 JPEG；失败抛错由调用方记为 unreadable。 */
-async function sipsToJpeg(filePath) {
-  const dir = await mkdtemp(path.join(tmpdir(), 'pp-sips-'))
-  const out = path.join(dir, 'preview.jpg')
-  try {
-    await execFileAsync(
-      'sips',
-      ['-s', 'format', 'jpeg', '--resampleWidth', '1600', filePath, '--out', out],
-      { timeout: 120_000 },
-    )
-    return { path: out, cleanup: () => rm(dir, { recursive: true, force: true }) }
-  } catch (error) {
-    await rm(dir, { recursive: true, force: true })
-    throw error
-  }
-}
-
-/** 解码到长边 1200 的 JPEG 缓冲；HEIC/RAW 自动回退 sips。 */
+/**
+ * 解码到长边 1200 的 JPEG 缓冲；HEIC/RAW 等 sharp 读不了的格式
+ * 交给平台层（macOS sips / Windows WIC）转成临时 JPEG。
+ */
 export async function decodeToJpeg(filePath) {
   try {
     return await sharp(filePath)
@@ -38,7 +20,7 @@ export async function decodeToJpeg(filePath) {
       .jpeg({ quality: 92 })
       .toBuffer()
   } catch (error) {
-    const converted = await sipsToJpeg(filePath)
+    const converted = await platform.decodeToJpeg(filePath)
     try {
       return await sharp(converted.path)
         .rotate()
@@ -98,7 +80,7 @@ function laplacianVariance(gray, width, height) {
   return sumSq / n - mean * mean
 }
 
-/** 原始像素尺寸（含 EXIF 旋转）；sharp 读不到时回退 sips。 */
+/** 原始像素尺寸（含 EXIF 旋转）；sharp 读不到时回退平台解码器。 */
 async function originalSize(filePath) {
   try {
     const meta = await sharp(filePath).metadata()
@@ -110,17 +92,9 @@ async function originalSize(filePath) {
       }
     }
   } catch {
-    // HEIC/RAW 可能不在 sharp 的 loader 里，回退 sips。
+    // HEIC/RAW 可能不在 sharp 的 loader 里，回退平台解码器。
   }
-  const { stdout } = await execFileAsync(
-    'sips',
-    ['-g', 'pixelWidth', '-g', 'pixelHeight', filePath],
-    { timeout: 60_000 },
-  )
-  return {
-    width: Number(/pixelWidth:\s*(\d+)/.exec(stdout)?.[1] ?? 0),
-    height: Number(/pixelHeight:\s*(\d+)/.exec(stdout)?.[1] ?? 0),
-  }
+  return platform.imageSize(filePath)
 }
 
 /** 从一张原图派生缩略图、尺寸、模糊分数、曝光裁剪比例与 dHash。 */
@@ -183,7 +157,7 @@ export async function renderPreview(filePath, cachePath) {
   try {
     buffer = await encode(filePath)
   } catch {
-    const converted = await sipsToJpeg(filePath)
+    const converted = await platform.decodeToJpeg(filePath)
     try {
       buffer = await encode(converted.path)
     } finally {
