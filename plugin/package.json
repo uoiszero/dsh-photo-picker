@@ -1,7 +1,6 @@
 {
   "name": "dsh-photo-picker",
   "version": "0.0.1",
-  "private": true,
   "type": "module",
   "exports": {
     ".": "./index.js",
@@ -15,7 +14,10 @@
     "dist",
     "cordis.patch.yml",
     "locale/*.json",
-    "icon.svg"
+    "icon.svg",
+    "assets",
+    "screenshots.json",
+    "LICENSE"
   ],
   "dependencies": {
     "sharp": "^0.35.0",
@@ -41,5 +43,6 @@
     "type": "git",
     "url": "git+https://github.com/uoiszero/dsh-photo-picker.git",
     "directory": "plugin"
-  }
+  },
+  "license": "MIT"
 }

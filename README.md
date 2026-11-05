@@ -38,16 +38,16 @@
 
 ## 界面预览
 
-![照片工作台项目详情](docs/assets/workbench-overview.png)
+![照片工作台项目详情](plugin/assets/screenshots/workbench-overview.png)
 
 *项目详情：概览统计、五阶段进度、默认折叠的运行记录，以及按分数排序的复核图墙。*
 
 | 单图复核 | 组对比 |
 | --- | --- |
-| ![单图复核](docs/assets/workbench-single.png) | ![组对比](docs/assets/workbench-group.png) |
+| ![单图复核](plugin/assets/screenshots/workbench-single.png) | ![组对比](plugin/assets/screenshots/workbench-group.png) |
 | 六维评分、判定理由、后期建议与快捷键。 | 连拍/同场景按分数排序，确认本组保留哪一张。 |
 
-![导出照片](docs/assets/workbench-export.png)
+![导出照片](plugin/assets/screenshots/workbench-export.png)
 
 *导出：分桶、硬链接或复制，先 dry-run 预览数量与体积，再执行。*
 
@@ -248,7 +248,6 @@ docs/superpowers/           # 设计 spec 与执行计划
 - 组对比每页 6 张，超过需要翻页。
 - 校准复用已经评分的照片，不会为了校准重新跑一遍 L1–L3。
 - 插件面向单用户本机，没有多人协作/权限体系。
-- 仓库暂未附开源许可证（默认保留所有权利）；如需 MIT/Apache-2.0，请添加 `LICENSE` 并在 `package.json` 声明。
 
 ## 文档
 
@@ -261,3 +260,7 @@ docs/superpowers/           # 设计 spec 与执行计划
 ## 版本
 
 0.0.1（首个可运行版本：本机照片 → AI 分层筛选 → 人工复核 → 导出）。
+
+## 许可证
+
+本项目采用 [MIT 许可证](LICENSE)。Copyright (c) 2026 uoiszero。
