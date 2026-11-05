@@ -33,5 +33,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/uoiszero/dsh-photo-picker.git"
-  }
+  },
+  "license": "MIT"
 }

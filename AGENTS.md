@@ -7,6 +7,7 @@
 `photo-picker` 是一个 DSH（DeepSeek Harness）插件 bundle：Host 侧（ESM JavaScript，Cordis 服务）负责照片扫描、本地预处理、AI 分层筛选、复核数据、校准与导出；Client 侧（React + TSX，esbuild 打包）是左侧栏「照片工作台」页面。所有状态在一个项目 SQLite 里，agent 工具 `photo_picker` / `photo_picker_export` 与面板共享同一个服务。
 
 - 版本：`0.0.1`
+- 许可证：MIT
 - 平台：macOS（当前主线，`sips` / `osascript` / `open`）；Windows 平台层与 `windows-latest` CI 在推进，尚未完成真机验收；Node 22.23+（`node:sqlite`）
 - 文档：`docs/superpowers/specs/`（设计）、`docs/superpowers/plans/`（执行计划与状态）
 
