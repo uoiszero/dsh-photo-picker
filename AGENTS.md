@@ -8,7 +8,7 @@
 
 - 版本：`0.0.1`
 - 许可证：MIT
-- 平台：macOS（当前主线，`sips` / `osascript` / `open`）；Windows 平台层与 `windows-latest` CI 在推进，尚未完成真机验收；Node 22.23+（`node:sqlite`）
+- 平台：macOS 与 Windows（Windows 11 ARM64 已真机跑通完整流程；x64 由 `windows-latest` CI 覆盖）；Node 22.23+（`node:sqlite`）
 - 文档：`docs/superpowers/specs/`（设计）、`docs/superpowers/plans/`（执行计划与状态）
 
 ## 快速命令
@@ -82,6 +82,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - 平台相关副作用必须走 `src/host/platform.js`（`sips`/`osascript`/`open`、WIC、`explorer`），不要散落在业务代码；测试用 `createPlatform({ platform, run, spawnProcess })` 注入假实现。
 - Windows 路径比较用 `isSameOrInside`（盘符/UNC/大小写），相对路径入库用 `toPortablePath`，拼回绝对路径用 `fromPortablePath`；不要用字符串前缀比较。
 - Windows 原生目录选择：UTM + Win11 ARM 上 `FolderBrowserDialog` 仍可能出现在 DSH 下层；`platform.js` 已用 TopMost owner + 单飞，仍以 `Alt+Tab` / 最小化 DSH 为兜底。不要为这个问题再叠加新的选择器实现。
+- Windows 原生验收已通过：扫描、预处理、AI 粗筛/精评、复核、导出；HEIC/RAW 仍依赖系统 HEIF/HEVC 与 Raw Image Extension，缺扩展时按 `unreadable` 处理。
 - `check:hygiene` 会扫 `/Users/<name>/` 和 `C:\Users\<name>\`：测试 fixture 用 `/photos/...`、`C:\photos\...` 这类中性路径。
 - esbuild 会自动读根 `tsconfig.json`：`scripts/build-client.mjs` 已传 `tsconfigRaw: {}` 隔离。否则调整 `strict` / `module` 等选项会悄悄改变 bundle 字节（例如多出 `"use strict"`），让 CI 的产物同步校验误报。
 
@@ -91,7 +92,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
   - `checks`（ubuntu）：`npm ci` → `npm test` → `typecheck` → `check:release` → `check:hygiene` → `build:client` + 产物必须与源码同步；
   - `acceptance`（ubuntu）：`fixtures` + `acceptance:1/2/4`（假 LLM，零费用、无密钥）；
   - `macOS`：主平台回归，测试 + 三个验收脚本；
-  - `windows`：`npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端（Windows 路径与平台层回归；原生对话框/解码仍需 VM）。
+  - `windows`：`npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端（Windows 路径与平台层回归；原生对话框/解码已在 Win11 ARM64 真机验证）。
 - `main` 启用了规则集（name `main`）：改动必须走 PR，`checks (ubuntu)` / `acceptance (ubuntu)` / `macOS` 三项必需检查全绿才能合；禁止强推和删除分支。**不要再直接 `git push origin main`**。发布 tag 不受规则集限制。
 - 打 `v*` tag 触发 `release.yml`：重复完整门禁，把 `plugin/` 打成 `dsh-photo-picker-vX.Y.Z.tar.gz` 附到 GitHub Release；tag 必须等于 `v<版本号>`。
 - CI **不调用真实模型**，也**不做创造者模式安装 / 浏览器验证**，这两步仍按上面「DSH 环境注意事项」手工执行。

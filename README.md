@@ -2,7 +2,7 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.0.1** · macOS · 本机优先 · 源目录只读
+**版本 0.0.1** · macOS / Windows · 本机优先 · 源目录只读
 
 ---
 
@@ -55,7 +55,7 @@
 
 ## 功能
 
-- **照片源**：本机目录（macOS 原生选文件夹对话框 + 目录浏览）。SMB/NFS 网络源在路线图中。
+- **照片源**：本机目录（系统原生选文件夹对话框 + 应用内目录浏览）。SMB/NFS 网络源在路线图中。
 - **本地预处理**：精确去重、模糊/曝光/分辨率过滤、dHash 连拍与同场景分组、384px 缩略图、1600px 预览按需生成。
 - **AI 粗筛**：4×4 网格拼图（SVG 编号、不裁切），每格一次调用；解析失败会强化提示重试，仍失败的照片标记为 `grid_error` 进入人工队列，不会消失。
 - **AI 精评**：组内排序（>6 张分块）→ 单张六维评分 → 阈值收敛；坏 JSON 自动重试，人工判定永远覆盖 AI。
@@ -68,7 +68,8 @@
 ## 环境要求
 
 - **macOS**：HEIC/RAW 依赖系统 `sips`；选文件夹用 `osascript`；「在 Finder 中显示」用 `open`。
-- **DSH Web profile**（创造者模式会话安装插件），Node **22.23+**（使用内置 `node:sqlite`）。
+- **Windows**：Windows 10/11（x64 / ARM64）；原生对话框与解码走 PowerShell + WIC + `explorer`，需要 PowerShell 5.1。HEIC 依赖系统 HEIF/HEVC 扩展，RAW 依赖 Raw Image Extension；没有扩展时对应照片会标记为 `unreadable`。DSH 必须原生运行在 Windows，不要从 WSL 启动，否则系统对话框不可用。
+- **DSH**（macOS 用创造者模式会话安装，Windows 用 DSH CLI 安装），Node **22.23+**（使用内置 `node:sqlite`）。
 - 模型路由需支持**图片输入**（默认 `deepseek-official / deepseek-flash`）。不支持图片的模型会在设置里置灰。模型服务由使用者**自备**，插件不内置任何模型或凭据。
 - 本仓库开发依赖：`sharp`、`exifr`、`nanoid`、`esbuild`；测试用 `node:test`。
 
@@ -98,6 +99,22 @@ plugin_manager action=install_bundle target=<abs-path>/dsh-photo-picker/plugin
 
 > 插件安装在 profile 的 `link:` 依赖上，源码改动在 Host 侧需要 disable/enable 插件或重启 DSH；Client 侧重新 build 后刷新页面即可。
 
+### Windows 安装
+
+Windows 上不需要创造者模式，用 DSH CLI 安装本地 checkout：
+
+```powershell
+npm install -g pnpm@11.28.5
+npm install -g @deepseek-ai/dsh@0.2.1-rc.3
+
+git clone https://github.com/uoiszero/dsh-photo-picker.git C:\work\dsh-photo-picker
+cd C:\work\dsh-photo-picker
+dsh plugin --profile web add .\plugin
+dsh web
+```
+
+`0.2.1-rc.3` 是当前验证过的 DSH 版本；后续 DSH 升级后需要重新做一次冒烟。系统目录对话框可能出现在 DSH 窗口下层，`Alt+Tab` 或最小化 DSH 即可，见「已知限制」。
+
 ## 使用
 
 1. 点侧栏「照片工作台」，右上角「新建项目」，选照片文件夹，设项目名/题材/预算。
@@ -105,7 +122,7 @@ plugin_manager action=install_bundle target=<abs-path>/dsh-photo-picker/plugin
 3. 需要单独控制时用 **单步运行** 菜单：扫描 / 预处理 / 网格粗筛 / 组内排序 / 单张精评。
 4. 在「复核」区筛选 keep/maybe/reject，多选后批量判定；双击/点缩略图进入单图，`G` 进入组对比。
 5. 觉得阈值不准时点 **开始校准**：盲评若干张后看报告，一键应用建议阈值。
-6. 点 **导出**：选目标目录、分桶与硬链接/复制，先看 dry-run 汇总，再执行；完成后可直接在 Finder 中显示。
+6. 点 **导出**：选目标目录、分桶与硬链接/复制，先看 dry-run 汇总，再执行；完成后可直接在 Finder / 资源管理器中显示。
 
 ### 快捷键
 
@@ -231,18 +248,14 @@ docs/superpowers/           # 设计 spec 与执行计划
 
 ## 后续计划
 
-1. **Windows 系统支持**
-   当前依赖 macOS 的 `sips`（HEIC/RAW 解码）、`osascript`（选文件夹）和 `open`（在 Finder 中显示）。已完成平台适配层（macOS / Windows 双实现）与 `windows-latest` CI；Windows 侧走 WIC 解码、PowerShell 目录选择与 `explorer /select`，原生对话框、HEIC/RAW 扩展与长路径仍需在 Windows 虚拟机上做真机验收。
-
-2. **更精确的修图建议（PS Actions）**
+1. **更精确的修图建议（PS Actions）**
    现在只给出白名单形式的后期代码（`crop_right`、`exposure_+0.3`、`straighten_+1.5` 等）。计划让模型输出更具体的参数与区域，并生成可直接执行的 Photoshop Action（`.atn`）或脚本，把「建议」变成「一键套用」。
 
-3. **人物识别分组**
+2. **人物识别分组**
    按人物聚合同一场活动/婚礼里的照片，方便逐人筛选与交付。计划在本地做人脸检测与特征聚类（照片不出本机，可选开启），并把人物分组接进现有的图墙、组对比与导出流程。
 
 ## 已知限制
 
-- 目前仅支持 **macOS**（Windows 支持在后续计划中）；Windows 不是当前的一等公民。
 - **Windows 系统目录对话框可能显示在 DSH 窗口下层**（UTM + Win11 ARM 上已复现）：已加 TopMost owner 与单飞防止重复弹窗，但个别窗口环境仍需 `Alt+Tab` 或最小化 DSH 才能看到对话框。
 - **网络源（SMB/NFS）尚未实现**（计划中的下一块）：目前只支持已挂载到本机路径的目录。
 - 图墙一次最多取 200 张，尚未做虚拟滚动；超大项目建议用筛选收敛。
