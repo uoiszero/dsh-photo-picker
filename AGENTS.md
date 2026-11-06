@@ -8,7 +8,7 @@
 
 - 版本：`0.0.1`
 - 许可证：MIT
-- 平台：macOS 与 Windows（Windows 11 ARM64 已真机跑通完整流程；x64 由 `windows-latest` CI 覆盖）；Node 22.23+（`node:sqlite`）
+- 平台：macOS 与 Windows（Windows 11 ARM64 已真机跑通完整流程；x64 由 `windows-latest` CI 覆盖）；已验证 DSH `0.2.2-rc.1`（macOS）与 `0.2.1-rc.3`（Windows）；Node 22.23+（`node:sqlite`）
 - 文档：`docs/superpowers/specs/`（设计）、`docs/superpowers/plans/`（执行计划与状态）
 
 ## 快速命令
