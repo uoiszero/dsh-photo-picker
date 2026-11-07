@@ -2,7 +2,7 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.0.1** · macOS / Windows · 本机优先 · 源目录只读
+**版本 0.1.0** · macOS / Windows · 本机优先 · 源目录只读
 
 ---
 
@@ -274,7 +274,7 @@ docs/superpowers/           # 设计 spec 与执行计划
 
 ## 版本
 
-0.0.1（首个可运行版本：本机照片 → AI 分层筛选 → 人工复核 → 导出）。
+0.1.0（首个可运行版本：本机照片 → AI 分层筛选 → 人工复核 → 导出）。
 
 ## 许可证
 
