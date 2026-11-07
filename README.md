@@ -2,7 +2,7 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.1.0** · macOS / Windows · 本机优先 · 源目录只读
+**版本 0.1.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
 
 ---
 
@@ -76,6 +76,17 @@
 
 ## 安装
 
+### 从 npm 安装（推荐）
+
+```bash
+dsh plugin --profile web add dsh-photo-picker
+dsh web
+```
+
+npm 包里包含构建产物，不需要本地 clone，也不会触发源码安装的构建授权。
+
+### 从源码安装（开发）
+
 1. 克隆并安装依赖：
 
 ```bash
@@ -102,7 +113,14 @@ plugin_manager action=install_bundle target=<abs-path>/dsh-photo-picker/plugin
 
 ### Windows 安装
 
-Windows 上不需要创造者模式，用 DSH CLI 安装本地 checkout：
+Windows 同样优先走 npm 包：
+
+```powershell
+dsh plugin --profile web add dsh-photo-picker
+dsh web
+```
+
+如果需要改插件源码，再安装本地 checkout：
 
 ```powershell
 npm install -g pnpm@11.28.5
