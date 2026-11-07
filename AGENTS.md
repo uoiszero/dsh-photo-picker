@@ -104,5 +104,6 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - 版本号在两处：根 `package.json` 与 `plugin/package.json`（以及 `package-lock.json` 的根 packages 条目）。
 - 发布前：`npm run verify`（测试 / 类型检查 / 版本与卫生检查 / 构建 / 三个验收脚本），确认 `git status` 干净。
 - 发布走 tag：`chore: release X.Y.Z` 提交后打 `vX.Y.Z` 推上去，`release.yml` 会重跑门禁并生成带 bundle 的 Release。
+- npm 发布只从 `plugin/` 目录：`npm run publish:npm`（根仓库 `package.json` 是 private 工作区，不要发布根目录）。
 - 仓库默认分支 `main`；推送到 GitHub 前确认 remote 与可见性，不要在公开仓库里放个人照片/路径清单。
 - 设计文档与计划随代码一起维护；实现偏离 spec 时在对应 plan 里写「实现状态/偏差」。
