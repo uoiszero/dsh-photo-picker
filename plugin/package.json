@@ -17,7 +17,8 @@
     "icon.svg",
     "assets",
     "screenshots.json",
-    "LICENSE"
+    "LICENSE",
+    "README.md"
   ],
   "dependencies": {
     "sharp": "^0.35.0",
