@@ -211,7 +211,7 @@ export function createHttpHandler(service) {
         if (file === undefined) {
           return send(res, 404, { error: { code: 'NOT_FOUND', message: 'edited preview not found' } })
         }
-        res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=3600' })
+        res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=0, must-revalidate' })
         createReadStream(file).pipe(res)
         return
       }

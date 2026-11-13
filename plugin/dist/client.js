@@ -1299,7 +1299,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
   const dimensions = detail.dimensions ?? {};
   const recipe = detail.editRecipe ?? null;
-  const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}`;
+  const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? "none"}`;
   const canCompare = recipe !== null && !editedFailed;
   const showingEdited = showEdited && canCompare;
   return /* @__PURE__ */ h("section", { className: "pp-single" }, /* @__PURE__ */ h("div", { className: "pp-single-head" }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, "\u2190 ", t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { className: "pp-single-body" }, /* @__PURE__ */ h("div", { className: "pp-stage" }, /* @__PURE__ */ h("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h(
