@@ -639,7 +639,11 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
             <div className="pp-section-title" style={{ marginBottom: 6 }}>{t('editRecipe')}</div>
             {recipe !== null ? (
               <div className="pp-chips">
-                <span className="pp-chip">{t('editCrop')} {Math.round(recipe.crop.width * 100)}% × {Math.round(recipe.crop.height * 100)}%</span>
+                <span className="pp-chip">
+                  {t('editCrop')}: {recipe.crop.width === 1 && recipe.crop.height === 1
+                    ? t('editCropNone')
+                    : `${t('editCropKeep')} ${Math.round(recipe.crop.width * 100)}% × ${Math.round(recipe.crop.height * 100)}% · ${t('editCropLeft')} ${Math.round(recipe.crop.left * 100)}% · ${t('editCropTop')} ${Math.round(recipe.crop.top * 100)}%`}
+                </span>
                 <span className="pp-chip">{t('editRotate')} {recipe.rotate}°</span>
                 <span className="pp-chip">{t('editExposure')} {recipe.exposureEv > 0 ? '+' : ''}{recipe.exposureEv} EV</span>
                 <span className="pp-chip">{t('editContrast')} {recipe.contrast}</span>

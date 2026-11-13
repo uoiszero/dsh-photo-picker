@@ -76,7 +76,7 @@ test('parseRank validates order and best against the given labels', () => {
 })
 
 test('post processing whitelist and prompt version are the spec values', () => {
-  assert.equal(PROMPT_VERSION, 'v2')
+  assert.equal(PROMPT_VERSION, 'v3')
   assert.ok(POST_PROCESSING_CODES.has('crop_right'))
   assert.ok(isPostProcessingCode('straighten_+1.5'))
   assert.ok(isPostProcessingCode('exposure_-0.3'))

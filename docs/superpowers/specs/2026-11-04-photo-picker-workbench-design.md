@@ -459,7 +459,7 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
   }
   ```
 - 校验：`score` 数值 0–10；`verdict` ∈ keep/maybe/reject；`dimensions` 六键齐全（缺失补 `null` 并记警告）；`reason` 提示词要求 ≤60 字，入库超过 120 字截断；`post_processing` 仅接受白名单代码（未知代码保留在 raw，不展示）。
-- 修图配方（提示词 v2）：可选输出 `edit_recipe`（`version`、`crop{left,top,width,height}`、`rotate`、`exposureEv`、`contrast`、`saturation`、`sharpen`）。`recipe.js` 负责校验与 clamp：裁剪坐标按**旋转并自动去掉黑角后的画布**归一化（旋转后先取最大内接矩形），缺省/恒等/非法版本一律视为“无配方”，评分本身仍然成功。合法配方写入 `assessments.recipe_json`，单图详情返回 `editRecipe`；旧项目要重跑单张精评才会生成配方，并产生新的模型调用费用。
+- 修图配方（提示词 v3）：可选输出 `edit_recipe`（`version`、`crop{left,top,width,height}`、`rotate`、`exposureEv`、`contrast`、`saturation`、`sharpen`）。`recipe.js` 负责校验与 clamp：裁剪坐标按**旋转并自动去掉黑角后的画布**归一化；提示词要求先逐边判断，只有存在明确边缘干扰时才裁，否则保持全画幅（旋转后先取最大内接矩形），缺省/恒等/非法版本一律视为“无配方”，评分本身仍然成功。合法配方写入 `assessments.recipe_json`，单图详情返回 `editRecipe`；旧项目要重跑单张精评才会生成配方，并产生新的模型调用费用。
 - 解析失败 → 重试 1 次（追加“只返回合法 JSON”）；再失败记 `errors`，该照片默认 `maybe`。
 
 **3c 收敛**

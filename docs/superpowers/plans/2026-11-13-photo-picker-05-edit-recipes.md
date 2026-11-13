@@ -13,6 +13,7 @@
 ## 实现状态（2026-11-13）
 
 - 后续 UI 修订：点击图片右上「原图/修图」角标切换；增加九宫格/十字线开关；旋转后自动裁掉黑角（engine `sharp-v2`）。
+- 后续提示词修订：v3 把示例改为全画幅，并要求逐边判断、不要照抄固定边距；UI 显示“保留宽高 + 左/上偏移”。
 - Task 1–10 已完成，分支 `feat/edit-recipes`；`npm test` 100/100、`npm run verify` 通过（含 `acceptance:5`）。
 - 偏差：Task 4 计划测试里的 `parsed.recipe` 统一为 `parsed.editRecipe`，避免解析结果出现两个同义字段。
 - 偏差：Task 5 的组详情/组对比查询也改成取最新 single assessment，避免 v1/v2 并存时成员重复。
@@ -26,7 +27,7 @@
 **本计划实现：**
 
 - 配方 schema v1：`crop`、`rotate`、`exposureEv`、`contrast`、`saturation`、`sharpen`。
-- 模型 `score` 提示词 v2，解析失败或没有配方时保持原有评分行为。
+- 模型 `score` 提示词 v3，解析失败或没有配方时保持原有评分行为。
 - `assessments.recipe_json` 持久化与旧库迁移。
 - sharp 渲染器：自动方向 → 旋转 → 裁剪 → 曝光/对比/饱和/锐化 → JPEG。
 - 单图页“查看修图效果”预览。
@@ -44,7 +45,7 @@
 **兼容性：**
 
 - 旧项目已有 `prompt_version='v1'` 的 assessments，没有 `recipe_json`，单图页显示“无结构化修图建议”。
-- 新的评分使用提示词 v2；用户对旧项目重跑单张精评才会生成配方，并产生新的模型调用费用。
+- 新的评分使用提示词 v3；用户对旧项目重跑单张精评才会生成配方，并产生新的模型调用费用。
 - `edit:'recipe'` 只是新增导出选项，默认 `none` 完全保持现有行为。
 
 ---
@@ -56,7 +57,7 @@
 | `plugin/src/host/recipe.js` | 新建。配方校验、裁剪像素换算、签名、恒等判断 |
 | `plugin/src/host/edit.js` | 新建。sharp 渲染、缓存、JPEG 输出 |
 | `plugin/src/host/db.js` | 修改。`assessments.recipe_json` 列 + 旧库迁移 |
-| `plugin/src/host/prompts.js` | 修改。提示词 v2，要求输出 `edit_recipe` |
+| `plugin/src/host/prompts.js` | 修改。提示词 v3，要求输出 `edit_recipe` |
 | `plugin/src/host/parse.js` | 修改。解析并校验 `edit_recipe` |
 | `plugin/src/host/pipeline.js` | 修改。把 recipe 写进 assessment |
 | `plugin/src/host/review.js` | 修改。详情返回 `editRecipe` |
@@ -471,7 +472,7 @@ git commit -m "feat: persist edit recipes in assessments"
 
 ---
 
-## Task 4：提示词 v2 与解析
+## Task 4：提示词 v3 与解析
 
 **Files:**
 - Modify: `plugin/src/host/prompts.js`
