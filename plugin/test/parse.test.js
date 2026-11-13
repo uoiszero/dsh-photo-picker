@@ -76,7 +76,7 @@ test('parseRank validates order and best against the given labels', () => {
 })
 
 test('post processing whitelist and prompt version are the spec values', () => {
-  assert.equal(PROMPT_VERSION, 'v3')
+  assert.equal(PROMPT_VERSION, 'v4')
   assert.ok(POST_PROCESSING_CODES.has('crop_right'))
   assert.ok(isPostProcessingCode('straighten_+1.5'))
   assert.ok(isPostProcessingCode('exposure_-0.3'))
@@ -110,7 +110,7 @@ test('parseScore accepts an optional edit_recipe', () => {
     post_processing: ['crop_right', 'exposure_+0.3'],
     edit_recipe: {
       version: 1,
-      crop: { left: 0.1, top: 0.05, width: 0.8, height: 0.9 },
+      crop: { left: 0.2, top: 0.1, width: 0.6, height: 0.8 },
       rotate: 1.2,
       exposureEv: 0.3,
       contrast: 0.1,
@@ -119,7 +119,7 @@ test('parseScore accepts an optional edit_recipe', () => {
     },
     reason: '主体清晰',
   }))
-  assert.equal(parsed.editRecipe.crop.left, 0.1)
+  assert.equal(parsed.editRecipe.crop.left, 0.2)
   assert.equal(parsed.editRecipe.rotate, 1.2)
 })
 

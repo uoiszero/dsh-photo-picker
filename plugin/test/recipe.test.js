@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  cropPixels, isIdentityRecipe, maxInscribedRect, normalizeRecipe, recipeSignature,
+  cropPixels, isIdentityRecipe, isMicroCrop, maxInscribedRect, normalizeRecipe, recipeSignature,
 } from '../src/host/recipe.js'
 
 test('normalizeRecipe returns null for missing or identity recipes', () => {
@@ -36,7 +36,7 @@ test('normalizeRecipe clamps values and accepts cropped recipes', () => {
 
 test('normalizeRecipe accepts Chinese aliases used by the model', () => {
   const recipe = normalizeRecipe({
-    裁剪: { 左: 0.1, 上: 0.1, 宽: 0.8, 高: 0.8 },
+    裁剪: { 左: 0.2, 上: 0.2, 宽: 0.6, 高: 0.6 },
     旋转: 1.5,
     曝光: 0.3,
     对比度: 0.1,
@@ -44,7 +44,7 @@ test('normalizeRecipe accepts Chinese aliases used by the model', () => {
     锐化: 0.2,
   })
   assert.ok(recipe)
-  assert.equal(recipe.crop.left, 0.1)
+  assert.equal(recipe.crop.left, 0.2)
   assert.equal(recipe.rotate, 1.5)
   assert.equal(recipe.exposureEv, 0.3)
 })
@@ -77,4 +77,21 @@ test('maxInscribedRect keeps the full frame at zero rotation and crops inside a 
   assert.ok(inner.width > 0 && inner.height > 0)
   const portrait = maxInscribedRect(1000, 1600, 2)
   assert.ok(portrait.height > portrait.width)
+})
+
+
+test('normalizeRecipe ignores a micro single-edge crop but keeps other adjustments', () => {
+  const recipe = normalizeRecipe({
+    crop: { left: 0.08, top: 0, width: 0.92, height: 1 },
+    exposureEv: 0.2,
+  })
+  assert.deepEqual(recipe.crop, { left: 0, top: 0, width: 1, height: 1 })
+  assert.equal(normalizeRecipe({ crop: { left: 0.08, top: 0, width: 0.92, height: 1 } }), null)
+})
+
+test('isMicroCrop distinguishes meaningful and two-edge crops', () => {
+  assert.equal(isMicroCrop({ left: 0.08, top: 0, width: 0.92, height: 1 }), true)
+  assert.equal(isMicroCrop({ left: 0.18, top: 0, width: 0.82, height: 1 }), false)
+  assert.equal(isMicroCrop({ left: 0.08, top: 0, width: 0.84, height: 1 }), true)
+  assert.equal(isMicroCrop({ left: 0.08, top: 0.2, width: 0.92, height: 0.8 }), false)
 })

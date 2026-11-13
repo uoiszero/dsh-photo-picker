@@ -33,7 +33,7 @@ await preprocessProject({
 const calls = { grid: 0, rank: 0, score: 0 }
 const editRecipe = {
   version: 1,
-  crop: { left: 0.1, top: 0.1, width: 0.8, height: 0.8 },
+  crop: { left: 0.2, top: 0.1, width: 0.6, height: 0.8 },
   rotate: 0,
   exposureEv: 0.2,
   contrast: 0,
@@ -106,8 +106,8 @@ const photo = keeps.items[0]
 const detail = getPhotoDetail(db, project.id, photo.id)
 console.log('detail', { id: detail.id, verdict: detail.verdict, editRecipe: detail.editRecipe })
 assert.ok(detail.editRecipe, 'scored photo must expose editRecipe')
-assert.equal(detail.editRecipe.crop.left, 0.1)
-assert.equal(detail.editRecipe.crop.width, 0.8)
+assert.equal(detail.editRecipe.crop.left, 0.2)
+assert.equal(detail.editRecipe.crop.width, 0.6)
 assert.equal(detail.editRecipe.exposureEv, 0.2)
 
 // 渲染编辑预览：源文件 sha256 不能变。
@@ -125,7 +125,7 @@ assert.equal(edited.cached, false)
 assert.ok(existsSync(edited.path))
 const meta = await sharp(edited.path).metadata()
 assert.equal(meta.format, 'jpeg')
-assert.equal(meta.width, Math.round(detail.width * 0.8))
+assert.equal(meta.width, Math.round(detail.width * detail.editRecipe.crop.width))
 assert.equal(sha256(sourcePathForPhoto), before, 'rendering must not modify the source')
 
 // 导出编辑副本：强制 copy，输出 .jpg，manifest 记录配方。
