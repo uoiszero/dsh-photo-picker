@@ -35,3 +35,22 @@ test('renderEditedFile caches by recipe signature and leaves source untouched', 
   assert.equal(statSync(source).size, before.size)
   rmSync(dir, { recursive: true, force: true })
 })
+
+
+test('renderEditedBuffer removes black corners after rotation', async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pp-edit-'))
+  const source = path.join(dir, 'source.jpg')
+  await sharp({ create: { width: 1200, height: 800, channels: 3, background: '#d8d2c4' } }).jpeg().toFile(source)
+  const recipe = normalizeRecipe({ rotate: 3 })
+  const output = await renderEditedBuffer({ sourcePath: source, recipe })
+  const { data, info } = await sharp(output).raw().toBuffer({ resolveWithObject: true })
+  const pixel = (x, y) => {
+    const offset = (y * info.width + x) * info.channels
+    return [data[offset], data[offset + 1], data[offset + 2]]
+  }
+  for (const [x, y] of [[1, 1], [info.width - 2, 1], [1, info.height - 2], [info.width - 2, info.height - 2]]) {
+    const rgb = pixel(x, y)
+    assert.ok(rgb.every(channel => channel > 40), `corner ${x},${y} is black: ${rgb}`)
+  }
+  rmSync(dir, { recursive: true, force: true })
+})

@@ -56,7 +56,7 @@ export function scoreUserPrompt({ theme = 'mixed' } = {}) {
     '如果确实有可执行的后期建议，再额外给出 edit_recipe（与软件无关的参数）：',
     '{"version":1,"crop":{"left":0,"top":0,"width":1,"height":1},"rotate":0,',
     '"exposureEv":0,"contrast":0,"saturation":0,"sharpen":0}。',
-    'crop 是 0–1 的归一化坐标，按“先旋转校正后的画布”计算；rotate 单位是度（-5–5）；',
+    'crop 是 0–1 的归一化坐标，按“先旋转校正并自动裁掉黑角后的画布”计算；rotate 单位是度（-5–5）；',
     'exposureEv 是曝光补偿（-2–2）；contrast/saturation 是 -1–1；sharpen 是 0–2。',
     '没有明确可执行的调整时，省略 edit_recipe 或返回全 0/全画布。',
   ]

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 
 export const RECIPE_VERSION = 1
-export const RECIPE_ENGINE = 'sharp-v1'
+export const RECIPE_ENGINE = 'sharp-v2'
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 const number = value => (typeof value === 'number' && Number.isFinite(value) ? value : undefined)
@@ -58,7 +58,39 @@ export function normalizeRecipe(input) {
   return isIdentityRecipe(recipe) ? null : recipe
 }
 
-/** 裁剪坐标按“旋转后的画布”归一化。 */
+/** 裁剪坐标按“旋转并自动裁掉黑角后的画布”归一化。 */
+
+/** 旋转后画面内最大的轴对齐矩形，用来裁掉旋转产生的黑角。 */
+export function maxInscribedRect(width, height, angleDegrees) {
+  if (!(width > 0) || !(height > 0)) return { width: 1, height: 1 }
+  const rad = Math.abs(angleDegrees) * Math.PI / 180
+  if (rad < 1e-9) return { width, height }
+
+  const sin = Math.abs(Math.sin(rad))
+  const cos = Math.abs(Math.cos(rad))
+  const widthIsLonger = width >= height
+  const longSide = widthIsLonger ? width : height
+  const shortSide = widthIsLonger ? height : width
+
+  let rectLong
+  let rectShort
+  if (shortSide <= 2 * sin * cos * longSide) {
+    rectLong = shortSide / (2 * sin)
+    rectShort = shortSide / (2 * cos)
+  } else {
+    const denominator = cos * cos - sin * sin
+    rectLong = (longSide * cos - shortSide * sin) / denominator
+    rectShort = (shortSide * cos - longSide * sin) / denominator
+  }
+
+  const rectWidth = widthIsLonger ? rectLong : rectShort
+  const rectHeight = widthIsLonger ? rectShort : rectLong
+  return {
+    width: Math.max(1, Math.min(width, Math.floor(rectWidth))),
+    height: Math.max(1, Math.min(height, Math.floor(rectHeight))),
+  }
+}
+
 export function cropPixels(recipe, width, height) {
   const crop = recipe?.crop ?? { left: 0, top: 0, width: 1, height: 1 }
   const left = Math.min(width - 1, Math.max(0, Math.round(crop.left * width)))

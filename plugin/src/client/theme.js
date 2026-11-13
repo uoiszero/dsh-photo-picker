@@ -277,24 +277,37 @@ export const STYLES = `
   max-width: 100%; max-height: 72vh; border-radius: 10px;
   object-fit: contain;
 }
-.pp-stage-compare { position: relative; }
-.pp-compare-btn {
-  position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
-  z-index: 2; display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 13px; border-radius: 999px; cursor: pointer;
-  border: 1px solid var(--dsw-alias-border-l1);
-  background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary);
-  font-size: 12px; line-height: 1.2;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .24);
-  backdrop-filter: blur(8px);
+.pp-stage-frame { position: relative; display: inline-block; max-width: 100%; line-height: 0; }
+.pp-stage-frame > img { display: block; }
+.pp-guide { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.pp-guide span { position: absolute; background: rgba(255, 255, 255, .72); box-shadow: 0 0 2px rgba(0, 0, 0, .55); }
+.pp-guide .v { top: 0; bottom: 0; width: 1px; }
+.pp-guide .h { left: 0; right: 0; height: 1px; }
+.pp-stage-tools {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  display: flex; gap: 4px; line-height: 1.2;
 }
-.pp-compare-btn:hover { border-color: var(--dsw-alias-border-l2); }
-.pp-edit-badge {
-  position: absolute; top: 18px; right: 18px; z-index: 2;
-  padding: 3px 8px; border-radius: 999px; font-size: 11px;
-  color: #fff; background: rgba(0, 0, 0, .58);
-  pointer-events: none;
+.pp-tool-btn {
+  padding: 4px 8px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, .28);
+  background: rgba(0, 0, 0, .5); color: #fff;
+  font-size: 11px; line-height: 1.2;
+  backdrop-filter: blur(6px);
 }
+.pp-tool-btn[aria-pressed="true"] {
+  background: var(--dsw-alias-brand-primary);
+  border-color: var(--dsw-alias-brand-primary);
+  color: #fff;
+}
+.pp-photo-badge {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  padding: 4px 9px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, .28);
+  background: rgba(0, 0, 0, .58); color: #fff;
+  font-size: 11px; line-height: 1.2;
+  backdrop-filter: blur(6px);
+}
+.pp-photo-badge:hover { border-color: rgba(255, 255, 255, .55); }
 .pp-meters { display: grid; gap: 8px; }
 .pp-meter {
   display: grid; grid-template-columns: 58px 1fr 24px; gap: 8px;

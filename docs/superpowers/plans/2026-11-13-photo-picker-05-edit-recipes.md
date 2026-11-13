@@ -12,7 +12,8 @@
 
 ## 实现状态（2026-11-13）
 
-- Task 1–10 已完成，分支 `feat/edit-recipes`；`npm test` 98/98、`npm run verify` 通过（含 `acceptance:5`）。
+- 后续 UI 修订：点击图片右上「原图/修图」角标切换；增加九宫格/十字线开关；旋转后自动裁掉黑角（engine `sharp-v2`）。
+- Task 1–10 已完成，分支 `feat/edit-recipes`；`npm test` 100/100、`npm run verify` 通过（含 `acceptance:5`）。
 - 偏差：Task 4 计划测试里的 `parsed.recipe` 统一为 `parsed.editRecipe`，避免解析结果出现两个同义字段。
 - 偏差：Task 5 的组详情/组对比查询也改成取最新 single assessment，避免 v1/v2 并存时成员重复。
 - 偏差：Task 9 在勾选“应用修图建议”时同时把导出方式显示/强制为 copy，并在切换勾选时清空旧预览，避免用未含修图的 dry-run 执行。

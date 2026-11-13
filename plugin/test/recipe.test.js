@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  cropPixels, isIdentityRecipe, normalizeRecipe, recipeSignature,
+  cropPixels, isIdentityRecipe, maxInscribedRect, normalizeRecipe, recipeSignature,
 } from '../src/host/recipe.js'
 
 test('normalizeRecipe returns null for missing or identity recipes', () => {
@@ -66,4 +66,15 @@ test('recipeSignature is stable across key order', () => {
 
 test('isIdentityRecipe is true for the default recipe', () => {
   assert.equal(isIdentityRecipe({ crop: { left: 0, top: 0, width: 1, height: 1 }, rotate: 0, exposureEv: 0, contrast: 0, saturation: 0, sharpen: 0 }), true)
+})
+
+
+test('maxInscribedRect keeps the full frame at zero rotation and crops inside a rotated frame', () => {
+  assert.deepEqual(maxInscribedRect(1600, 1000, 0), { width: 1600, height: 1000 })
+  const inner = maxInscribedRect(1600, 1000, 2)
+  assert.ok(inner.width < 1600)
+  assert.ok(inner.height < 1000)
+  assert.ok(inner.width > 0 && inner.height > 0)
+  const portrait = maxInscribedRect(1000, 1600, 2)
+  assert.ok(portrait.height > portrait.width)
 })
