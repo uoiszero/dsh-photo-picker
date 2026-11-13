@@ -12,9 +12,10 @@
     "acceptance:1": "node scripts/acceptance-phase1.mjs",
     "acceptance:2": "node scripts/acceptance-phase2.mjs",
     "acceptance:4": "node scripts/acceptance-phase4.mjs",
+    "acceptance:5": "node scripts/acceptance-phase5.mjs",
     "check:release": "node scripts/check-release.mjs",
     "check:hygiene": "node scripts/check-hygiene.mjs",
-    "verify": "npm test && npm run typecheck && npm run check:release && npm run check:hygiene && npm run build:client && npm run fixtures && npm run acceptance:1 && npm run acceptance:2 && npm run acceptance:4",
+    "verify": "npm test && npm run typecheck && npm run check:release && npm run check:hygiene && npm run build:client && npm run fixtures && npm run acceptance:1 && npm run acceptance:2 && npm run acceptance:4 && npm run acceptance:5",
     "publish:npm": "cd plugin && npm publish --registry=https://registry.npmjs.org --access public"
   },
   "engines": {
