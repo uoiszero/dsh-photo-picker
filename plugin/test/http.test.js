@@ -39,8 +39,8 @@ function stub() {
     async promptInfo(projectId) { return { version: 'v1', project: projectId ?? null, prompts: { gridUser: 'x' } } },
     async models(route) { return { route, models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }] } },
     async previewFile() { return undefined },
-    async exportPreview(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
-    async exportRun(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
+    async exportPreview(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
+    async exportRun(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
     async listDir() { return [{ name: 'Pictures', path: '~/Pictures' }] },
     async chooseFolder() { return '~/Pictures' },
     async thumbFile() { return undefined },
@@ -144,9 +144,11 @@ test('review, decisions and export routes answer JSON', async () => {
     const exported = await fetch(`${origin}/photo-picker/api/projects/p1/export/preview`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ dest: '/tmp/out' }),
+      body: JSON.stringify({ dest: '/tmp/out', edit: 'recipe' }),
     })
-    assert.deepEqual(await exported.json(), { total: 2, dest: '/tmp/out', counts: { keep: 2 } })
+    assert.deepEqual(await exported.json(), {
+      total: 2, dest: '/tmp/out', edit: 'recipe', counts: { keep: 2 },
+    })
 
     const preview = await fetch(`${origin}/photo-picker/media/preview/p1/ph1`)
     assert.equal(preview.status, 404)
