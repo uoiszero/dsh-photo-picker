@@ -538,7 +538,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
               >
                 {showingEdited ? t('editOriginal') : t('editPreview')}
               </button>
-              <span className="pp-compare-badge">{showingEdited ? t('editAfter') : t('editBefore')}</span>
+              <span className="pp-edit-badge">{showingEdited ? t('editAfter') : t('editBefore')}</span>
             </>
           )}
         </div>
@@ -879,7 +879,7 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
               onClick={() => setSelected(position)}
             >
               <img src={`${member.thumbUrl}?v=${version}`} alt={member.relPath} loading="lazy" />
-              <span className="pp-compare-badge">
+              <span className="pp-edit-badge">
                 #{position + 1}{member.score !== null && member.score !== undefined ? ` · ${Number(member.score).toFixed(1)}` : ''}
               </span>
               {member.humanVerdict !== null && (

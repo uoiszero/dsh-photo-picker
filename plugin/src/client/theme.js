@@ -279,7 +279,7 @@ export const STYLES = `
 }
 .pp-stage-compare { position: relative; }
 .pp-compare-btn {
-  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
   z-index: 2; display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 13px; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--dsw-alias-border-l1);
@@ -289,7 +289,7 @@ export const STYLES = `
   backdrop-filter: blur(8px);
 }
 .pp-compare-btn:hover { border-color: var(--dsw-alias-border-l2); }
-.pp-compare-badge {
+.pp-edit-badge {
   position: absolute; top: 18px; right: 18px; z-index: 2;
   padding: 3px 8px; border-radius: 999px; font-size: 11px;
   color: #fff; background: rgba(0, 0, 0, .58);

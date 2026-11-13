@@ -761,7 +761,7 @@ var STYLES = `
 }
 .pp-stage-compare { position: relative; }
 .pp-compare-btn {
-  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
   z-index: 2; display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 13px; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--dsw-alias-border-l1);
@@ -771,7 +771,7 @@ var STYLES = `
   backdrop-filter: blur(8px);
 }
 .pp-compare-btn:hover { border-color: var(--dsw-alias-border-l2); }
-.pp-compare-badge {
+.pp-edit-badge {
   position: absolute; top: 18px; right: 18px; z-index: 2;
   padding: 3px 8px; border-radius: 999px; font-size: 11px;
   color: #fff; background: rgba(0, 0, 0, .58);
@@ -1282,7 +1282,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
       onClick: () => setShowEdited((value) => !value)
     },
     showingEdited ? t("editOriginal") : t("editPreview")
-  ), /* @__PURE__ */ h("span", { className: "pp-compare-badge" }, showingEdited ? t("editAfter") : t("editBefore")))), /* @__PURE__ */ h("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
+  ), /* @__PURE__ */ h("span", { className: "pp-edit-badge" }, showingEdited ? t("editAfter") : t("editBefore")))), /* @__PURE__ */ h("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h("div", { key, className: "pp-meter" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h("div", { className: "pp-meter-track" }, /* @__PURE__ */ h("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h("span", null, value === null || value === void 0 ? "\u2014" : value));
   })), detail.reason !== null && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("editRecipe")), recipe !== null ? /* @__PURE__ */ h("div", { className: "pp-chips" }, /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editCrop"), " ", Math.round(recipe.crop.width * 100), "% \xD7 ", Math.round(recipe.crop.height * 100), "%"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editRotate"), " ", recipe.rotate, "\xB0"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editExposure"), " ", recipe.exposureEv > 0 ? "+" : "", recipe.exposureEv, " EV"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editContrast"), " ", recipe.contrast), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editSaturation"), " ", recipe.saturation), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editSharpen"), " ", recipe.sharpen)) : /* @__PURE__ */ h("div", { className: "pp-muted" }, t("editNoRecipe"))), /* @__PURE__ */ h("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));
@@ -1465,7 +1465,7 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
         onClick: () => setSelected(position)
       },
       /* @__PURE__ */ h("img", { src: `${member.thumbUrl}?v=${version}`, alt: member.relPath, loading: "lazy" }),
-      /* @__PURE__ */ h("span", { className: "pp-compare-badge" }, "#", position + 1, member.score !== null && member.score !== void 0 ? ` \xB7 ${Number(member.score).toFixed(1)}` : ""),
+      /* @__PURE__ */ h("span", { className: "pp-edit-badge" }, "#", position + 1, member.score !== null && member.score !== void 0 ? ` \xB7 ${Number(member.score).toFixed(1)}` : ""),
       member.humanVerdict !== null && /* @__PURE__ */ h("span", { className: "pp-pill", style: { position: "absolute", right: 8, bottom: 8, background: "rgba(0,0,0,.62)", color: "#fff" } }, verdictLabel(t, member.humanVerdict))
     );
   })), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: confirm }, t("groupConfirm")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => decide("reject", detail.members.map((member) => member.id)) }, t("groupRejectAll"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("groupHint")));
