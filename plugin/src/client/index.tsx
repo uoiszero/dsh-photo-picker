@@ -466,9 +466,11 @@ function ReviewSection({ t, projectId, version, onChanged }: {
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showEdited, setShowEdited] = useState(false)
 
   useEffect(() => {
     setDetail(null)
+    setShowEdited(false)
     api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`)
       .then(setDetail)
       .catch(cause => setError(String(cause)))
@@ -500,6 +502,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   if (detail === null) return <div style={{ ...muted, fontSize: 13 }}>{t('loading')}</div>
 
   const dimensions = detail.dimensions ?? {}
+  const recipe = detail.editRecipe ?? null
+  const showingEdited = showEdited && recipe !== null
   return (
     <section className="pp-single">
       <div className="pp-single-head">
@@ -515,7 +519,12 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
 
       <div className="pp-single-body">
         <div className="pp-stage">
-          <img src={`${detail.previewUrl}?v=${version}`} alt={detail.relPath} />
+          <img
+            src={showingEdited
+              ? `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}`
+              : `${detail.previewUrl}?v=${version}`}
+            alt={detail.relPath}
+          />
         </div>
         <aside className="pp-card pp-panel">
           <div className="pp-row" style={{ gap: 6 }}>
@@ -552,6 +561,28 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
               </div>
             </div>
           )}
+          <div>
+            <div className="pp-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <span className="pp-section-title">{t('editRecipe')}</span>
+              {recipe !== null && (
+                <button type="button" style={btn} onClick={() => setShowEdited(value => !value)}>
+                  {showEdited ? t('editOriginal') : t('editPreview')}
+                </button>
+              )}
+            </div>
+            {recipe !== null ? (
+              <div className="pp-chips">
+                <span className="pp-chip">{t('editCrop')} {Math.round(recipe.crop.width * 100)}% × {Math.round(recipe.crop.height * 100)}%</span>
+                <span className="pp-chip">{t('editRotate')} {recipe.rotate}°</span>
+                <span className="pp-chip">{t('editExposure')} {recipe.exposureEv > 0 ? '+' : ''}{recipe.exposureEv} EV</span>
+                <span className="pp-chip">{t('editContrast')} {recipe.contrast}</span>
+                <span className="pp-chip">{t('editSaturation')} {recipe.saturation}</span>
+                <span className="pp-chip">{t('editSharpen')} {recipe.sharpen}</span>
+              </div>
+            ) : (
+              <div className="pp-muted">{t('editNoRecipe')}</div>
+            )}
+          </div>
           <div className="pp-muted">
             {detail.width} × {detail.height}
             {detail.group !== undefined ? ` · ${t('groupRank').replace('{rank}', String(detail.group.rank)).replace('{size}', String(detail.group.size))}` : ''}
@@ -566,6 +597,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
   const [dest, setDest] = useState('')
   const [buckets, setBuckets] = useState(['keep', 'maybe'])
   const [mode, setMode] = useState('hardlink')
+  const [applyEdits, setApplyEdits] = useState(false)
   const [preview, setPreview] = useState<any>(null)
   const [result, setResult] = useState<any>(null)
   const [busy, setBusy] = useState(false)
@@ -575,6 +607,12 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
   const toggleBucket = (bucket: string) => setBuckets(current => (
     current.includes(bucket) ? current.filter(item => item !== bucket) : [...current, bucket]
   ))
+
+  const toggleEdits = (checked: boolean) => {
+    setApplyEdits(checked)
+    // 修图开关改变输出内容，旧预览不再可信。
+    setPreview(null)
+  }
 
   const choose = async () => {
     if (choosing) return
@@ -595,7 +633,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
     try {
       const data = await api(`/photo-picker/api/projects/${projectId}/export/${action}`, {
         method: 'POST',
-        body: JSON.stringify({ dest, buckets, mode }),
+        body: JSON.stringify({ dest, buckets, mode: applyEdits ? 'copy' : mode, edit: applyEdits ? 'recipe' : 'none' }),
       })
       if (action === 'preview') setPreview(data)
       else {
@@ -641,11 +679,23 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
               </label>
             ))}
             <span className="pp-muted" style={{ marginLeft: 8 }}>{t('exportMode')}</span>
-            <select value={mode} onChange={event => setMode(event.target.value)} style={{ ...input, padding: '4px 8px', fontSize: 12 }}>
+            <select
+              value={applyEdits ? 'copy' : mode}
+              disabled={applyEdits}
+              onChange={event => setMode(event.target.value)}
+              style={{ ...input, padding: '4px 8px', fontSize: 12 }}
+            >
               <option value="hardlink">{t('exportHardlink')}</option>
               <option value="copy">{t('exportCopy')}</option>
             </select>
           </div>
+          <div className="pp-checks">
+            <label>
+              <input type="checkbox" checked={applyEdits} onChange={event => toggleEdits(event.target.checked)} />
+              {t('editExport')}
+            </label>
+          </div>
+          {applyEdits && <div className="pp-callout">{t('editExportHint')}</div>}
         </div>
 
         <div className="pp-actions">
@@ -664,6 +714,9 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
             <div style={{ marginTop: 4 }}>
               {t('exportSkipped')} {preview.skippedExisting} · {t('exportConflict')} {preview.conflictCount} · {preview.sameVolume ? t('exportSameVolume') : t('exportCrossVolume')}
             </div>
+            {preview.editedCount > 0 && (
+              <div style={{ marginTop: 4 }}>{t('editExport')}: {preview.editedCount}</div>
+            )}
           </div>
         )}
 

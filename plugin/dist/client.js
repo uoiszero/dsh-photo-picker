@@ -127,6 +127,18 @@ var zh = {
   dimensionPostPotential: "\u540E\u671F\u6F5C\u529B",
   dimensionMoment: "\u77AC\u95F4",
   postProcessing: "\u540E\u671F\u5EFA\u8BAE",
+  editRecipe: "\u4FEE\u56FE\u5EFA\u8BAE",
+  editNoRecipe: "\u8FD9\u5F20\u7167\u7247\u6CA1\u6709\u7ED3\u6784\u5316\u4FEE\u56FE\u5EFA\u8BAE\uFF1B\u91CD\u8DD1\u5355\u5F20\u7CBE\u8BC4\u53EF\u751F\u6210\u3002",
+  editPreview: "\u67E5\u770B\u4FEE\u56FE\u6548\u679C",
+  editOriginal: "\u67E5\u770B\u539F\u56FE",
+  editCrop: "\u88C1\u526A",
+  editRotate: "\u6821\u6B63",
+  editExposure: "\u66DD\u5149",
+  editContrast: "\u5BF9\u6BD4",
+  editSaturation: "\u9971\u548C",
+  editSharpen: "\u9510\u5316",
+  editExport: "\u5E94\u7528\u4FEE\u56FE\u5EFA\u8BAE\uFF08\u8F93\u51FA JPEG \u526F\u672C\uFF09",
+  editExportHint: "\u5E94\u7528\u4FEE\u56FE\u65F6\u5F3A\u5236\u590D\u5236\uFF0C\u6E90\u6587\u4EF6\u4E0D\u4F1A\u4FEE\u6539\uFF1B\u6CA1\u6709\u914D\u65B9\u7684\u7167\u7247\u4FDD\u6301\u539F\u6837\u590D\u5236\u3002",
   reason: "\u7406\u7531",
   scoreLabel: "\u5206\u6570",
   backToWall: "\u8FD4\u56DE\u56FE\u5899",
@@ -313,6 +325,18 @@ var en = {
   dimensionPostPotential: "Post",
   dimensionMoment: "Moment",
   postProcessing: "Suggestions",
+  editRecipe: "Edit recipe",
+  editNoRecipe: "No structured edit recipe for this photo; re-run single scoring to generate one.",
+  editPreview: "Show edited preview",
+  editOriginal: "Show original",
+  editCrop: "Crop",
+  editRotate: "Straighten",
+  editExposure: "Exposure",
+  editContrast: "Contrast",
+  editSaturation: "Saturation",
+  editSharpen: "Sharpen",
+  editExport: "Apply edit recipes (JPEG copies)",
+  editExportHint: "Applying edits forces copy mode; source files are never modified. Photos without a recipe are copied unchanged.",
   reason: "Reason",
   scoreLabel: "Score",
   backToWall: "Back to wall",
@@ -1183,8 +1207,10 @@ function ReviewSection({ t, projectId, version, onChanged }) {
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
   const [error, setError] = (0, import_react.useState)(null);
+  const [showEdited, setShowEdited] = (0, import_react.useState)(false);
   (0, import_react.useEffect)(() => {
     setDetail(null);
+    setShowEdited(false);
     api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`).then(setDetail).catch((cause) => setError(String(cause)));
   }, [photoId]);
   const index = items.findIndex((item) => item.id === photoId);
@@ -1210,21 +1236,34 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   if (error !== null) return /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error);
   if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
   const dimensions = detail.dimensions ?? {};
-  return /* @__PURE__ */ h("section", { className: "pp-single" }, /* @__PURE__ */ h("div", { className: "pp-single-head" }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, "\u2190 ", t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { className: "pp-single-body" }, /* @__PURE__ */ h("div", { className: "pp-stage" }, /* @__PURE__ */ h("img", { src: `${detail.previewUrl}?v=${version}`, alt: detail.relPath })), /* @__PURE__ */ h("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
+  const recipe = detail.editRecipe ?? null;
+  const showingEdited = showEdited && recipe !== null;
+  return /* @__PURE__ */ h("section", { className: "pp-single" }, /* @__PURE__ */ h("div", { className: "pp-single-head" }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, "\u2190 ", t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { className: "pp-single-body" }, /* @__PURE__ */ h("div", { className: "pp-stage" }, /* @__PURE__ */ h(
+    "img",
+    {
+      src: showingEdited ? `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}` : `${detail.previewUrl}?v=${version}`,
+      alt: detail.relPath
+    }
+  )), /* @__PURE__ */ h("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h("div", { key, className: "pp-meter" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h("div", { className: "pp-meter-track" }, /* @__PURE__ */ h("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h("span", null, value === null || value === void 0 ? "\u2014" : value));
-  })), detail.reason !== null && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));
+  })), detail.reason !== null && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-row", style: { justifyContent: "space-between", alignItems: "center", marginBottom: 6 } }, /* @__PURE__ */ h("span", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setShowEdited((value) => !value) }, showEdited ? t("editOriginal") : t("editPreview"))), recipe !== null ? /* @__PURE__ */ h("div", { className: "pp-chips" }, /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editCrop"), " ", Math.round(recipe.crop.width * 100), "% \xD7 ", Math.round(recipe.crop.height * 100), "%"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editRotate"), " ", recipe.rotate, "\xB0"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editExposure"), " ", recipe.exposureEv > 0 ? "+" : "", recipe.exposureEv, " EV"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editContrast"), " ", recipe.contrast), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editSaturation"), " ", recipe.saturation), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editSharpen"), " ", recipe.sharpen)) : /* @__PURE__ */ h("div", { className: "pp-muted" }, t("editNoRecipe"))), /* @__PURE__ */ h("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));
 }
 function ExportDialog({ t, projectId, onClose }) {
   const [dest, setDest] = (0, import_react.useState)("");
   const [buckets, setBuckets] = (0, import_react.useState)(["keep", "maybe"]);
   const [mode, setMode] = (0, import_react.useState)("hardlink");
+  const [applyEdits, setApplyEdits] = (0, import_react.useState)(false);
   const [preview, setPreview] = (0, import_react.useState)(null);
   const [result, setResult] = (0, import_react.useState)(null);
   const [busy, setBusy] = (0, import_react.useState)(false);
   const [choosing, setChoosing] = (0, import_react.useState)(false);
   const [error, setError] = (0, import_react.useState)(null);
   const toggleBucket = (bucket) => setBuckets((current) => current.includes(bucket) ? current.filter((item) => item !== bucket) : [...current, bucket]);
+  const toggleEdits = (checked) => {
+    setApplyEdits(checked);
+    setPreview(null);
+  };
   const choose = async () => {
     if (choosing) return;
     setChoosing(true);
@@ -1243,7 +1282,7 @@ function ExportDialog({ t, projectId, onClose }) {
     try {
       const data = await api(`/photo-picker/api/projects/${projectId}/export/${action}`, {
         method: "POST",
-        body: JSON.stringify({ dest, buckets, mode })
+        body: JSON.stringify({ dest, buckets, mode: applyEdits ? "copy" : mode, edit: applyEdits ? "recipe" : "none" })
       });
       if (action === "preview") setPreview(data);
       else {
@@ -1264,7 +1303,17 @@ function ExportDialog({ t, projectId, onClose }) {
       placeholder: t("destPlaceholder"),
       style: { ...input, flex: 1 }
     }
-  ), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("exportChoose")))), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h("select", { value: mode, onChange: (event) => setMode(event.target.value), style: { ...input, padding: "4px 8px", fontSize: 12 } }, /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy"))))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume"))), result !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h(
+  ), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("exportChoose")))), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h("label", { key: bucket, className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h(
+    "select",
+    {
+      value: applyEdits ? "copy" : mode,
+      disabled: applyEdits,
+      onChange: (event) => setMode(event.target.value),
+      style: { ...input, padding: "4px 8px", fontSize: 12 }
+    },
+    /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")),
+    /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy"))
+  )), /* @__PURE__ */ h("div", { className: "pp-checks" }, /* @__PURE__ */ h("label", null, /* @__PURE__ */ h("input", { type: "checkbox", checked: applyEdits, onChange: (event) => toggleEdits(event.target.checked) }), t("editExport"))), applyEdits && /* @__PURE__ */ h("div", { className: "pp-callout" }, t("editExportHint"))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume")), preview.editedCount > 0 && /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("editExport"), ": ", preview.editedCount)), result !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
