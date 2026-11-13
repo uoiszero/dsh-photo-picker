@@ -15,7 +15,7 @@
 
 ```bash
 npm install              # 依赖（sharp/exifr/nanoid/esbuild；类型检查用 tsc）
-npm test                 # 全部 node:test（97 个）
+npm test                 # 全部 node:test（98 个）
 npm run typecheck        # tsc --noEmit（TSX 只转译、esbuild 不做类型检查）
 npm run build:client     # plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # /tmp/pp-fixtures（120 张测试图）
