@@ -267,8 +267,8 @@ docs/superpowers/           # 设计 spec 与执行计划
 
 ## 后续计划
 
-1. **更精确的修图建议（PS Actions）**
-   现在只给出白名单形式的后期代码（`crop_right`、`exposure_+0.3`、`straighten_+1.5` 等）。计划让模型输出更具体的参数与区域，并生成可直接执行的 Photoshop Action（`.atn`）或脚本，把「建议」变成「一键套用」。
+1. **更精确的修图建议（可移植配方）**
+   现在只给出白名单形式的后期代码（`crop_right`、`exposure_+0.3`、`straighten_+1.5` 等）。计划让模型输出裁剪/校正/曝光/对比/饱和度/锐化的结构化参数，用内置 sharp 引擎生成预览与 JPEG 副本；没有 Photoshop 也能用。RawTherapee/GIMP 适配器后续再加。详见 [Plan 5](docs/superpowers/plans/2026-11-13-photo-picker-05-edit-recipes.md)。
 
 2. **人物识别分组**
    按人物聚合同一场活动/婚礼里的照片，方便逐人筛选与交付。计划在本地做人脸检测与特征聚类（照片不出本机，可选开启），并把人物分组接进现有的图墙、组对比与导出流程。
@@ -289,6 +289,7 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 1：骨架与本机预处理](docs/superpowers/plans/2026-11-04-photo-picker-01-foundation.md)
   - [Plan 2：AI 批量流水线](docs/superpowers/plans/2026-11-04-photo-picker-02-ai-pipeline.md)
   - [Plan 4：复核、改判与导出](docs/superpowers/plans/2026-11-04-photo-picker-04-review-and-export.md)
+  - [Plan 5：可移植修图配方](docs/superpowers/plans/2026-11-13-photo-picker-05-edit-recipes.md)
 
 ## 版本
 
