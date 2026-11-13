@@ -523,7 +523,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
 
   const dimensions = detail.dimensions ?? {}
   const recipe = detail.editRecipe ?? null
-  const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}`
+  const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? 'none'}`
   const canCompare = recipe !== null && !editedFailed
   const showingEdited = showEdited && canCompare
   return (

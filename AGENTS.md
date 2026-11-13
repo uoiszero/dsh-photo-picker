@@ -81,6 +81,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - 网格打包是**分组感知**的，实际格数可能大于 `ceil(候选/16)`，测试不要假设等于该值。
 - 组对比每页 6 张；`groupDetail` 的成员按分数降序，名次从 1 开始。
 - 修图配方的所有被裁边都 <18% 的微裁在 `recipe.js` 里按未裁切处理（模型容易给 8–12% 的“安全边距”）；裁剪坐标按**旋转并自动去掉黑角后的画布**归一化：`edit.js` 先 `autoOrient`/`rotate`，再按原始尺寸计算最大内接矩形居中裁剪，最后才 `cropPixels`；不要把原图坐标直接喂给 `sharp.extract`。
+- 编辑预览 URL 带 `editSignature`（配方 + 引擎签名）；改了裁切/渲染策略后必须让签名变化，否则浏览器会继续显示旧图。
 - `edit:'recipe'` 导出强制 `copy`，绝不硬链接编辑后的新文件；HEIC/RAW 走 `decodeToJpeg` 平台回退，v1 编辑副本最长边 1200px，不保留原始分辨率。
 - 平台相关副作用必须走 `src/host/platform.js`（`sips`/`osascript`/`open`、WIC、`explorer`），不要散落在业务代码；测试用 `createPlatform({ platform, run, spawnProcess })` 注入假实现。
 - Windows 路径比较用 `isSameOrInside`（盘符/UNC/大小写），相对路径入库用 `toPortablePath`，拼回绝对路径用 `fromPortablePath`；不要用字符串前缀比较。
