@@ -1,3 +1,5 @@
+import { normalizeRecipe } from './recipe.js'
+
 /** 后期建议固定代码（spec 18.3）；带参数的四类另有正则校验。 */
 export const POST_PROCESSING_CODES = new Set([
   'crop_left', 'crop_right', 'crop_top', 'crop_bottom',
@@ -39,6 +41,10 @@ function pickString(...values) {
     if (typeof value === 'string' && value.trim() !== '') return value
   }
   return undefined
+}
+
+function pickObject(...values) {
+  return values.find(value => value !== null && typeof value === 'object' && !Array.isArray(value))
 }
 
 /** 兼容模型返回中文键名 / 扁平六维 / 嵌套 dimensions 三种形态。 */
@@ -166,11 +172,16 @@ export function parseScore(text) {
   const postProcessing = Array.isArray(postRaw)
     ? [...new Set(postRaw.filter(code => typeof code === 'string' && isPostProcessingCode(code)))]
     : []
+  // 非法/缺失/恒等配方一律为 null，不能让整次评分失败。
+  const editRecipe = normalizeRecipe(
+    pickObject(value.edit_recipe, value.editRecipe, value['修图配方'], value['修图建议参数']),
+  )
   return {
     score: Math.min(10, Math.max(0, Math.round(score * 10) / 10)),
     verdict,
     dimensions,
     postProcessing,
+    editRecipe,
     reason: normalizeReason(pickString(value.reason, value['理由'], value['原因'], value['说明']), 120),
   }
 }

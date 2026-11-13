@@ -76,7 +76,7 @@ test('parseRank validates order and best against the given labels', () => {
 })
 
 test('post processing whitelist and prompt version are the spec values', () => {
-  assert.equal(PROMPT_VERSION, 'v1')
+  assert.equal(PROMPT_VERSION, 'v2')
   assert.ok(POST_PROCESSING_CODES.has('crop_right'))
   assert.ok(isPostProcessingCode('straighten_+1.5'))
   assert.ok(isPostProcessingCode('exposure_-0.3'))
@@ -100,4 +100,36 @@ test('parseScore accepts Chinese keys and flat dimensions', () => {
   assert.equal(parsed.dimensions.moment, 8)
   assert.deepEqual(parsed.postProcessing, ['crop_left', 'warm'])
   assert.equal(parsed.reason, '光线不错')
+})
+
+test('parseScore accepts an optional edit_recipe', () => {
+  const parsed = parseScore(JSON.stringify({
+    score: 8.2,
+    dimensions: { composition: 8, light: 7, color: 8, technique: 9, post_potential: 8, moment: 7 },
+    verdict: 'keep',
+    post_processing: ['crop_right', 'exposure_+0.3'],
+    edit_recipe: {
+      version: 1,
+      crop: { left: 0.1, top: 0.05, width: 0.8, height: 0.9 },
+      rotate: 1.2,
+      exposureEv: 0.3,
+      contrast: 0.1,
+      saturation: 0.05,
+      sharpen: 0.2,
+    },
+    reason: '主体清晰',
+  }))
+  assert.equal(parsed.editRecipe.crop.left, 0.1)
+  assert.equal(parsed.editRecipe.rotate, 1.2)
+})
+
+test('parseScore ignores an invalid edit_recipe without failing the score', () => {
+  const parsed = parseScore(JSON.stringify({
+    score: 7,
+    dimensions: { composition: 7, light: 7, color: 7, technique: 7, post_potential: 7, moment: 7 },
+    verdict: 'maybe',
+    edit_recipe: { version: 99, crop: 'bad' },
+  }))
+  assert.equal(parsed.editRecipe, null)
+  assert.equal(parsed.verdict, 'maybe')
 })
