@@ -22,7 +22,7 @@ test('photo_picker run_stage starts a stage', async () => {
   assert.deepEqual(JSON.parse(value.result), { started: 'scan' })
 })
 
-test('photo_picker_export preview forwards dest, buckets and mode', async () => {
+test('photo_picker_export preview forwards dest, buckets, mode and edit', async () => {
   const calls = []
   const tool = createPhotoPickerExportTool({
     async resolveProject(ref) { return 'p1' },
@@ -30,13 +30,15 @@ test('photo_picker_export preview forwards dest, buckets and mode', async () => 
     async exportRun() { throw new Error('should not run') },
   })
   const value = await tool.execute({
-    action: 'preview', project: 'demo', dest: '/tmp/out', buckets: ['keep'], mode: 'copy',
+    action: 'preview', project: 'demo', dest: '/tmp/out', buckets: ['keep'], mode: 'copy', edit: 'recipe',
   }, {})
-  assert.deepEqual(calls, [['p1', { dest: '/tmp/out', buckets: ['keep'], mode: 'copy', layout: undefined }]])
+  assert.deepEqual(calls, [['p1', {
+    dest: '/tmp/out', buckets: ['keep'], mode: 'copy', layout: undefined, edit: 'recipe',
+  }]])
   assert.deepEqual(JSON.parse(value.result), { total: 2, counts: { keep: 2 } })
 })
 
-test('photo_picker_export run calls exportRun', async () => {
+test('photo_picker_export run calls exportRun and forwards edit', async () => {
   const calls = []
   const tool = createPhotoPickerExportTool({
     async resolveProject() { return 'p1' },
@@ -44,6 +46,8 @@ test('photo_picker_export run calls exportRun', async () => {
     async exportPreview() { throw new Error('should not preview') },
   })
   const value = await tool.execute({ action: 'run', project: 'demo', dest: '/tmp/out' }, {})
-  assert.deepEqual(calls, [['p1', { dest: '/tmp/out', buckets: undefined, mode: undefined, layout: undefined }]])
+  assert.deepEqual(calls, [['p1', {
+    dest: '/tmp/out', buckets: undefined, mode: undefined, layout: undefined, edit: undefined,
+  }]])
   assert.equal(JSON.parse(value.result).manifestPath, '/tmp/out/manifest.csv')
 })

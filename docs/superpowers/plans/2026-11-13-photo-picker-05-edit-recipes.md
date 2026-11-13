@@ -10,6 +10,16 @@
 
 ---
 
+## 实现状态（2026-11-13）
+
+- Task 1–10 已完成，分支 `feat/edit-recipes`；`npm test` 98/98、`npm run verify` 通过（含 `acceptance:5`）。
+- 偏差：Task 4 计划测试里的 `parsed.recipe` 统一为 `parsed.editRecipe`，避免解析结果出现两个同义字段。
+- 偏差：Task 5 的组详情/组对比查询也改成取最新 single assessment，避免 v1/v2 并存时成员重复。
+- 偏差：Task 9 在勾选“应用修图建议”时同时把导出方式显示/强制为 copy，并在切换勾选时清空旧预览，避免用未含修图的 dry-run 执行。
+- 未实现：RawTherapee `.pp3`、darktable XMP、GIMP 脚本、PS `.atn`；这些留作后续适配器。
+
+---
+
 ## 范围与非目标
 
 **本计划实现：**
@@ -97,9 +107,9 @@ test('normalizeRecipe clamps values and accepts cropped recipes', () => {
   })
   assert.ok(recipe)
   assert.equal(recipe.crop.left, 0)
-  assert.equal(recipe.crop.top, 0.98)
-  assert.equal(recipe.crop.width, 0.02)
-  assert.equal(recipe.crop.height, 0.02)
+  assert.equal(recipe.crop.top, 0.95)
+  assert.equal(recipe.crop.width, 1)
+  assert.equal(recipe.crop.height, 0.05)
   assert.equal(recipe.rotate, 5)
   assert.equal(recipe.exposureEv, -2)
   assert.equal(recipe.contrast, 1)
@@ -490,8 +500,8 @@ test('parseScore accepts an optional edit_recipe', () => {
     },
     reason: '主体清晰',
   }))
-  assert.equal(parsed.recipe.crop.left, 0.1)
-  assert.equal(parsed.recipe.rotate, 1.2)
+  assert.equal(parsed.editRecipe.crop.left, 0.1)
+  assert.equal(parsed.editRecipe.rotate, 1.2)
 })
 
 test('parseScore ignores an invalid edit_recipe without failing the score', () => {
@@ -501,7 +511,7 @@ test('parseScore ignores an invalid edit_recipe without failing the score', () =
     verdict: 'maybe',
     edit_recipe: { version: 99, crop: 'bad' },
   }))
-  assert.equal(parsed.recipe, null)
+  assert.equal(parsed.editRecipe, null)
   assert.equal(parsed.verdict, 'maybe')
 })
 ```

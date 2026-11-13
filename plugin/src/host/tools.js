@@ -87,6 +87,7 @@ export function createPhotoPickerExportTool(service) {
     description:
       '导出照片工作台里按判定分桶（keep / maybe / reject）的照片到本机目录：'
       + 'action=preview 做 dry-run 汇总，action=run 执行硬链接或复制并写 manifest。'
+      + 'edit=recipe 会用 sharp 应用修图建议并输出 JPEG 副本（源文件不改，强制复制）。'
       + 'dest 必须是本机绝对路径；不确定时先用 preview 给用户看数量与冲突。',
     parameters: {
       action: {
@@ -104,6 +105,11 @@ export function createPhotoPickerExportTool(service) {
       },
       mode: { type: 'string', enum: ['hardlink', 'copy'], description: '硬链接（默认）或复制' },
       layout: { type: 'string', enum: ['mirror', 'flat'], description: '保留相对目录结构（默认）或平铺' },
+      edit: {
+        type: 'string',
+        enum: ['none', 'recipe'],
+        description: 'none 导出原文件；recipe 用 sharp 应用修图建议并输出 JPEG 副本（默认 none）',
+      },
     },
     output: {
       schema: {
@@ -117,7 +123,13 @@ export function createPhotoPickerExportTool(service) {
     },
     async execute(args) {
       const id = await service.resolveProject(args.project)
-      const options = { dest: args.dest, buckets: args.buckets, mode: args.mode, layout: args.layout }
+      const options = {
+        dest: args.dest,
+        buckets: args.buckets,
+        mode: args.mode,
+        layout: args.layout,
+        edit: args.edit,
+      }
       const payload = args.action === 'preview'
         ? await service.exportPreview(id, options)
         : await service.exportRun(id, options)

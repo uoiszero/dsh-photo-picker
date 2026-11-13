@@ -27,7 +27,7 @@ jobs:
       - run: npm run build:client
       - run: git diff --exit-code -- plugin/dist/client.js
       - run: npm run fixtures
-      - run: npm run acceptance:1 && npm run acceptance:2 && npm run acceptance:4
+      - run: npm run acceptance:1 && npm run acceptance:2 && npm run acceptance:4 && npm run acceptance:5
       - name: Package plugin bundle
         run: >-
           tar -czf "dsh-photo-picker-${GITHUB_REF_NAME}.tar.gz"

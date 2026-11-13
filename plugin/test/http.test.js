@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import sharp from 'sharp'
 import { createHttpHandler } from '../src/host/http.js'
 
 function stub() {
@@ -35,16 +39,17 @@ function stub() {
     async promptInfo(projectId) { return { version: 'v1', project: projectId ?? null, prompts: { gridUser: 'x' } } },
     async models(route) { return { route, models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }] } },
     async previewFile() { return undefined },
-    async exportPreview(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
-    async exportRun(id, options) { return { total: 2, dest: options.dest, counts: { keep: 2 } } },
+    async exportPreview(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
+    async exportRun(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
     async listDir() { return [{ name: 'Pictures', path: '~/Pictures' }] },
     async chooseFolder() { return '~/Pictures' },
     async thumbFile() { return undefined },
+    async editedFile() { return undefined },
   }
 }
 
-async function withServer(run) {
-  const server = createServer(createHttpHandler(stub()))
+async function withServer(run, service = stub()) {
+  const server = createServer(createHttpHandler(service))
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   const origin = `http://127.0.0.1:${server.address().port}`
   try {
@@ -139,9 +144,11 @@ test('review, decisions and export routes answer JSON', async () => {
     const exported = await fetch(`${origin}/photo-picker/api/projects/p1/export/preview`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ dest: '/tmp/out' }),
+      body: JSON.stringify({ dest: '/tmp/out', edit: 'recipe' }),
     })
-    assert.deepEqual(await exported.json(), { total: 2, dest: '/tmp/out', counts: { keep: 2 } })
+    assert.deepEqual(await exported.json(), {
+      total: 2, dest: '/tmp/out', edit: 'recipe', counts: { keep: 2 },
+    })
 
     const preview = await fetch(`${origin}/photo-picker/media/preview/p1/ph1`)
     assert.equal(preview.status, 404)
@@ -210,4 +217,38 @@ test('run_all starts the pipeline and reveal opens Finder', async () => {
     })
     assert.deepEqual(await reveal.json(), { revealed: '/tmp/out' })
   })
+})
+
+test('edit preview route streams JPEG and returns structured 404', async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pp-http-edit-'))
+  const edited = path.join(dir, 'edited.jpg')
+  await sharp({ create: { width: 8, height: 8, channels: 3, background: '#336699' } })
+    .jpeg().toFile(edited)
+  const calls = []
+  const service = {
+    ...stub(),
+    async editedFile(projectId, photoId) {
+      calls.push([projectId, photoId])
+      return photoId === 'm1' ? edited : undefined
+    },
+  }
+  try {
+    await withServer(async origin => {
+      const response = await fetch(`${origin}/photo-picker/media/edit/p1/m1`)
+      assert.equal(response.status, 200)
+      assert.equal(response.headers.get('content-type'), 'image/jpeg')
+      const body = Buffer.from(await response.arrayBuffer())
+      assert.ok(body.length > 0)
+      // JPEG SOI marker，证明响应体是真实图片字节。
+      assert.equal(body[0], 0xff)
+      assert.equal(body[1], 0xd8)
+      assert.deepEqual(calls, [['p1', 'm1']])
+
+      const missing = await fetch(`${origin}/photo-picker/media/edit/p1/m2`)
+      assert.equal(missing.status, 404)
+      assert.equal((await missing.json()).error.code, 'NOT_FOUND')
+    }, service)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })

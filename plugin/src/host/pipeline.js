@@ -70,18 +70,19 @@ function hasAssessment(db, targetKind, targetId, stage, modelId) {
     .get(targetKind, targetId, stage, modelId ?? null, PROMPT_VERSION) !== undefined
 }
 
-function insertAssessment(db, projectId, { targetKind, targetId, stage, modelId, modelRoute, score, verdict, dimensions, postProcessing, reason, raw, tokensIn, tokensOut, costCny }) {
+function insertAssessment(db, projectId, { targetKind, targetId, stage, modelId, modelRoute, score, verdict, dimensions, postProcessing, recipe, reason, raw, tokensIn, tokensOut, costCny }) {
   if (hasAssessment(db, targetKind, targetId, stage, modelId)) return false
   db.prepare(`
     INSERT INTO assessments (id, project_id, target_kind, target_id, stage, model_route, model_id,
-      prompt_version, score, verdict, dimensions_json, post_processing_json, reason, raw_json,
-      tokens_in, tokens_out, cost_cny, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      prompt_version, score, verdict, dimensions_json, post_processing_json, recipe_json,
+      reason, raw_json, tokens_in, tokens_out, cost_cny, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     nanoid(), projectId, targetKind, targetId, stage, modelRoute ?? null, modelId ?? null, PROMPT_VERSION,
     score ?? null, verdict ?? null,
     dimensions === undefined ? null : JSON.stringify(dimensions),
     postProcessing === undefined ? null : JSON.stringify(postProcessing),
+    recipe === undefined || recipe === null ? null : JSON.stringify(recipe),
     reason ?? null, raw === undefined ? null : JSON.stringify(raw),
     tokensIn ?? 0, tokensOut ?? 0, costCny ?? 0, Date.now(),
   )
@@ -449,7 +450,7 @@ export async function runScoreStage({
         targetKind: 'photo', targetId: photo.id, stage: 'single',
         modelId: project.modelId, modelRoute: project.modelRoute,
         score: result.score, verdict, dimensions: result.dimensions,
-        postProcessing: result.postProcessing, reason: result.reason,
+        postProcessing: result.postProcessing, recipe: result.editRecipe, reason: result.reason,
         raw: result, tokensIn: usage.inputTokens, tokensOut: usage.outputTokens, costCny: cost,
       })
       upsertAiDecision(db, projectId, photo.id, verdict)

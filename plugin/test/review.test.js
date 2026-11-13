@@ -6,6 +6,7 @@ import path from 'node:path'
 import { openDb } from '../src/host/db.js'
 import {
   getPhotoDetail,
+  groupDetail,
   listGroups,
   listReviewPhotos,
   projectStats,
@@ -21,10 +22,19 @@ function setup() {
   const addPhoto = db.prepare(`INSERT INTO photos (id, project_id, rel_path, size_bytes, mtime_ms,
       format, taken_at, group_id, thumb_path, state, created_at)
     VALUES (?, 'p1', ?, 10, ?, 'jpeg', ?, ?, ?, ?, ?)`)
-  const addAssessment = db.prepare(`INSERT INTO assessments (id, project_id, target_kind, target_id,
+  const insertAssessment = db.prepare(`INSERT INTO assessments (id, project_id, target_kind, target_id,
       stage, model_id, prompt_version, score, verdict, dimensions_json, post_processing_json,
-      reason, created_at)
-    VALUES (?, 'p1', 'photo', ?, 'single', 'deepseek-flash', 'v1', ?, ?, ?, ?, ?, ?)`)
+      recipe_json, reason, created_at)
+    VALUES (?, 'p1', 'photo', ?, 'single', 'deepseek-flash', 'v1', ?, ?, ?, ?, ?, ?, ?)`)
+  const addAssessment = {
+    run(id, targetId, score, verdict, dimensions, postProcessing, reason, createdAt, recipe = null) {
+      insertAssessment.run(
+        id, targetId, score, verdict, dimensions, postProcessing,
+        recipe === null || recipe === undefined ? null : JSON.stringify(recipe),
+        reason, createdAt,
+      )
+    },
+  }
   return { db, dir, addPhoto, addAssessment }
 }
 
@@ -75,15 +85,21 @@ test('getPhotoDetail returns the group ranking', () => {
   const { db, dir, addPhoto, addAssessment } = setup()
   addPhoto.run('g1', 'g1.jpg', 100, 1, 'grp', 'thumbs/g1.webp', 'scored', 1)
   addPhoto.run('g2', 'g2.jpg', 200, 2, 'grp', 'thumbs/g2.webp', 'scored', 2)
-  addAssessment.run('x1', 'g1', 8, 'keep', '{}', '[]', '较好', 1)
+  addAssessment.run('x1', 'g1', 8, 'keep', '{}', '[]', '较好', 1, {
+    version: 1,
+    crop: { left: 0.1, top: 0, width: 0.5, height: 1 },
+  })
   addAssessment.run('x2', 'g2', 6, 'maybe', '{}', '[]', '一般', 2)
 
   const best = getPhotoDetail(db, 'p1', 'g1')
   assert.equal(best.group.id, 'grp')
   assert.equal(best.group.rank, 1)
   assert.equal(best.group.size, 2)
+  assert.ok(best.editRecipe)
+  assert.equal(best.editRecipe.crop.left, 0.1)
   const worse = getPhotoDetail(db, 'p1', 'g2')
   assert.equal(worse.group.rank, 2)
+  assert.equal(worse.editRecipe, null)
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })
@@ -145,6 +161,54 @@ test('listGroups returns sizes and member thumbnails', () => {
   assert.equal(groups.items[0].size, 3)
   assert.equal(groups.items[0].thumbUrls.length, 3)
   assert.match(groups.items[0].thumbUrls[0], /\/media\/thumb\/p1\/m1$/)
+  db.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('getPhotoDetail uses the latest single assessment', () => {
+  const { db, dir, addPhoto } = setup()
+  addPhoto.run('m1', 'm1.jpg', 100, 1, null, 'thumbs/m1.webp', 'scored', 1)
+  const insert = (id, promptVersion, createdAt, recipe, score) => db.prepare(`
+    INSERT INTO assessments (id, project_id, target_kind, target_id, stage,
+      prompt_version, score, verdict, recipe_json, created_at)
+    VALUES (?, 'p1', 'photo', 'm1', 'single', ?, ?, 'maybe', ?, ?)
+  `).run(id, promptVersion, score, recipe === null ? null : JSON.stringify(recipe), createdAt)
+  insert('a-v1', 'v1', 1, null, 6)
+  insert('a-v2', 'v2', 2, { crop: { left: 0.2, top: 0, width: 0.5, height: 1 } }, 8)
+  const detail = getPhotoDetail(db, 'p1', 'm1')
+  assert.equal(detail.score, 8)
+  assert.equal(detail.editRecipe.crop.left, 0.2)
+  db.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('group queries use the latest single assessment for every member', () => {
+  const { db, dir, addPhoto } = setup()
+  db.prepare(`INSERT INTO groups (id, project_id, kind, size, started_at, ended_at)
+              VALUES ('grp', 'p1', 'burst', 2, 1000, 2000)`).run()
+  addPhoto.run('g1', 'g1.jpg', 100, 1, 'grp', 'thumbs/g1.webp', 'scored', 1)
+  addPhoto.run('g2', 'g2.jpg', 200, 2, 'grp', 'thumbs/g2.webp', 'scored', 2)
+  const insert = (id, targetId, promptVersion, createdAt, score) => db.prepare(`
+    INSERT INTO assessments (id, project_id, target_kind, target_id, stage,
+      prompt_version, score, verdict, created_at)
+    VALUES (?, 'p1', 'photo', ?, 'single', ?, ?, 'maybe', ?)
+  `).run(id, targetId, promptVersion, score, createdAt)
+  insert('g1-v1', 'g1', 'v1', 1, 4)
+  insert('g1-v2', 'g1', 'v2', 2, 9)
+  insert('g2-v1', 'g2', 'v1', 1, 7)
+  insert('g2-v2', 'g2', 'v2', 2, 5)
+
+  const group = groupDetail(db, 'p1', 'grp')
+  assert.equal(group.members.length, 2) // 每张照片即使有 v1/v2 也只出现一次
+  const byId = Object.fromEntries(group.members.map(member => [member.id, member]))
+  assert.equal(byId.g1.score, 9)
+  assert.equal(byId.g2.score, 5)
+
+  const detail = getPhotoDetail(db, 'p1', 'g1')
+  assert.equal(detail.group.size, 2)
+  assert.equal(detail.group.rank, 1) // 最新分：g1 9 > g2 5
+  assert.equal(detail.group.members.find(member => member.id === 'g1').score, 9)
+  assert.equal(getPhotoDetail(db, 'p1', 'g2').group.rank, 2)
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })

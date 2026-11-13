@@ -49,6 +49,7 @@ jobs:
       - run: npm run acceptance:1
       - run: npm run acceptance:2
       - run: npm run acceptance:4
+      - run: npm run acceptance:5
 
   windows:
     name: windows
@@ -84,3 +85,4 @@ jobs:
       - run: npm run acceptance:1
       - run: npm run acceptance:2
       - run: npm run acceptance:4
+      - run: npm run acceptance:5

@@ -3,15 +3,20 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import sharp from 'sharp'
 import { openDb } from '../src/host/db.js'
 import { previewExport, runExport } from '../src/host/export.js'
 
-function setup() {
+async function setup() {
   const base = mkdtempSync(path.join(tmpdir(), 'pp-export-'))
   const source = path.join(base, 'source')
   const dest = path.join(base, 'dest')
   mkdirSync(path.join(source, 'day1'), { recursive: true })
-  writeFileSync(path.join(source, 'day1', 'a.jpg'), 'a'.repeat(100))
+  // 编辑导出要真的解码源图，fixture 必须是合法 JPEG。
+  const aJpeg = await sharp({
+    create: { width: 200, height: 150, channels: 3, background: { r: 120, g: 80, b: 40 } },
+  }).jpeg({ quality: 82 }).toBuffer()
+  writeFileSync(path.join(source, 'day1', 'a.jpg'), aJpeg)
   writeFileSync(path.join(source, 'day1', 'b.jpg'), 'b'.repeat(200))
   writeFileSync(path.join(source, 'c.jpg'), 'c'.repeat(300))
 
@@ -25,22 +30,22 @@ function setup() {
   const addAssessment = db.prepare(`INSERT INTO assessments (id, project_id, target_kind, target_id,
       stage, model_id, prompt_version, score, verdict, reason, created_at)
     VALUES (?, 'p1', 'photo', ?, 'single', 'deepseek-flash', 'v1', ?, ?, ?, ?)`)
-  addPhoto.run('a', 'day1/a.jpg', 100, 'thumbs/a.webp', now)
+  addPhoto.run('a', 'day1/a.jpg', aJpeg.length, 'thumbs/a.webp', now)
   addAssessment.run('aa', 'a', 8.4, 'keep', '好', now)
   addPhoto.run('b', 'day1/b.jpg', 200, 'thumbs/b.webp', now)
   addAssessment.run('ab', 'b', 8.1, 'keep', '好', now)
   addPhoto.run('c', 'c.jpg', 300, 'thumbs/c.webp', now)
   addAssessment.run('ac', 'c', 6.2, 'maybe', '中', now)
-  return { base, source, dest, db }
+  return { base, source, dest, db, aSize: aJpeg.length }
 }
 
 test('previewExport summarizes buckets, bytes and conflicts', async () => {
-  const { base, source, dest, db } = setup()
+  const { base, source, dest, db, aSize } = await setup()
   const project = db.prepare("SELECT * FROM projects WHERE id = 'p1'").get()
   const preview = await previewExport({ db, project, dest })
   assert.equal(preview.total, 3)
   assert.deepEqual(preview.counts, { keep: 2, maybe: 1 })
-  assert.equal(preview.totalBytes, 600)
+  assert.equal(preview.totalBytes, aSize + 500)
   assert.equal(preview.conflictCount, 0)
   assert.equal(preview.skippedExisting, 0)
   assert.equal(preview.sameVolume, true)
@@ -48,7 +53,7 @@ test('previewExport summarizes buckets, bytes and conflicts', async () => {
 
   // 目标目录已有同大小文件 → 计入 skippedExisting；不同大小 → 冲突
   mkdirSync(path.join(dest, 'keep', 'day1'), { recursive: true })
-  writeFileSync(path.join(dest, 'keep', 'day1', 'a.jpg'), 'a'.repeat(100))
+  writeFileSync(path.join(dest, 'keep', 'day1', 'a.jpg'), Buffer.alloc(aSize))
   writeFileSync(path.join(dest, 'keep', 'day1', 'b.jpg'), 'x'.repeat(50))
   const second = await previewExport({ db, project, dest })
   assert.equal(second.skippedExisting, 1)
@@ -60,7 +65,7 @@ test('previewExport summarizes buckets, bytes and conflicts', async () => {
 })
 
 test('runExport hardlinks buckets, writes manifests and never writes the source', async () => {
-  const { base, source, dest, db } = setup()
+  const { base, source, dest, db } = await setup()
   const project = db.prepare("SELECT * FROM projects WHERE id = 'p1'").get()
   const before = statSync(path.join(source, 'day1', 'a.jpg'))
   const result = await runExport({ db, project, dest })
@@ -77,7 +82,7 @@ test('runExport hardlinks buckets, writes manifests and never writes the source'
 
   const csv = readFileSync(path.join(dest, 'manifest.csv'), 'utf8').trim().split('\n')
   assert.equal(csv.length, 4)
-  assert.match(csv[0], /^rel_path,bucket,verdict,ai_score,group_id,reason,dest_path$/)
+  assert.match(csv[0], /^rel_path,bucket,verdict,ai_score,group_id,reason,edited,edit_engine,dest_path$/)
   const json = JSON.parse(readFileSync(path.join(dest, 'manifest.json'), 'utf8'))
   assert.equal(json.items.length, 3)
   assert.equal(json.counts.keep, 2)
@@ -91,7 +96,7 @@ test('runExport hardlinks buckets, writes manifests and never writes the source'
 })
 
 test('runExport copy mode duplicates files', async () => {
-  const { base, source, dest, db } = setup()
+  const { base, source, dest, db } = await setup()
   const project = db.prepare("SELECT * FROM projects WHERE id = 'p1'").get()
   const result = await runExport({ db, project, dest, mode: 'copy', buckets: ['maybe'] })
   assert.deepEqual(result.counts, { maybe: 1 })
@@ -103,7 +108,7 @@ test('runExport copy mode duplicates files', async () => {
 })
 
 test('export refuses a destination inside the source', async () => {
-  const { base, source, db } = setup()
+  const { base, source, db } = await setup()
   const project = db.prepare("SELECT * FROM projects WHERE id = 'p1'").get()
   await assert.rejects(
     runExport({ db, project, dest: path.join(source, 'out') }),
@@ -115,7 +120,7 @@ test('export refuses a destination inside the source', async () => {
 })
 
 test('export ignores grid_rejected and technically filtered photos', async () => {
-  const { base, source, dest, db } = setup()
+  const { base, source, dest, db } = await setup()
   writeFileSync(path.join(source, 'r.jpg'), 'r'.repeat(50))
   writeFileSync(path.join(source, 'f.jpg'), 'f'.repeat(60))
   const now = Date.now()
@@ -130,6 +135,47 @@ test('export ignores grid_rejected and technically filtered photos', async () =>
   const preview = await previewExport({ db, project, dest })
   assert.equal(preview.total, 3)
   assert.deepEqual(preview.counts, { keep: 2, maybe: 1 })
+  db.close()
+  rmSync(base, { recursive: true, force: true })
+})
+
+test('runExport applies recipes as JPEG copies and records the edit in the manifest', async () => {
+  const { base, source, dest, db } = await setup()
+  db.prepare(`UPDATE assessments SET recipe_json = ? WHERE id = 'aa'`).run(JSON.stringify({
+    version: 1,
+    crop: { left: 0.1, top: 0.1, width: 0.8, height: 0.8 },
+    rotate: 0, exposureEv: 0.2, contrast: 0, saturation: 0, sharpen: 0,
+  }))
+  const project = db.prepare("SELECT * FROM projects WHERE id = 'p1'").get()
+
+  const preview = await previewExport({ db, project, dest, edit: 'recipe' })
+  assert.equal(preview.edit, 'recipe')
+  assert.equal(preview.mode, 'copy')
+  assert.equal(preview.editedCount, 1)
+
+  const result = await runExport({ db, project, dest, edit: 'recipe', mode: 'copy', buckets: ['keep'] })
+  assert.equal(result.mode, 'copy')
+  assert.ok(result.editedCount >= 1)
+  const edited = result.items.find(item => item.edited === true)
+  assert.ok(edited)
+  assert.equal(edited.rel_path, 'day1/a.jpg')
+  assert.ok(edited.destPath.endsWith('.jpg'))
+  assert.ok(statSync(edited.destPath).isFile())
+
+  const manifest = JSON.parse(readFileSync(path.join(dest, 'manifest.json'), 'utf8'))
+  assert.ok(manifest.items.some(item => item.edited === true && item.editEngine === 'sharp-v1'))
+  assert.equal(manifest.editedCount, 1)
+  const csv = readFileSync(path.join(dest, 'manifest.csv'), 'utf8').trim().split('\n')
+  assert.match(csv[1], /,true,sharp-v1,/)
+
+  // 没有配方的照片仍按原文件复制。
+  const copied = result.items.find(item => item.rel_path === 'day1/b.jpg')
+  assert.equal(copied.edited, false)
+  const sourceA = statSync(path.join(source, 'day1', 'a.jpg'))
+  const destA = statSync(edited.destPath)
+  assert.notEqual(destA.ino, sourceA.ino)
+  assert.notEqual(destA.size, sourceA.size)
+
   db.close()
   rmSync(base, { recursive: true, force: true })
 })

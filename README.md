@@ -28,7 +28,7 @@
    ├─ 本地预处理（sha256 去重、模糊/曝光/过小过滤、连拍与同场景分组、缩略图）
    ├─ AI 网格粗筛（4×4 拼图，每格 1 次调用，选出值得进入下一轮的照片）
    ├─ 组内排序（连拍/同场景只保留最好的 1–2 张）
-   ├─ 单张精评（六维评分 + keep/maybe/reject + 后期建议）
+   ├─ 单张精评（六维评分 + keep/maybe/reject + 后期建议 + 修图配方）
    ├─ 人工复核（图墙 / 单图 / 组对比，批量改判与撤销）
    ├─ 校准（盲评 → 精确率 / 召回率 / F1 / 建议阈值）
    └─ 导出（硬链接或复制 + manifest，源目录零写入）
@@ -61,8 +61,9 @@
 - **AI 精评**：组内排序（>6 张分块）→ 单张六维评分 → 阈值收敛；坏 JSON 自动重试，人工判定永远覆盖 AI。
 - **预算与稳定性**：按 usage 实时计费、预算触顶暂停、并发/重试/退避、离峰开关、自动跑串联阶段、阶段间暂停、断点续跑。
 - **复核**：图墙筛选/排序/多选改判/撤销最近 20 步；单图 1600px 预览、维度条、理由、后期建议；组对比 6 张/页；`J/K/P/M/X/Space` 快捷键。
+- **修图配方**：单张精评可输出与软件无关的结构化配方（裁剪/旋转/曝光/对比/饱和度/锐化），用内置 sharp 引擎生成编辑预览；导出时可选择“应用修图建议”，输出 JPEG 编辑副本并写进 manifest，源文件保持只读。
 - **校准**：按拍摄时间分层抽 80 张盲评，输出 keep 精确率/召回率/F1、三分类一致率、阈值曲线，可一键应用建议阈值。
-- **导出**：keep / maybe / reject 分桶，硬链接（跨盘自动回退复制）或复制，保留目录结构或平铺，`manifest.csv` + `manifest.json`，导出前后抽样校验源文件未被修改。
+- **导出**：keep / maybe / reject 分桶，硬链接（跨盘自动回退复制）或复制，保留目录结构或平铺，`manifest.csv` + `manifest.json`，导出前后抽样校验源文件未被修改。勾选“应用修图建议”时按配方重新渲染 JPEG（强制复制，不做硬链接）。
 - **设置**：题材、模型（图片输入能力检测）、并发、预算、网格规格、阈值、分组参数、阶段间暂停、离峰开关、提示词全文、重跑指定阶段。
 
 ## 环境要求
@@ -197,7 +198,7 @@ Harness Web UI
 | `GET/POST /photo-picker/api/projects/:id/calibration[/sample]` | 校准样本 / 报告 |
 | `POST /photo-picker/api/projects/:id/export/preview\|run` | dry-run / 导出 |
 | `GET /photo-picker/api/prompt`、`/models` | 提示词全文 / 模型目录 |
-| `GET /photo-picker/media/thumb\|preview/...` | 缩略图 / 预览图 |
+| `GET /photo-picker/media/thumb\|preview\|edit/...` | 缩略图 / 预览图 / 编辑预览 |
 | `GET /photo-picker/api/projects/:id/events` | SSE 进度与费用 |
 
 ## 费用与隐私
@@ -218,13 +219,14 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 83 个单元/集成测试（node:test）
+npm test                 # 98 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
 npm run acceptance:1     # 本机扫描/预处理验收
 npm run acceptance:2     # AI 流水线端到端（mock LLM，不产生费用）
 npm run acceptance:4     # 复核/改判/导出/源零写入验收
+npm run acceptance:5     # 修图配方渲染与编辑副本导出（mock LLM，不产生费用）
 npm run check:release    # 三处版本号一致（打 tag 时还要与 tag 一致）
 npm run check:hygiene    # 个人路径 / 密钥 / 数据库 / 本地 file: 依赖
 npm run verify           # 以上全部串一遍，与 CI 同一套门禁
@@ -241,9 +243,9 @@ GitHub Actions（`.github/workflows/ci.yml`）在 push 到 `main` 与 PR 上跑�
 | job | 内容 |
 | --- | --- |
 | `checks`（ubuntu） | `npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端，并断言 `plugin/dist/client.js` 与源码同步 |
-| `acceptance`（ubuntu） | fixture + `acceptance:1/2/4`（假 LLM，零费用、无密钥） |
+| `acceptance`（ubuntu） | fixture + `acceptance:1/2/4/5`（假 LLM，零费用、无密钥） |
 | `windows` | `npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端（Windows 路径与平台层回归） |
-| `macOS` | 主平台回归：测试 + 三个验收脚本 |
+| `macOS` | 主平台回归：测试 + 四个验收脚本 |
 
 `main` 已启用规则集：改动必须走 PR，上表三个 job 全绿才能合并；禁止强推和删除分支。发布 tag 不受规则集限制。
 
@@ -268,7 +270,7 @@ docs/superpowers/           # 设计 spec 与执行计划
 ## 后续计划
 
 1. **更精确的修图建议（可移植配方）**
-   现在只给出白名单形式的后期代码（`crop_right`、`exposure_+0.3`、`straighten_+1.5` 等）。计划让模型输出裁剪/校正/曝光/对比/饱和度/锐化的结构化参数，用内置 sharp 引擎生成预览与 JPEG 副本；没有 Photoshop 也能用。RawTherapee/GIMP 适配器后续再加。详见 [Plan 5](docs/superpowers/plans/2026-11-13-photo-picker-05-edit-recipes.md)。
+   已实现：模型在单张精评里输出裁剪/校正/曝光/对比/饱和度/锐化的结构化配方，插件用内置 sharp 引擎生成预览与 JPEG 副本；没有 Photoshop 也能用。v1 只做全局调整，RawTherapee/GIMP 适配器与局部修图后续再加。详见 [Plan 5](docs/superpowers/plans/2026-11-13-photo-picker-05-edit-recipes.md)。
 
 2. **人物识别分组**
    按人物聚合同一场活动/婚礼里的照片，方便逐人筛选与交付。计划在本地做人脸检测与特征聚类（照片不出本机，可选开启），并把人物分组接进现有的图墙、组对比与导出流程。
@@ -280,6 +282,8 @@ docs/superpowers/           # 设计 spec 与执行计划
 - 图墙一次最多取 200 张，尚未做虚拟滚动；超大项目建议用筛选收敛。
 - 组对比每页 6 张，超过需要翻页。
 - 校准复用已经评分的照片，不会为了校准重新跑一遍 L1–L3。
+- 修图配方 v1 只做全局调整（裁剪/旋转/曝光/对比/饱和度/锐化），不做局部蒙版、污点修复或 RAW 显影。
+- HEIC/RAW 的编辑副本走平台解码回退，最长边为 1200px，不保留原始分辨率；需要更大余量时先用其他工具转成 JPEG 再导入。
 - 插件面向单用户本机，没有多人协作/权限体系。
 
 ## 文档

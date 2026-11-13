@@ -1,5 +1,5 @@
 /** 提示词版本；改动提示词时同步 bump，assessments 幂等键依赖它。 */
-export const PROMPT_VERSION = 'v1'
+export const PROMPT_VERSION = 'v2'
 
 const THEME_HINTS = {
   portrait: '这是一个以人像为主的项目：优先看眼神、皮肤、表情与人物姿态，容许背景虚化。',
@@ -52,12 +52,19 @@ export function scoreUserPrompt({ theme = 'mixed' } = {}) {
     '然后给出：总分 score（0–10，保留一位小数）、建议 verdict（keep / maybe / reject）、',
     '后期建议 post_processing（可多选，代码如 crop_left/crop_right/straighten_+1.5/',
     'exposure_+0.3/white_balance/warm/cool）、一句中文理由 reason（不超过 60 字）。',
+    '',
+    '如果确实有可执行的后期建议，再额外给出 edit_recipe（与软件无关的参数）：',
+    '{"version":1,"crop":{"left":0,"top":0,"width":1,"height":1},"rotate":0,',
+    '"exposureEv":0,"contrast":0,"saturation":0,"sharpen":0}。',
+    'crop 是 0–1 的归一化坐标，按“先旋转校正后的画布”计算；rotate 单位是度（-5–5）；',
+    'exposureEv 是曝光补偿（-2–2）；contrast/saturation 是 -1–1；sharpen 是 0–2。',
+    '没有明确可执行的调整时，省略 edit_recipe 或返回全 0/全画布。',
   ]
   if (hint !== '') lines.push('', hint)
   lines.push(
     '',
     '只返回如下结构的 JSON（不要围栏、不要解释）：',
-    '{"score":8.2,"dimensions":{"composition":8,"light":7,"color":8,"technique":9,"post_potential":7,"moment":6},"verdict":"keep","post_processing":["crop_right"],"reason":"主体清晰，侧光有层次"}',
+    '{"score":8.2,"dimensions":{"composition":8,"light":7,"color":8,"technique":9,"post_potential":7,"moment":6},"verdict":"keep","post_processing":["crop_right"],"edit_recipe":{"version":1,"crop":{"left":0.04,"top":0.02,"width":0.9,"height":0.94},"rotate":0.8,"exposureEv":0.2,"contrast":0.08,"saturation":0.04,"sharpen":0.2},"reason":"主体清晰，侧光有层次"}',
   )
   return lines.join('\n')
 }

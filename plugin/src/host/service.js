@@ -6,6 +6,7 @@ import path from 'node:path'
 import { createHttpHandler } from './http.js'
 import { dshHome } from './paths.js'
 import { isPeakHour } from './cost.js'
+import { renderEditedFile } from './edit.js'
 import { previewExport, runExport } from './export.js'
 import { renderPreview } from './images.js'
 import { fromPortablePath, platform } from './platform.js'
@@ -23,6 +24,7 @@ import {
   GRID_SYSTEM, PROMPT_VERSION, RANK_SYSTEM, SCORE_SYSTEM,
   gridUserPrompt, rankUserPrompt, scoreUserPrompt,
 } from './prompts.js'
+import { normalizeRecipe, recipeSignature } from './recipe.js'
 import { scanProject } from './scan.js'
 import { LocalSource } from './source.js'
 import { createPhotoPickerExportTool, createPhotoPickerTool } from './tools.js'
@@ -428,6 +430,35 @@ export class PhotoPickerService extends Service {
     const cachePath = path.join(project.workspaceDir, 'previews', `${photoId}.jpg`)
     try {
       const rendered = await renderPreview(sourcePath, cachePath)
+      return rendered.path
+    } catch {
+      return undefined
+    }
+  }
+
+  /** 最新 single assessment 的配方渲染成 JPEG 缓存；无配方或坏配方返回 undefined。 */
+  async editedFile(id, photoId) {
+    const { db, project } = await this.store.open(id)
+    const row = db.prepare(`
+      SELECT p.rel_path, a.recipe_json
+      FROM photos p
+      LEFT JOIN assessments a ON a.target_id = p.id
+        AND a.target_kind = 'photo' AND a.stage = 'single'
+      WHERE p.id = ? AND p.project_id = ?
+      ORDER BY a.created_at DESC LIMIT 1
+    `).get(photoId, id)
+    if (row === undefined || row.recipe_json === null) return undefined
+    let raw
+    try { raw = JSON.parse(row.recipe_json) } catch { return undefined }
+    const recipe = normalizeRecipe(raw)
+    if (recipe === null) return undefined
+    const sourcePath = fromPortablePath(project.sourcePath, row.rel_path)
+    const cachePath = path.join(
+      project.workspaceDir, 'edits',
+      `${photoId}-${recipeSignature(recipe)}.jpg`,
+    )
+    try {
+      const rendered = await renderEditedFile({ sourcePath, recipe, cachePath })
       return rendered.path
     } catch {
       return undefined
