@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS assessments (
   verdict TEXT,
   dimensions_json TEXT,
   post_processing_json TEXT,
+  recipe_json TEXT,
   reason TEXT,
   raw_json TEXT,
   tokens_in INTEGER NOT NULL DEFAULT 0,
@@ -175,6 +176,14 @@ CREATE INDEX IF NOT EXISTS idx_stage_runs_project ON stage_runs(project_id, stag
 CREATE INDEX IF NOT EXISTS idx_assess_target ON assessments(target_kind, target_id);
 `
 
+/** 旧项目库没有 recipe_json；CREATE TABLE IF NOT EXISTS 不会补列，必须显式迁移。 */
+export function ensureAssessmentRecipeColumn(db) {
+  const columns = db.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
+  if (!columns.includes('recipe_json')) {
+    db.exec('ALTER TABLE assessments ADD COLUMN recipe_json TEXT')
+  }
+}
+
 /** 打开（必要时创建）一个项目数据库。 */
 export function openDb(workspaceDir) {
   mkdirSync(workspaceDir, { recursive: true })
@@ -182,6 +191,7 @@ export function openDb(workspaceDir) {
   db.exec('PRAGMA journal_mode=WAL;')
   db.exec('PRAGMA foreign_keys=ON;')
   db.exec(SCHEMA)
+  ensureAssessmentRecipeColumn(db)
   return db
 }
 
