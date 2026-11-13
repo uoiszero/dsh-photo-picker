@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 
 export const RECIPE_VERSION = 1
 export const RECIPE_ENGINE = 'sharp-v2'
+export const MIN_CROP_TRIM = 0.18
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 const number = value => (typeof value === 'number' && Number.isFinite(value) ? value : undefined)
@@ -26,6 +27,21 @@ export function isIdentityRecipe(recipe) {
     && Math.abs(recipe.contrast ?? 0) < 1e-6
     && Math.abs(recipe.saturation ?? 0) < 1e-6
     && Math.abs(recipe.sharpen ?? 0) < 1e-6
+}
+
+function trimEdges(crop) {
+  return [
+    { edge: 'left', amount: crop.left },
+    { edge: 'right', amount: Math.max(0, 1 - crop.left - crop.width) },
+    { edge: 'top', amount: crop.top },
+    { edge: 'bottom', amount: Math.max(0, 1 - crop.top - crop.height) },
+  ].filter(item => item.amount > 1e-6)
+}
+
+/** 模型常给出 8–12% 的“安全微裁”；所有被裁边都小于阈值时，整条裁切没有构图意义。 */
+export function isMicroCrop(crop) {
+  const edges = trimEdges(crop)
+  return edges.length > 0 && edges.every(item => item.amount < MIN_CROP_TRIM)
 }
 
 /** 缺失/恒等/坏数据返回 null；合法配方返回规范化对象。 */
@@ -54,6 +70,9 @@ export function normalizeRecipe(input) {
     contrast: round4(clamp(number(read(input, 'contrast', '对比度')) ?? 0, -1, 1)),
     saturation: round4(clamp(number(read(input, 'saturation', '饱和度')) ?? 0, -1, 1)),
     sharpen: round4(clamp(number(read(input, 'sharpen', 'sharpening', '锐化')) ?? 0, 0, 2)),
+  }
+  if (isMicroCrop(recipe.crop)) {
+    recipe.crop = { left: 0, top: 0, width: 1, height: 1 }
   }
   return isIdentityRecipe(recipe) ? null : recipe
 }

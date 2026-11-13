@@ -219,7 +219,7 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 100 个单元/集成测试（node:test）
+npm test                 # 102 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures

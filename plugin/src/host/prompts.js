@@ -1,5 +1,5 @@
 /** 提示词版本；改动提示词时同步 bump，assessments 幂等键依赖它。 */
-export const PROMPT_VERSION = 'v3'
+export const PROMPT_VERSION = 'v4'
 
 const THEME_HINTS = {
   portrait: '这是一个以人像为主的项目：优先看眼神、皮肤、表情与人物姿态，容许背景虚化。',
@@ -59,6 +59,7 @@ export function scoreUserPrompt({ theme = 'mixed' } = {}) {
     '先逐边检查左、右、上、下：只有某条边存在明确分散注意力的元素（路人、杂物、半截物体等），',
     '且裁掉后主体仍完整时，才裁切；否则保持全画幅。不要为了填字段而套用固定边距。',
     '不同照片应因主体和干扰位置不同而给出不同的裁切框；不要照抄示例里的数字。',
+    '裁切必须有构图意义：如果所有被裁的边都小于 18%，就不要裁，保持全画幅；轻微边缘干扰应忽略。',
     'crop 是 0–1 的归一化坐标，按“先旋转校正并自动裁掉黑角后的画布”计算；',
     'left/top 是保留区域左上角，width/height 是保留比例；rotate 单位是度（-5–5）；',
     'exposureEv 是曝光补偿（-2–2）；contrast/saturation 是 -1–1；sharpen 是 0–2。',

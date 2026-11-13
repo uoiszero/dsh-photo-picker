@@ -1,5 +1,7 @@
 /** 复核查询：最终判定 = 人类决策 > AI 判定 > 默认 maybe（spec 7.7）。 */
 
+import { normalizeRecipe } from './recipe.js'
+
 const REVIEW_STATES = ['scored', 'grid_selected', 'grid_error', 'score_failed', 'ok']
 const VERDICTS = new Set(['keep', 'maybe', 'reject'])
 
@@ -62,7 +64,7 @@ function toReviewPhoto(row, projectId) {
     reason: row.reason ?? null,
     dimensions: parseJson(row.dimensions_json),
     postProcessing: parseJson(row.post_processing_json) ?? [],
-    editRecipe: parseJson(row.recipe_json),
+    editRecipe: normalizeRecipe(parseJson(row.recipe_json)),
     thumbUrl: `/photo-picker/media/thumb/${projectId}/${row.id}`,
     previewUrl: `/photo-picker/media/preview/${projectId}/${row.id}`,
   }
