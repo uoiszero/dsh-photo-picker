@@ -467,10 +467,12 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [showEdited, setShowEdited] = useState(false)
+  const [editedFailed, setEditedFailed] = useState(false)
 
   useEffect(() => {
     setDetail(null)
     setShowEdited(false)
+    setEditedFailed(false)
     api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`)
       .then(setDetail)
       .catch(cause => setError(String(cause)))
@@ -503,7 +505,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
 
   const dimensions = detail.dimensions ?? {}
   const recipe = detail.editRecipe ?? null
-  const showingEdited = showEdited && recipe !== null
+  const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}`
+  const canCompare = recipe !== null && !editedFailed
+  const showingEdited = showEdited && canCompare
   return (
     <section className="pp-single">
       <div className="pp-single-head">
@@ -518,13 +522,25 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
       </div>
 
       <div className="pp-single-body">
-        <div className="pp-stage">
+        <div className={`pp-stage${canCompare ? ' pp-stage-compare' : ''}`}>
           <img
-            src={showingEdited
-              ? `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}`
-              : `${detail.previewUrl}?v=${version}`}
+            src={showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`}
             alt={detail.relPath}
+            onError={() => { if (showingEdited) setEditedFailed(true) }}
           />
+          {canCompare && (
+            <>
+              <button
+                type="button"
+                className="pp-compare-btn"
+                aria-pressed={showingEdited}
+                onClick={() => setShowEdited(value => !value)}
+              >
+                {showingEdited ? t('editOriginal') : t('editPreview')}
+              </button>
+              <span className="pp-compare-badge">{showingEdited ? t('editAfter') : t('editBefore')}</span>
+            </>
+          )}
         </div>
         <aside className="pp-card pp-panel">
           <div className="pp-row" style={{ gap: 6 }}>
@@ -562,14 +578,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
             </div>
           )}
           <div>
-            <div className="pp-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span className="pp-section-title">{t('editRecipe')}</span>
-              {recipe !== null && (
-                <button type="button" style={btn} onClick={() => setShowEdited(value => !value)}>
-                  {showEdited ? t('editOriginal') : t('editPreview')}
-                </button>
-              )}
-            </div>
+            <div className="pp-section-title" style={{ marginBottom: 6 }}>{t('editRecipe')}</div>
             {recipe !== null ? (
               <div className="pp-chips">
                 <span className="pp-chip">{t('editCrop')} {Math.round(recipe.crop.width * 100)}% × {Math.round(recipe.crop.height * 100)}%</span>

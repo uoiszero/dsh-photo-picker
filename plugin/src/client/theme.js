@@ -277,6 +277,24 @@ export const STYLES = `
   max-width: 100%; max-height: 72vh; border-radius: 10px;
   object-fit: contain;
 }
+.pp-stage-compare { position: relative; }
+.pp-compare-btn {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  z-index: 2; display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary);
+  font-size: 12px; line-height: 1.2;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(8px);
+}
+.pp-compare-btn:hover { border-color: var(--dsw-alias-border-l2); }
+.pp-compare-badge {
+  position: absolute; top: 18px; right: 18px; z-index: 2;
+  padding: 3px 8px; border-radius: 999px; font-size: 11px;
+  color: #fff; background: rgba(0, 0, 0, .58);
+  pointer-events: none;
+}
 .pp-meters { display: grid; gap: 8px; }
 .pp-meter {
   display: grid; grid-template-columns: 58px 1fr 24px; gap: 8px;
