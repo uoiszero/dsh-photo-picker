@@ -141,7 +141,14 @@ export function getPhotoDetail(db, projectId, photoId) {
   if (row.group_id !== null) {
     const members = db.prepare(`
       SELECT p.id, p.rel_path, a.score FROM photos p
-      LEFT JOIN assessments a ON a.target_id = p.id AND a.target_kind = 'photo' AND a.stage = 'single'
+      LEFT JOIN assessments a ON a.id = (
+        SELECT id FROM assessments latest
+        WHERE latest.target_id = p.id
+          AND latest.target_kind = 'photo'
+          AND latest.stage = 'single'
+        ORDER BY latest.created_at DESC, latest.id DESC
+        LIMIT 1
+      )
       WHERE p.project_id = ? AND p.group_id = ? AND p.thumb_path IS NOT NULL
       ORDER BY a.score IS NULL, a.score DESC, p.rel_path
     `).all(projectId, row.group_id)
@@ -207,7 +214,14 @@ export function groupDetail(db, projectId, groupId) {
     FROM photos p
     LEFT JOIN decisions d ON d.photo_id = p.id AND d.source = 'human'
     LEFT JOIN decisions ai_d ON ai_d.photo_id = p.id AND ai_d.source = 'ai'
-    LEFT JOIN assessments a ON a.target_id = p.id AND a.target_kind = 'photo' AND a.stage = 'single'
+    LEFT JOIN assessments a ON a.id = (
+      SELECT id FROM assessments latest
+      WHERE latest.target_id = p.id
+        AND latest.target_kind = 'photo'
+        AND latest.stage = 'single'
+      ORDER BY latest.created_at DESC, latest.id DESC
+      LIMIT 1
+    )
     WHERE p.project_id = ? AND p.group_id = ? AND p.thumb_path IS NOT NULL
     ORDER BY a.score IS NULL, a.score DESC, p.rel_path
   `).all(projectId, groupId)

@@ -6,6 +6,7 @@ import path from 'node:path'
 import { openDb } from '../src/host/db.js'
 import {
   getPhotoDetail,
+  groupDetail,
   listGroups,
   listReviewPhotos,
   projectStats,
@@ -177,6 +178,37 @@ test('getPhotoDetail uses the latest single assessment', () => {
   const detail = getPhotoDetail(db, 'p1', 'm1')
   assert.equal(detail.score, 8)
   assert.equal(detail.editRecipe.crop.left, 0.2)
+  db.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('group queries use the latest single assessment for every member', () => {
+  const { db, dir, addPhoto } = setup()
+  db.prepare(`INSERT INTO groups (id, project_id, kind, size, started_at, ended_at)
+              VALUES ('grp', 'p1', 'burst', 2, 1000, 2000)`).run()
+  addPhoto.run('g1', 'g1.jpg', 100, 1, 'grp', 'thumbs/g1.webp', 'scored', 1)
+  addPhoto.run('g2', 'g2.jpg', 200, 2, 'grp', 'thumbs/g2.webp', 'scored', 2)
+  const insert = (id, targetId, promptVersion, createdAt, score) => db.prepare(`
+    INSERT INTO assessments (id, project_id, target_kind, target_id, stage,
+      prompt_version, score, verdict, created_at)
+    VALUES (?, 'p1', 'photo', ?, 'single', ?, ?, 'maybe', ?)
+  `).run(id, targetId, promptVersion, score, createdAt)
+  insert('g1-v1', 'g1', 'v1', 1, 4)
+  insert('g1-v2', 'g1', 'v2', 2, 9)
+  insert('g2-v1', 'g2', 'v1', 1, 7)
+  insert('g2-v2', 'g2', 'v2', 2, 5)
+
+  const group = groupDetail(db, 'p1', 'grp')
+  assert.equal(group.members.length, 2) // 每张照片即使有 v1/v2 也只出现一次
+  const byId = Object.fromEntries(group.members.map(member => [member.id, member]))
+  assert.equal(byId.g1.score, 9)
+  assert.equal(byId.g2.score, 5)
+
+  const detail = getPhotoDetail(db, 'p1', 'g1')
+  assert.equal(detail.group.size, 2)
+  assert.equal(detail.group.rank, 1) // 最新分：g1 9 > g2 5
+  assert.equal(detail.group.members.find(member => member.id === 'g1').score, 9)
+  assert.equal(getPhotoDetail(db, 'p1', 'g2').group.rank, 2)
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })
