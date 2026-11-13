@@ -2,7 +2,7 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.1.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+**版本 0.2.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
 
 ---
 
@@ -296,6 +296,8 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 5：可移植修图配方](docs/superpowers/plans/2026-11-13-photo-picker-05-edit-recipes.md)
 
 ## 版本
+
+0.2.0（修图配方）：单张精评输出可移植修图配方（裁剪/旋转/曝光/对比/饱和/锐化），内置 sharp 渲染、原图/修图切换、九宫格/十字线辅助线，导出可生成 JPEG 编辑副本；旋转自动去黑角，8–12% 微裁会被过滤。
 
 0.1.0（首个可运行版本：本机照片 → AI 分层筛选 → 人工复核 → 导出）。
 

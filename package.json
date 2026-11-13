@@ -1,6 +1,6 @@
 {
   "name": "photo-picker-workbench",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "DSH 照片工作台：本机照片扫描、AI 分层筛选、人工复核与导出。",
