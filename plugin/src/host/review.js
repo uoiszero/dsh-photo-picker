@@ -7,8 +7,14 @@ const BASE_FROM = `
   FROM photos p
   LEFT JOIN decisions d ON d.photo_id = p.id AND d.source = 'human'
   LEFT JOIN decisions ai_d ON ai_d.photo_id = p.id AND ai_d.source = 'ai'
-  LEFT JOIN assessments a
-    ON a.target_id = p.id AND a.target_kind = 'photo' AND a.stage = 'single'
+  LEFT JOIN assessments a ON a.id = (
+    SELECT id FROM assessments latest
+    WHERE latest.target_id = p.id
+      AND latest.target_kind = 'photo'
+      AND latest.stage = 'single'
+    ORDER BY latest.created_at DESC, latest.id DESC
+    LIMIT 1
+  )
   WHERE p.project_id = ? AND p.thumb_path IS NOT NULL
 `
 
@@ -56,6 +62,7 @@ function toReviewPhoto(row, projectId) {
     reason: row.reason ?? null,
     dimensions: parseJson(row.dimensions_json),
     postProcessing: parseJson(row.post_processing_json) ?? [],
+    editRecipe: parseJson(row.recipe_json),
     thumbUrl: `/photo-picker/media/thumb/${projectId}/${row.id}`,
     previewUrl: `/photo-picker/media/preview/${projectId}/${row.id}`,
   }
@@ -116,6 +123,7 @@ export function getPhotoDetail(db, projectId, photoId) {
     SELECT p.id, p.rel_path, p.state, p.width, p.height, p.taken_at, p.group_id, p.camera, p.lens,
            d.verdict AS human_verdict,
            a.score, a.verdict AS ai_verdict, a.reason, a.dimensions_json, a.post_processing_json,
+           a.recipe_json,
            ${VERDICT_SQL} AS verdict
     ${BASE_FROM} AND p.id = ?
   `).get(projectId, photoId)

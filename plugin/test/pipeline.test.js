@@ -182,7 +182,24 @@ test('runScoreStage writes verdicts and never overwrites a human decision', asyn
               VALUES ('p1', 'p1', 'keep', 'human', 0)`).run()
   const project = projectOf(db)
   const llm = fakeLlm([
-    { text: JSON.stringify({ score: 8.2, verdict: 'keep', dimensions: { composition: 8 }, post_processing: ['crop_right'], reason: '好' }) },
+    {
+      text: JSON.stringify({
+        score: 8.2,
+        verdict: 'keep',
+        dimensions: { composition: 8 },
+        post_processing: ['crop_right'],
+        reason: '好',
+        edit_recipe: {
+          version: 1,
+          crop: { left: 0.1, top: 0.1, width: 0.8, height: 0.8 },
+          rotate: 0,
+          exposureEv: 0.2,
+          contrast: 0,
+          saturation: 0,
+          sharpen: 0,
+        },
+      }),
+    },
     { text: JSON.stringify({ score: 1, verdict: 'reject', dimensions: {}, post_processing: [], reason: '差' }) },
   ])
   const result = await runScoreStage({
@@ -197,6 +214,9 @@ test('runScoreStage writes verdicts and never overwrites a human decision', asyn
   assert.deepEqual({ verdict: decisions.p1.verdict, source: decisions.p1.source }, { verdict: 'keep', source: 'human' })
   assert.deepEqual({ verdict: decisions.p0.verdict, source: decisions.p0.source }, { verdict: 'keep', source: 'ai' })
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM assessments WHERE stage = 'single'").get().n, 2)
+  const row = db.prepare("SELECT recipe_json FROM assessments WHERE stage = 'single' LIMIT 1").get()
+  assert.ok(row.recipe_json)
+  assert.equal(JSON.parse(row.recipe_json).crop.left, 0.1)
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM photos WHERE state = 'scored'").get().n, 2)
   db.close()
   rmSync(dir, { recursive: true, force: true })
