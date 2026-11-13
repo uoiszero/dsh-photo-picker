@@ -463,11 +463,29 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   )
 }
 
+function storedGuide(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return false
+  }
+}
+
+function storeGuide(key: string, value: boolean) {
+  try {
+    localStorage.setItem(key, value ? '1' : '0')
+  } catch {
+    // 隐私模式或存储被禁用时只保留当前会话状态
+  }
+}
+
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [showEdited, setShowEdited] = useState(false)
   const [editedFailed, setEditedFailed] = useState(false)
+  const [showGrid, setShowGrid] = useState(() => storedGuide('photoPicker.gridGuide'))
+  const [showCross, setShowCross] = useState(() => storedGuide('photoPicker.crossGuide'))
 
   useEffect(() => {
     setDetail(null)
@@ -522,25 +540,65 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
       </div>
 
       <div className="pp-single-body">
-        <div className={`pp-stage${canCompare ? ' pp-stage-compare' : ''}`}>
-          <img
-            src={showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`}
-            alt={detail.relPath}
-            onError={() => { if (showingEdited) setEditedFailed(true) }}
-          />
-          {canCompare && (
-            <>
+        <div className="pp-stage">
+          <div className="pp-stage-frame">
+            <img
+              src={showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`}
+              alt={detail.relPath}
+              onError={() => { if (showingEdited) setEditedFailed(true) }}
+            />
+            {showGrid && (
+              <div className="pp-guide pp-guide-grid" aria-hidden="true">
+                <span className="v" style={{ left: '33.333%' }} />
+                <span className="v" style={{ left: '66.666%' }} />
+                <span className="h" style={{ top: '33.333%' }} />
+                <span className="h" style={{ top: '66.666%' }} />
+              </div>
+            )}
+            {showCross && (
+              <div className="pp-guide pp-guide-cross" aria-hidden="true">
+                <span className="v" style={{ left: '50%' }} />
+                <span className="h" style={{ top: '50%' }} />
+              </div>
+            )}
+            <div className="pp-stage-tools">
               <button
                 type="button"
-                className="pp-compare-btn"
+                className="pp-tool-btn"
+                aria-pressed={showGrid}
+                onClick={() => {
+                  const next = !showGrid
+                  setShowGrid(next)
+                  storeGuide('photoPicker.gridGuide', next)
+                }}
+              >
+                {t('gridGuide')}
+              </button>
+              <button
+                type="button"
+                className="pp-tool-btn"
+                aria-pressed={showCross}
+                onClick={() => {
+                  const next = !showCross
+                  setShowCross(next)
+                  storeGuide('photoPicker.crossGuide', next)
+                }}
+              >
+                {t('crossGuide')}
+              </button>
+            </div>
+            {canCompare && (
+              <button
+                type="button"
+                className="pp-photo-badge"
                 aria-pressed={showingEdited}
+                title={t('editToggleHint')}
                 onClick={() => setShowEdited(value => !value)}
               >
-                {showingEdited ? t('editOriginal') : t('editPreview')}
+                {showingEdited ? t('editAfter') : t('editBefore')}
               </button>
-              <span className="pp-edit-badge">{showingEdited ? t('editAfter') : t('editBefore')}</span>
-            </>
-          )}
+            )}
+          </div>
         </div>
         <aside className="pp-card pp-panel">
           <div className="pp-row" style={{ gap: 6 }}>

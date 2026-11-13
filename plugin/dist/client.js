@@ -129,10 +129,11 @@ var zh = {
   postProcessing: "\u540E\u671F\u5EFA\u8BAE",
   editRecipe: "\u4FEE\u56FE\u5EFA\u8BAE",
   editNoRecipe: "\u8FD9\u5F20\u7167\u7247\u6CA1\u6709\u7ED3\u6784\u5316\u4FEE\u56FE\u5EFA\u8BAE\uFF1B\u91CD\u8DD1\u5355\u5F20\u7CBE\u8BC4\u53EF\u751F\u6210\u3002",
-  editPreview: "\u67E5\u770B\u4FEE\u56FE\u6548\u679C",
-  editOriginal: "\u67E5\u770B\u539F\u56FE",
   editBefore: "\u539F\u56FE",
   editAfter: "\u4FEE\u56FE",
+  editToggleHint: "\u70B9\u51FB\u5207\u6362\u539F\u56FE/\u4FEE\u56FE",
+  gridGuide: "\u4E5D\u5BAB\u683C",
+  crossGuide: "\u5341\u5B57\u7EBF",
   editCrop: "\u88C1\u526A",
   editRotate: "\u6821\u6B63",
   editExposure: "\u66DD\u5149",
@@ -329,10 +330,11 @@ var en = {
   postProcessing: "Suggestions",
   editRecipe: "Edit recipe",
   editNoRecipe: "No structured edit recipe for this photo; re-run single scoring to generate one.",
-  editPreview: "Show edited preview",
-  editOriginal: "Show original",
   editBefore: "Before",
   editAfter: "After",
+  editToggleHint: "Click to switch original/edited",
+  gridGuide: "Rule of thirds",
+  crossGuide: "Crosshair",
   editCrop: "Crop",
   editRotate: "Straighten",
   editExposure: "Exposure",
@@ -759,24 +761,37 @@ var STYLES = `
   max-width: 100%; max-height: 72vh; border-radius: 10px;
   object-fit: contain;
 }
-.pp-stage-compare { position: relative; }
-.pp-compare-btn {
-  position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
-  z-index: 2; display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 13px; border-radius: 999px; cursor: pointer;
-  border: 1px solid var(--dsw-alias-border-l1);
-  background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary);
-  font-size: 12px; line-height: 1.2;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .24);
-  backdrop-filter: blur(8px);
+.pp-stage-frame { position: relative; display: inline-block; max-width: 100%; line-height: 0; }
+.pp-stage-frame > img { display: block; }
+.pp-guide { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.pp-guide span { position: absolute; background: rgba(255, 255, 255, .72); box-shadow: 0 0 2px rgba(0, 0, 0, .55); }
+.pp-guide .v { top: 0; bottom: 0; width: 1px; }
+.pp-guide .h { left: 0; right: 0; height: 1px; }
+.pp-stage-tools {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  display: flex; gap: 4px; line-height: 1.2;
 }
-.pp-compare-btn:hover { border-color: var(--dsw-alias-border-l2); }
-.pp-edit-badge {
-  position: absolute; top: 18px; right: 18px; z-index: 2;
-  padding: 3px 8px; border-radius: 999px; font-size: 11px;
-  color: #fff; background: rgba(0, 0, 0, .58);
-  pointer-events: none;
+.pp-tool-btn {
+  padding: 4px 8px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, .28);
+  background: rgba(0, 0, 0, .5); color: #fff;
+  font-size: 11px; line-height: 1.2;
+  backdrop-filter: blur(6px);
 }
+.pp-tool-btn[aria-pressed="true"] {
+  background: var(--dsw-alias-brand-primary);
+  border-color: var(--dsw-alias-brand-primary);
+  color: #fff;
+}
+.pp-photo-badge {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  padding: 4px 9px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, .28);
+  background: rgba(0, 0, 0, .58); color: #fff;
+  font-size: 11px; line-height: 1.2;
+  backdrop-filter: blur(6px);
+}
+.pp-photo-badge:hover { border-color: rgba(255, 255, 255, .55); }
 .pp-meters { display: grid; gap: 8px; }
 .pp-meter {
   display: grid; grid-template-columns: 58px 1fr 24px; gap: 8px;
@@ -1226,11 +1241,26 @@ function ReviewSection({ t, projectId, version, onChanged }) {
     }
   )))), selected.length > 0 && /* @__PURE__ */ h("div", { className: "pp-batch" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setSelected([]) }, t("clearSelection"))));
 }
+function storedGuide(key) {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+function storeGuide(key, value) {
+  try {
+    localStorage.setItem(key, value ? "1" : "0");
+  } catch {
+  }
+}
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }) {
   const [detail, setDetail] = (0, import_react.useState)(null);
   const [error, setError] = (0, import_react.useState)(null);
   const [showEdited, setShowEdited] = (0, import_react.useState)(false);
   const [editedFailed, setEditedFailed] = (0, import_react.useState)(false);
+  const [showGrid, setShowGrid] = (0, import_react.useState)(() => storedGuide("photoPicker.gridGuide"));
+  const [showCross, setShowCross] = (0, import_react.useState)(() => storedGuide("photoPicker.crossGuide"));
   (0, import_react.useEffect)(() => {
     setDetail(null);
     setShowEdited(false);
@@ -1264,7 +1294,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}`;
   const canCompare = recipe !== null && !editedFailed;
   const showingEdited = showEdited && canCompare;
-  return /* @__PURE__ */ h("section", { className: "pp-single" }, /* @__PURE__ */ h("div", { className: "pp-single-head" }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, "\u2190 ", t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { className: "pp-single-body" }, /* @__PURE__ */ h("div", { className: `pp-stage${canCompare ? " pp-stage-compare" : ""}` }, /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("section", { className: "pp-single" }, /* @__PURE__ */ h("div", { className: "pp-single-head" }, /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: onClose }, "\u2190 ", t("backToWall")), detail.group !== void 0 && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h("div", { className: "pp-single-body" }, /* @__PURE__ */ h("div", { className: "pp-stage" }, /* @__PURE__ */ h("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h(
     "img",
     {
       src: showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`,
@@ -1273,16 +1303,43 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
         if (showingEdited) setEditedFailed(true);
       }
     }
-  ), canCompare && /* @__PURE__ */ h(Fragment, null, /* @__PURE__ */ h(
+  ), showGrid && /* @__PURE__ */ h("div", { className: "pp-guide pp-guide-grid", "aria-hidden": "true" }, /* @__PURE__ */ h("span", { className: "v", style: { left: "33.333%" } }), /* @__PURE__ */ h("span", { className: "v", style: { left: "66.666%" } }), /* @__PURE__ */ h("span", { className: "h", style: { top: "33.333%" } }), /* @__PURE__ */ h("span", { className: "h", style: { top: "66.666%" } })), showCross && /* @__PURE__ */ h("div", { className: "pp-guide pp-guide-cross", "aria-hidden": "true" }, /* @__PURE__ */ h("span", { className: "v", style: { left: "50%" } }), /* @__PURE__ */ h("span", { className: "h", style: { top: "50%" } })), /* @__PURE__ */ h("div", { className: "pp-stage-tools" }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
-      className: "pp-compare-btn",
+      className: "pp-tool-btn",
+      "aria-pressed": showGrid,
+      onClick: () => {
+        const next = !showGrid;
+        setShowGrid(next);
+        storeGuide("photoPicker.gridGuide", next);
+      }
+    },
+    t("gridGuide")
+  ), /* @__PURE__ */ h(
+    "button",
+    {
+      type: "button",
+      className: "pp-tool-btn",
+      "aria-pressed": showCross,
+      onClick: () => {
+        const next = !showCross;
+        setShowCross(next);
+        storeGuide("photoPicker.crossGuide", next);
+      }
+    },
+    t("crossGuide")
+  )), canCompare && /* @__PURE__ */ h(
+    "button",
+    {
+      type: "button",
+      className: "pp-photo-badge",
       "aria-pressed": showingEdited,
+      title: t("editToggleHint"),
       onClick: () => setShowEdited((value) => !value)
     },
-    showingEdited ? t("editOriginal") : t("editPreview")
-  ), /* @__PURE__ */ h("span", { className: "pp-edit-badge" }, showingEdited ? t("editAfter") : t("editBefore")))), /* @__PURE__ */ h("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
+    showingEdited ? t("editAfter") : t("editBefore")
+  ))), /* @__PURE__ */ h("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h("button", { type: "button", style: { ...btn, flex: 1 }, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h("div", { key, className: "pp-meter" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h("div", { className: "pp-meter-track" }, /* @__PURE__ */ h("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h("span", null, value === null || value === void 0 ? "\u2014" : value));
   })), detail.reason !== null && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h("div", null, /* @__PURE__ */ h("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("editRecipe")), recipe !== null ? /* @__PURE__ */ h("div", { className: "pp-chips" }, /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editCrop"), " ", Math.round(recipe.crop.width * 100), "% \xD7 ", Math.round(recipe.crop.height * 100), "%"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editRotate"), " ", recipe.rotate, "\xB0"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editExposure"), " ", recipe.exposureEv > 0 ? "+" : "", recipe.exposureEv, " EV"), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editContrast"), " ", recipe.contrast), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editSaturation"), " ", recipe.saturation), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("editSharpen"), " ", recipe.sharpen)) : /* @__PURE__ */ h("div", { className: "pp-muted" }, t("editNoRecipe"))), /* @__PURE__ */ h("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));

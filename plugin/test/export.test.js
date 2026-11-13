@@ -163,10 +163,10 @@ test('runExport applies recipes as JPEG copies and records the edit in the manif
   assert.ok(statSync(edited.destPath).isFile())
 
   const manifest = JSON.parse(readFileSync(path.join(dest, 'manifest.json'), 'utf8'))
-  assert.ok(manifest.items.some(item => item.edited === true && item.editEngine === 'sharp-v1'))
+  assert.ok(manifest.items.some(item => item.edited === true && item.editEngine === 'sharp-v2'))
   assert.equal(manifest.editedCount, 1)
   const csv = readFileSync(path.join(dest, 'manifest.csv'), 'utf8').trim().split('\n')
-  assert.match(csv[1], /,true,sharp-v1,/)
+  assert.match(csv[1], /,true,sharp-v2,/)
 
   // 没有配方的照片仍按原文件复制。
   const copied = result.items.find(item => item.rel_path === 'day1/b.jpg')

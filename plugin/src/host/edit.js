@@ -3,7 +3,7 @@ import path from 'node:path'
 import { nanoid } from 'nanoid'
 import sharp from 'sharp'
 import { decodeToJpeg } from './images.js'
-import { RECIPE_ENGINE, cropPixels } from './recipe.js'
+import { RECIPE_ENGINE, cropPixels, maxInscribedRect } from './recipe.js'
 
 export { RECIPE_ENGINE as EDIT_ENGINE }
 
@@ -29,10 +29,25 @@ export async function renderEditedBuffer({ sourcePath, recipe }) {
   if (Math.abs(recipe.rotate) > 1e-6) {
     rotated = rotated.rotate(recipe.rotate, { background: { r: 0, g: 0, b: 0, alpha: 1 } })
   }
+  const metadata = await sharp(input).metadata()
+  const orientation = metadata.orientation ?? 1
+  const sourceWidth = orientation >= 5 && orientation <= 8 ? metadata.height : metadata.width
+  const sourceHeight = orientation >= 5 && orientation <= 8 ? metadata.width : metadata.height
   const stage = await rotated.toBuffer({ resolveWithObject: true })
-  const crop = cropPixels(recipe, stage.info.width, stage.info.height)
+  // 旋转会留下黑角；按原始尺寸计算最大内接矩形，再在旋转后的画布上居中裁剪。
+  const inner = maxInscribedRect(sourceWidth, sourceHeight, recipe.rotate)
+  const innerCrop = {
+    left: Math.floor((stage.info.width - inner.width) / 2),
+    top: Math.floor((stage.info.height - inner.height) / 2),
+    width: inner.width,
+    height: inner.height,
+  }
+  const straightened = innerCrop.width === stage.info.width && innerCrop.height === stage.info.height
+    ? stage.data
+    : await sharp(stage.data).extract(innerCrop).toBuffer()
+  const crop = cropPixels(recipe, innerCrop.width, innerCrop.height)
 
-  let output = sharp(stage.data).extract(crop)
+  let output = sharp(straightened).extract(crop)
   if (Math.abs(recipe.exposureEv) > 1e-6) {
     output = output.linear(2 ** recipe.exposureEv, 0)
   }
