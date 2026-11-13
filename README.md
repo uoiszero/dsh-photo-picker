@@ -70,7 +70,7 @@
 - **macOS**：HEIC/RAW 依赖系统 `sips`；选文件夹用 `osascript`；「在 Finder 中显示」用 `open`。
 - **Windows**：Windows 10/11（x64 / ARM64）；原生对话框与解码走 PowerShell + WIC + `explorer`，需要 PowerShell 5.1。HEIC 依赖系统 HEIF/HEVC 扩展，RAW 依赖 Raw Image Extension；没有扩展时对应照片会标记为 `unreadable`。DSH 必须原生运行在 Windows，不要从 WSL 启动，否则系统对话框不可用。
 - **DSH**（macOS 用创造者模式会话安装，Windows 用 DSH CLI 安装），Node **22.23+**（使用内置 `node:sqlite`）。
-- **已验证 DSH 版本**：`0.2.2-rc.1`（macOS）与 `0.2.1-rc.3`（Windows 11 ARM64）。插件不绑定固定 DSH 版本；升级 DSH 后建议跑 `npm test` 并打开工作台做一次冒烟。
+- **已验证 DSH 版本**：`0.2.2-rc.1` / `0.2.2-rc.2`（macOS）与 `0.2.1-rc.3`（Windows 11 ARM64）。插件不绑定固定 DSH 版本；升级 DSH 后建议跑 `npm test` 并打开工作台做一次冒烟。
 - 模型路由需支持**图片输入**（默认 `deepseek-official / deepseek-flash`）。不支持图片的模型会在设置里置灰。模型服务由使用者**自备**，插件不内置任何模型或凭据。
 - 本仓库开发依赖：`sharp`、`exifr`、`nanoid`、`esbuild`；测试用 `node:test`。
 
