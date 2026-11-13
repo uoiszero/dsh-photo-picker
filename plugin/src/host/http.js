@@ -205,6 +205,17 @@ export function createHttpHandler(service) {
         return
       }
 
+      const editMatch = pathname.match(/^\/photo-picker\/media\/edit\/([^/]+)\/([^/]+)$/)
+      if (editMatch !== null) {
+        const file = await service.editedFile(editMatch[1], editMatch[2])
+        if (file === undefined) {
+          return send(res, 404, { error: { code: 'NOT_FOUND', message: 'edited preview not found' } })
+        }
+        res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=3600' })
+        createReadStream(file).pipe(res)
+        return
+      }
+
       return send(res, 404, { error: { code: 'NOT_FOUND', message: pathname } })
     } catch (error) {
       return send(res, error?.statusCode ?? 500, {
