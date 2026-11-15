@@ -2,9 +2,18 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.2.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+**版本 0.3.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
 
-### 0.2.0 新增
+### 0.3.0 新增
+
+- 统一 UI 设计系统：来源选择改为等宽 tabs，返回/关闭统一为左上/右上，主操作统一右侧。
+- 按钮抽成 primary / secondary / danger / ghost 变体；表单输入与下拉统一 34px 高度、8px 圆角和自定义箭头。
+- 图墙工具栏按“筛选 / 排序·数量·撤销”左右分组；加载、错误、空状态统一为 `StateCard`。
+- 补窄屏布局、深色主题语义色、键盘焦点与 aria 标签。
+- 新增 `check:ui` 门禁：禁止内联按钮样式和散落状态色。
+- SMB 网络源入口继续标记「暂不可用」，Plan 3 保持暂停。
+
+### 0.2.0（修图配方）
 
 - 单张精评输出可移植修图配方，内置 sharp 渲染；图片右上角「原图/修图」标签点击切换。
 - 九宫格 / 十字线辅助线，可同时显示并记住开关状态。
@@ -58,7 +67,7 @@
 
 *导出：分桶、硬链接或复制，先 dry-run 预览数量与体积，再执行。*
 
-> 截图使用本地生成的合成测试素材与模拟评分，仅用于展示界面，**不含真实照片、个人路径或账号信息**。
+> 截图使用本地生成的合成测试素材与模拟评分，仅用于展示界面，**不含真实照片、个人路径或账号信息**。截图为上一轮素材，界面细节以当前版本为准。
 
 ## 功能
 
@@ -236,6 +245,7 @@ npm run acceptance:4     # 复核/改判/导出/源零写入验收
 npm run acceptance:5     # 修图配方渲染与编辑副本导出（mock LLM，不产生费用）
 npm run check:release    # 三处版本号一致（打 tag 时还要与 tag 一致）
 npm run check:hygiene    # 个人路径 / 密钥 / 数据库 / 本地 file: 依赖
+npm run check:ui         # 禁止内联按钮样式与散落状态色
 npm run verify           # 以上全部串一遍，与 CI 同一套门禁
 ```
 
@@ -245,11 +255,11 @@ npm run verify           # 以上全部串一遍，与 CI 同一套门禁
 
 ### CI
 
-GitHub Actions（`.github/workflows/ci.yml`）在 push 到 `main` 与 PR 上跑三个 job：
+GitHub Actions（`.github/workflows/ci.yml`）在 push 到 `main` 与 PR 上跑四个 job：
 
 | job | 内容 |
 | --- | --- |
-| `checks`（ubuntu） | `npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端，并断言 `plugin/dist/client.js` 与源码同步 |
+| `checks`（ubuntu） | `npm ci` → 测试 → 类型检查 → 版本/卫生检查 → UI 检查 → 构建客户端，并断言 `plugin/dist/client.js` 与源码同步 |
 | `acceptance`（ubuntu） | fixture + `acceptance:1/2/4/5`（假 LLM，零费用、无密钥） |
 | `windows` | `npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端（Windows 路径与平台层回归） |
 | `macOS` | 主平台回归：测试 + 四个验收脚本 |
@@ -305,6 +315,8 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 6：UI 统筹整改](docs/superpowers/plans/2026-11-15-photo-picker-06-ui-consistency.md)
 
 ## 版本
+
+0.3.0（UI 统筹）：统一按钮/表单/返回关闭/状态展示，补齐窄屏、深色主题、aria 与 `check:ui` 门禁；SMB 入口继续暂停。
 
 0.2.0（修图配方）：单张精评输出可移植修图配方（裁剪/旋转/曝光/对比/饱和/锐化），内置 sharp 渲染、原图/修图标签切换、九宫格/十字线辅助线，导出可生成 JPEG 编辑副本；旋转自动去黑角，8–12% 微裁会被过滤，编辑预览带配方签名缓存失效。
 
