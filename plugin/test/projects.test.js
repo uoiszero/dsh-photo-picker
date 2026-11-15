@@ -44,3 +44,21 @@ test('createProject rejects a missing path and leaves no registry entry', async 
   assert.equal((await store.list()).length, 0)
   rmSync(base, { recursive: true, force: true })
 })
+
+test('createProject stores an smb source with its mount point', async () => {
+  const { base, photos, dsh } = fixture()
+  const store = new ProjectStore({ dshHome: dsh, workspaceRoot: path.join(base, 'work') })
+  const created = await store.create({
+    source: { kind: 'smb', path: photos, mountPoint: photos, url: 'smb://nas/photos' },
+    name: 'SMB 项目',
+  })
+  assert.equal(created.sourceKind, 'smb')
+  assert.equal(created.mountPoint, photos)
+  const { db } = await store.open(created.id)
+  const mount = db.prepare('SELECT url, mount_point, status FROM mounts LIMIT 1').get()
+  assert.equal(mount.url, 'smb://nas/photos')
+  assert.equal(mount.mount_point, created.mountPoint)
+  assert.equal(mount.status, 'connected')
+  store.close(created.id)
+  rmSync(base, { recursive: true, force: true })
+})

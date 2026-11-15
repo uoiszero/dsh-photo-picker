@@ -56,7 +56,10 @@ export class ProjectStore {
   }
 
   async create({ source, name, theme = 'mixed', budgetCny = 30, workspaceDir } = {}) {
-    if (source?.kind !== 'local') throw new Error('only local sources are supported in plan 1')
+    const sourceKind = source?.kind ?? 'local'
+    if (!['local', 'smb', 'nfs'].includes(sourceKind)) {
+      throw new Error(`unsupported source kind: ${sourceKind}`)
+    }
     const sourcePath = path.resolve(String(source.path))
     let sourceStat
     try {
@@ -83,21 +86,34 @@ export class ProjectStore {
     try {
       db.prepare(`
         INSERT INTO projects (
-          id, name, workspace_dir, source_kind, source_path, theme,
+          id, name, workspace_dir, source_kind, source_path, mount_point, theme,
           budget_cny, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(id, projectName, workspace, 'local', sourcePath, theme, budgetCny, now, now)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id, projectName, workspace, sourceKind, sourcePath,
+        sourceKind === 'local' ? null : (source.mountPoint ?? sourcePath), theme, budgetCny, now, now,
+      )
       const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
       const registry = readRegistry(this.registryFile())
       registry.projects.push({
         id,
         name: projectName,
         workspaceDir: workspace,
-        sourceKind: 'local',
+        sourceKind,
         sourcePath,
+        mountPoint: sourceKind === 'local' ? null : (source.mountPoint ?? sourcePath),
         createdAt: now,
       })
       writeRegistry(registry, this.registryFile())
+      if (sourceKind !== 'local') {
+        db.prepare(`INSERT INTO mounts (id, url, mount_point, auto_mounted, status, last_seen_at)
+          VALUES (?, ?, ?, 1, 'connected', ?)`).run(
+          nanoid(),
+          String(source.url ?? source.remoteUrl ?? sourcePath),
+          source.mountPoint ?? sourcePath,
+          now,
+        )
+      }
       this.handles.set(id, { db, project: toProject(row) })
       return toProject(row)
     } catch (error) {

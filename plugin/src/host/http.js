@@ -172,6 +172,13 @@ export function createHttpHandler(service) {
         return streamSse(service, req, res, eventsMatch[1])
       }
 
+      if (pathname === '/photo-picker/api/fs/volumes') {
+        return send(res, 200, await service.listNetworkVolumes())
+      }
+      if (pathname === '/photo-picker/api/fs/smb/connect' && req.method === 'POST') {
+        const body = await readJson(req)
+        return send(res, 200, await service.connectSmb(body.url))
+      }
       if (pathname === '/photo-picker/api/fs/list') {
         return send(res, 200, await service.listDir(url.searchParams.get('path') ?? undefined))
       }

@@ -202,6 +202,20 @@ export function createPlatform({
     return folderPick
   }
 
+  /** 打开 URL（SMB/NFS），登录与凭据由系统对话框/钥匙串处理。 */
+  async function openUrl(url) {
+    if (isMac) {
+      await run('open', [url], { timeout: 30_000 })
+      return
+    }
+    if (isWindows) {
+      const child = spawnProcess('explorer.exe', [url], { detached: true, stdio: 'ignore' })
+      child?.unref?.()
+      return
+    }
+    await run('xdg-open', [url], { timeout: 30_000 })
+  }
+
   async function revealPath(target, isDirectory = false) {
     if (isMac) {
       await run('open', isDirectory ? [target] : ['-R', target], { timeout: 30_000 })
@@ -220,7 +234,7 @@ export function createPlatform({
     await run('xdg-open', [isDirectory ? target : path.dirname(target)], { timeout: 30_000 })
   }
 
-  return { name, isMac, isWindows, decodeToJpeg, imageSize, chooseFolder, revealPath }
+  return { name, isMac, isWindows, decodeToJpeg, imageSize, chooseFolder, revealPath, openUrl }
 }
 
 export const platform = createPlatform()
