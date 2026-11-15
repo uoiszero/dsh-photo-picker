@@ -485,28 +485,36 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   return (
     <section className="pp-review">
       <div className="pp-toolbar">
-        <span className="pp-section-title">{t('review')}</span>
-        <div className="pp-seg">
-          {filters.map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={filter === value ? 'active' : ''}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="pp-toolbar-group">
+          <span className="pp-section-title">{t('review')}</span>
+          <div className="pp-seg" role="group" aria-label={t('review')}>
+            {filters.map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={filter === value ? 'active' : ''}
+                aria-pressed={filter === value}
+                onClick={() => setFilter(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <select value={sort} onChange={event => setSort(event.target.value)} className="pp-select pp-select-sm">
-          <option value="score">{t('sortScore')}</option>
-          <option value="score_asc">{t('sortScoreAsc')}</option>
-          <option value="group">{t('sortGroup')}</option>
-          <option value="taken_at">{t('sortTaken')}</option>
-          <option value="rel_path">{t('sortPath')}</option>
-        </select>
-        <span className="pp-muted" style={{ marginLeft: 'auto' }}>{items.length} {t('photos')}</span>
-        <button type="button" style={btn} disabled={undo.length === 0} onClick={undoLast}>{t('undoAction')}</button>
+        <div className="pp-toolbar-group pp-toolbar-end">
+          <label className="pp-toolbar-field">
+            <span>{t('sortLabel')}</span>
+            <select value={sort} onChange={event => setSort(event.target.value)} className="pp-select pp-select-sm">
+              <option value="score">{t('sortScore')}</option>
+              <option value="score_asc">{t('sortScoreAsc')}</option>
+              <option value="group">{t('sortGroup')}</option>
+              <option value="taken_at">{t('sortTaken')}</option>
+              <option value="rel_path">{t('sortPath')}</option>
+            </select>
+          </label>
+          <span className="pp-muted">{items.length} {t('photos')}</span>
+          <button type="button" className="pp-button" disabled={undo.length === 0} onClick={undoLast}>{t('undoAction')}</button>
+        </div>
       </div>
 
       {error !== null && <div className="pp-error">{error}</div>}

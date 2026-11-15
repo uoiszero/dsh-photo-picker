@@ -95,6 +95,7 @@ var zh = {
   checkpoint: "\u68C0\u67E5\u70B9",
   aiDisabled: "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u7247\u8F93\u5165\uFF0CAI \u9636\u6BB5\u5DF2\u7981\u7528\u3002",
   review: "\u590D\u6838",
+  sortLabel: "\u6392\u5E8F",
   filterAll: "\u5168\u90E8",
   filterKeep: "\u4FDD\u7559",
   filterMaybe: "\u5F85\u5B9A",
@@ -311,6 +312,7 @@ var en = {
   checkpoint: "Checkpoints",
   aiDisabled: "The current model does not accept image input, so AI stages are disabled.",
   review: "Review",
+  sortLabel: "Sort",
   filterAll: "All",
   filterKeep: "\u4FDD\u7559",
   filterMaybe: "\u5F85\u5B9A",
@@ -783,6 +785,9 @@ var STYLES = `
   background: color-mix(in srgb, var(--dsw-alias-bg-base) 86%, transparent);
   backdrop-filter: blur(12px);
 }
+.pp-toolbar-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.pp-toolbar-end { margin-left: auto; }
+.pp-toolbar-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-seg {
   display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px;
   background: var(--dsw-alias-bg-layer-2);
@@ -1024,6 +1029,8 @@ var STYLES = `
   .pp-summary-top .pp-path { margin-left: 0 !important; max-width: 100%; width: 100%; }
   .pp-toolbar { position: static; padding: 9px 10px; }
   .pp-toolbar .pp-seg { flex: 1 1 100%; overflow-x: auto; }
+  .pp-toolbar-end { margin-left: 0; width: 100%; }
+  .pp-toolbar-field { flex: 1; }
   .pp-modal { width: calc(100vw - 24px); padding: 16px; }
   .pp-drawer { width: 100vw; padding: 16px; }
   .pp-project { padding: 14px; }
@@ -1413,16 +1420,17 @@ function ReviewSection({ t, projectId, version, onChanged }) {
     ["maybe", verdictLabel(t, "maybe")],
     ["reject", verdictLabel(t, "reject")]
   ];
-  return /* @__PURE__ */ h("section", { className: "pp-review" }, /* @__PURE__ */ h("div", { className: "pp-toolbar" }, /* @__PURE__ */ h("span", { className: "pp-section-title" }, t("review")), /* @__PURE__ */ h("div", { className: "pp-seg" }, filters.map(([value, label]) => /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("section", { className: "pp-review" }, /* @__PURE__ */ h("div", { className: "pp-toolbar" }, /* @__PURE__ */ h("div", { className: "pp-toolbar-group" }, /* @__PURE__ */ h("span", { className: "pp-section-title" }, t("review")), /* @__PURE__ */ h("div", { className: "pp-seg", role: "group", "aria-label": t("review") }, filters.map(([value, label]) => /* @__PURE__ */ h(
     "button",
     {
       key: value,
       type: "button",
       className: filter === value ? "active" : "",
+      "aria-pressed": filter === value,
       onClick: () => setFilter(value)
     },
     label
-  ))), /* @__PURE__ */ h("select", { value: sort, onChange: (event) => setSort(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h("option", { value: "rel_path" }, t("sortPath"))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, items.length, " ", t("photos")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: undo.length === 0, onClick: undoLast }, t("undoAction"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), items.length === 0 ? /* @__PURE__ */ h(
+  )))), /* @__PURE__ */ h("div", { className: "pp-toolbar-group pp-toolbar-end" }, /* @__PURE__ */ h("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h("span", null, t("sortLabel")), /* @__PURE__ */ h("select", { value: sort, onChange: (event) => setSort(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h("option", { value: "rel_path" }, t("sortPath")))), /* @__PURE__ */ h("span", { className: "pp-muted" }, items.length, " ", t("photos")), /* @__PURE__ */ h("button", { type: "button", className: "pp-button", disabled: undo.length === 0, onClick: undoLast }, t("undoAction")))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), items.length === 0 ? /* @__PURE__ */ h(
     StateCard,
     {
       kind: "empty",
