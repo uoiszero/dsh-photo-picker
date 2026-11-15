@@ -124,10 +124,11 @@ test('an invalid stage returns 400 with a structured code', async () => {
 
 test('review, decisions and export routes answer JSON', async () => {
   await withServer(async origin => {
-    const photos = await fetch(`${origin}/photo-picker/api/projects/p1/photos?verdict=keep&sort=score&limit=10`)
+    const photos = await fetch(`${origin}/photo-picker/api/projects/p1/photos?verdict=keep&scene=portrait&sort=score&limit=10`)
     const photosBody = await photos.json()
     assert.equal(photosBody.total, 1)
     assert.equal(photosBody.options.verdict, 'keep')
+    assert.equal(photosBody.options.scene, 'portrait')
     assert.equal(photosBody.options.limit, 10)
 
     const detail = await fetch(`${origin}/photo-picker/api/projects/p1/photos/ph1`)

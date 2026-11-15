@@ -1,6 +1,7 @@
 /** 复核查询：最终判定 = 人类决策 > AI 判定 > 默认 maybe（spec 7.7）。 */
 
 import { normalizeRecipe, recipeSignature } from './recipe.js'
+import { SCENE_VALUES } from './parse.js'
 
 const REVIEW_STATES = ['scored', 'grid_selected', 'grid_error', 'score_failed', 'ok']
 const VERDICTS = new Set(['keep', 'maybe', 'reject'])
@@ -89,6 +90,10 @@ function buildWhere(projectId, opts = {}) {
   if (opts.verdict !== undefined) {
     clauses.push(`${VERDICT_SQL} = ?`)
     params.push(opts.verdict)
+  }
+  if (opts.scene !== undefined && SCENE_VALUES.includes(opts.scene)) {
+    clauses.push('a.scenes_json LIKE ?')
+    params.push(`%"${opts.scene}"%`)
   }
   if (opts.groupId !== undefined) {
     clauses.push('p.group_id = ?')

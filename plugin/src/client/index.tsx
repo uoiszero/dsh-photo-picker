@@ -296,6 +296,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
 }) {
   const [items, setItems] = useState<any[]>([])
   const [filter, setFilter] = useState('all')
+  const [scene, setScene] = useState('all')
   const [sort, setSort] = useState('score')
   const [selected, setSelected] = useState<string[]>([])
   const [undo, setUndo] = useState<any[]>([])
@@ -306,6 +307,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   const load = async () => {
     const params = new URLSearchParams({ scope: 'review', sort, limit: '200' })
     if (filter !== 'all') params.set('verdict', filter)
+    if (scene !== 'all') params.set('scene', scene)
     const data = await api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`)
     setItems(data.items)
     setSelected(current => current.filter(id => data.items.some((item: any) => item.id === id)))
@@ -313,7 +315,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
 
   useEffect(() => {
     load().catch(cause => setError(String(cause)))
-  }, [filter, sort, version])
+  }, [filter, scene, sort, version])
 
   const decide = async (photoIds: string[], verdict: string) => {
     if (photoIds.length === 0) return
@@ -412,6 +414,15 @@ function ReviewSection({ t, projectId, version, onChanged }: {
         </div>
         <div className="pp-toolbar-group pp-toolbar-end">
           <label className="pp-toolbar-field">
+            <span>{t('sceneFilter')}</span>
+            <select value={scene} onChange={event => setScene(event.target.value)} className="pp-select pp-select-sm">
+              <option value="all">{t('filterAll')}</option>
+              {Object.keys(SCENE_KEYS).map(key => (
+                <option key={key} value={key}>{t(SCENE_KEYS[key])}</option>
+              ))}
+            </select>
+          </label>
+          <label className="pp-toolbar-field">
             <span>{t('sortLabel')}</span>
             <select value={sort} onChange={event => setSort(event.target.value)} className="pp-select pp-select-sm">
               <option value="score">{t('sortScore')}</option>
@@ -432,18 +443,23 @@ function ReviewSection({ t, projectId, version, onChanged }: {
         <StateCard
           kind="empty"
           title={t('reviewEmpty')}
-          action={filter !== 'all' ? (
-            <Button onClick={() => setFilter('all')}>{t('filterAll')}</Button>
+          action={filter !== 'all' || scene !== 'all' ? (
+            <Button onClick={() => { setFilter('all'); setScene('all') }}>{t('clearFilters')}</Button>
           ) : undefined}
         />
       ) : (
         <div className="pp-wall">
-          {items.map(item => (
+          {items.map(item => {
+            const sceneText = Array.isArray(item.scenes)
+              ? item.scenes.map((value: string) => sceneLabel(t, value)).join(' · ')
+              : ''
+            return (
             <div className="pp-tile-wrap" key={item.id}>
               <button
                 type="button"
                 className={`pp-tile${selected.includes(item.id) ? ' selected' : ''}`}
-                title={item.relPath}
+                title={sceneText === '' ? item.relPath : `${item.relPath} · ${sceneText}`}
+                aria-label={sceneText === '' ? item.relPath : `${item.relPath} · ${sceneText}`}
                 onClick={() => setSingle(item.id)}
               >
                 <img src={`${item.thumbUrl}?v=${version}`} alt={item.relPath} loading="lazy" />
@@ -452,6 +468,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
                   style={{ background: VERDICT_COLORS[item.verdict] ?? 'var(--dsw-alias-border-l2)' }}
                 />
                 {item.score !== null && <span className="pp-tile-score">{Number(item.score).toFixed(1)}</span>}
+                {sceneText !== '' && <span className="pp-tile-scenes">{sceneText}</span>}
                 {item.humanVerdict !== null && (
                   <span className="pp-tile-human">{verdictLabel(t, item.humanVerdict)}</span>
                 )}
@@ -464,7 +481,8 @@ function ReviewSection({ t, projectId, version, onChanged }: {
                 aria-label={item.relPath}
               />
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

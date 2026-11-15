@@ -82,6 +82,7 @@ export function createHttpHandler(service) {
           scope: query.get('scope') ?? undefined,
           state: query.get('state') ?? undefined,
           verdict: query.get('verdict') ?? undefined,
+          scene: query.get('scene') ?? undefined,
           groupId: query.get('group') ?? undefined,
           sort: query.get('sort') ?? undefined,
           scoreMin: query.get('scoreMin') === null ? undefined : Number(query.get('scoreMin')),
