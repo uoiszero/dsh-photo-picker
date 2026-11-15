@@ -562,6 +562,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? 'none'}`
   const canCompare = recipe !== null && !editedFailed
   const showingEdited = showEdited && canCompare
+  const sceneText = Array.isArray(detail.scenes)
+    ? detail.scenes.map((scene: string) => sceneLabel(t, scene)).join(' · ')
+    : ''
   return (
     <section className="pp-single">
       <div className="pp-single-head">
@@ -572,11 +575,6 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
         <span className="pp-chip">{index + 1} / {items.length}</span>
         <span className="pp-pill" data-tone={detail.verdict}>{verdictLabel(t, detail.verdict)}</span>
         {detail.score !== null && <span className="pp-chip">{t('scoreLabel')} {detail.score}</span>}
-        {Array.isArray(detail.scenes) && detail.scenes.length > 0 && (
-          <span className="pp-scene-chips">
-            {detail.scenes.map((scene: string) => <span className="pp-chip" key={scene}>{sceneLabel(t, scene)}</span>)}
-          </span>
-        )}
         <span className="pp-muted" style={{ marginLeft: 'auto' }}>{detail.relPath}</span>
       </div>
 
@@ -588,6 +586,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
               alt={detail.relPath}
               onError={() => { if (showingEdited) setEditedFailed(true) }}
             />
+            {sceneText !== '' && <span className="pp-stage-scenes" title={sceneText}>{sceneText}</span>}
             {showGrid && (
               <div className="pp-guide pp-guide-grid" aria-hidden="true">
                 <span className="v" style={{ left: '33.333%' }} />
