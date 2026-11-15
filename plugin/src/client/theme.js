@@ -53,6 +53,26 @@ export const STYLES = `
 }
 .pp-lang:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l2); }
 
+.pp-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 34px; padding: 7px 13px; border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary);
+  font-size: 13px; font-weight: 500; line-height: 1.3;
+  white-space: nowrap; cursor: pointer;
+}
+.pp-button-primary {
+  background: var(--dsw-alias-button-primary-fill);
+  border-color: transparent;
+  color: var(--dsw-alias-label-primary-foreground);
+  font-weight: 600;
+}
+.pp-button-danger {
+  background: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 10%, var(--dsw-alias-bg-layer-1));
+  border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 34%, var(--dsw-alias-border-l1));
+  color: var(--dsw-alias-state-danger-primary, #a93b32);
+}
+.pp-button-danger:hover { border-color: var(--dsw-alias-state-danger-primary, #a93b32); }
 .pp-page-nav { display: flex; align-items: center; min-height: 30px; }
 .pp-back {
   display: inline-flex; align-items: center; gap: 5px;

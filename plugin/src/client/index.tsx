@@ -28,14 +28,6 @@ const btn = {
   whiteSpace: 'nowrap',
 }
 
-const btnPrimary = {
-  ...btn,
-  background: 'var(--dsw-alias-button-primary-fill)',
-  color: 'var(--dsw-alias-label-primary-foreground)',
-  border: '1px solid transparent',
-  fontWeight: 600,
-}
-
 const input = {
   background: 'var(--dsw-alias-bg-base)',
   color: 'var(--dsw-alias-label-primary)',
@@ -345,7 +337,7 @@ function CreateForm({ t, onCreated, onCancel }: {
         </div>
         <div className="pp-actions">
           <span style={{ flex: 1 }} />
-          <button type="button" style={btnPrimary} disabled={busy || (sourceKind === 'local' ? folder === '' : mountPoint === '')} onClick={create}>
+          <button type="button" className="pp-button pp-button-primary" disabled={busy || (sourceKind === 'local' ? folder === '' : mountPoint === '')} onClick={create}>
             {busy ? t('creating') : t('create')}
           </button>
         </div>
@@ -870,7 +862,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
         <div className="pp-actions">
           <button type="button" style={btn} disabled={busy || dest === ''} onClick={() => execute('preview')}>{t('exportPreview')}</button>
           <span style={{ flex: 1 }} />
-          <button type="button" style={btnPrimary} disabled={busy || dest === '' || preview === null} onClick={() => execute('run')}>{t('exportRun')}</button>
+          <button type="button" className="pp-button pp-button-primary" disabled={busy || dest === '' || preview === null} onClick={() => execute('run')}>{t('exportRun')}</button>
         </div>
 
         {error !== null && <div className="pp-error">{error}</div>}
@@ -1054,11 +1046,11 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
       </div>
 
       <div className="pp-actions">
-        <button type="button" style={btn} disabled={busy} onClick={() => decide('reject', detail.members.map((member: any) => member.id))}>
+        <button type="button" className="pp-button pp-button-danger" disabled={busy} onClick={() => decide('reject', detail.members.map((member: any) => member.id))}>
           {t('groupRejectAll')}
         </button>
         <span style={{ flex: 1 }} />
-        <button type="button" style={btnPrimary} disabled={busy} onClick={confirm}>{t('groupConfirm')}</button>
+        <button type="button" className="pp-button pp-button-primary" disabled={busy} onClick={confirm}>{t('groupConfirm')}</button>
       </div>
       <div className="pp-kbd">{t('groupHint')}</div>
     </section>
@@ -1404,7 +1396,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
           <div className="pp-callout">{t('settingsHint')}</div>
           {error !== null && <div className="pp-error">{error}</div>}
           <div className="pp-modal-foot">
-            <button type="button" style={btnPrimary} disabled={busy} onClick={save}>{t('save')}</button>
+            <button type="button" className="pp-button pp-button-primary" disabled={busy} onClick={save}>{t('save')}</button>
             {saved && <span className="pp-muted">{t('saved')}</span>}
           </div>
         </div>
@@ -1561,7 +1553,7 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
         </div>
 
         <div className="pp-actions">
-          <button type="button" style={btnPrimary} disabled={detail.running !== null} onClick={runAll}>
+          <button type="button" className="pp-button pp-button-primary" disabled={detail.running !== null} onClick={runAll}>
             {t('autoRun')}
           </button>
           {detail.running !== null && (
@@ -1749,7 +1741,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
             >
               {getLanguage() === 'zh' ? 'EN' : '中'}
             </button>
-            <button type="button" style={btnPrimary} onClick={() => { setCreating(true); setSelected(null) }}>
+            <button type="button" className="pp-button pp-button-primary" onClick={() => { setCreating(true); setSelected(null) }}>
               {t('newProject')}
             </button>
           </div>
@@ -1778,7 +1770,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
             </div>
             <h2>{t('empty')}</h2>
             <p>{t('subtitle')}</p>
-            <button type="button" style={btnPrimary} onClick={() => setCreating(true)}>{t('newProject')}</button>
+            <button type="button" className="pp-button pp-button-primary" onClick={() => setCreating(true)}>{t('newProject')}</button>
           </div>
         ) : (
           <div className="pp-projects">
