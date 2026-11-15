@@ -9,7 +9,7 @@ const PANEL_ID = 'photo-picker'
 
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
-import { ActionBar, BackButton, Button, Card, CloseButton, Field, Input, Select, StateCard, Tabs } from './ui'
+import { ActionBar, BackButton, Button, Card, CloseButton, Field, Input, Segmented, Select, StateCard, Tabs } from './ui'
 
 
 const btn = {
@@ -431,19 +431,12 @@ function ReviewSection({ t, projectId, version, onChanged }: {
       <div className="pp-toolbar">
         <div className="pp-toolbar-group">
           <span className="pp-section-title">{t('review')}</span>
-          <div className="pp-seg" role="group" aria-label={t('review')}>
-            {filters.map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                className={filter === value ? 'active' : ''}
-                aria-pressed={filter === value}
-                onClick={() => setFilter(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label={t('review')}
+            value={filter}
+            items={filters.map(([value, label]) => ({ value, label }))}
+            onChange={setFilter}
+          />
         </div>
         <div className="pp-toolbar-group pp-toolbar-end">
           <label className="pp-toolbar-field">
@@ -457,7 +450,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
             </select>
           </label>
           <span className="pp-muted">{items.length} {t('photos')}</span>
-          <button type="button" className="pp-button" disabled={undo.length === 0} onClick={undoLast}>{t('undoAction')}</button>
+          <Button disabled={undo.length === 0} onClick={undoLast}>{t('undoAction')}</Button>
         </div>
       </div>
 
@@ -468,7 +461,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
           kind="empty"
           title={t('reviewEmpty')}
           action={filter !== 'all' ? (
-            <button type="button" style={btn} onClick={() => setFilter('all')}>{t('filterAll')}</button>
+            <Button onClick={() => setFilter('all')}>{t('filterAll')}</Button>
           ) : undefined}
         />
       ) : (
@@ -506,10 +499,10 @@ function ReviewSection({ t, projectId, version, onChanged }: {
       {selected.length > 0 && (
         <div className="pp-batch">
           <span className="pp-muted">{t('selectedCount')} {selected.length}</span>
-          <button type="button" style={btn} onClick={() => decide(selected, 'keep')}>{t('keep')}</button>
-          <button type="button" style={btn} onClick={() => decide(selected, 'maybe')}>{t('maybe')}</button>
-          <button type="button" style={btn} onClick={() => decide(selected, 'reject')}>{t('reject')}</button>
-          <button type="button" style={btn} onClick={() => setSelected([])}>{t('clearSelection')}</button>
+          <Button onClick={() => decide(selected, 'keep')}>{t('keep')}</Button>
+          <Button onClick={() => decide(selected, 'maybe')}>{t('maybe')}</Button>
+          <Button variant="danger" onClick={() => decide(selected, 'reject')}>{t('reject')}</Button>
+          <Button variant="ghost" onClick={() => setSelected([])}>{t('clearSelection')}</Button>
         </div>
       )}
     </section>
@@ -584,7 +577,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
       <div className="pp-single-head">
         <BackButton label={t('backToWall')} onClick={onClose} />
         {detail.group !== undefined && (
-          <button type="button" style={btn} onClick={() => onOpenGroup(detail.group.id)}>{t('groupCompare')}</button>
+          <Button onClick={() => onOpenGroup(detail.group.id)}>{t('groupCompare')}</Button>
         )}
         <span className="pp-chip">{index + 1} / {items.length}</span>
         <span className="pp-pill" data-tone={detail.verdict}>{verdictLabel(t, detail.verdict)}</span>
@@ -655,9 +648,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
         </div>
         <aside className="pp-card pp-panel">
           <div className="pp-row" style={{ gap: 6 }}>
-            <button type="button" style={{ ...btn, flex: 1 }} onClick={() => onDecide([photoId], 'keep')}>{t('keep')}</button>
-            <button type="button" style={{ ...btn, flex: 1 }} onClick={() => onDecide([photoId], 'maybe')}>{t('maybe')}</button>
-            <button type="button" style={{ ...btn, flex: 1 }} onClick={() => onDecide([photoId], 'reject')}>{t('reject')}</button>
+            <Button style={{ flex: 1 }} onClick={() => onDecide([photoId], 'keep')}>{t('keep')}</Button>
+            <Button style={{ flex: 1 }} onClick={() => onDecide([photoId], 'maybe')}>{t('maybe')}</Button>
+            <Button variant="danger" style={{ flex: 1 }} onClick={() => onDecide([photoId], 'reject')}>{t('reject')}</Button>
           </div>
           <div className="pp-kbd">{t('keyboardHint')}</div>
           <div className="pp-meters">
@@ -975,12 +968,12 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
           {pageCount > 1 && (
             <>
-              <button type="button" style={btn} disabled={page === 0} onClick={() => { setPage(page - 1); setSelected(pageStart - 6) }}>‹</button>
-              <button type="button" style={btn} disabled={page >= pageCount - 1} onClick={() => { setPage(page + 1); setSelected(pageStart + 6) }}>›</button>
+              <Button size="sm" disabled={page === 0} onClick={() => { setPage(page - 1); setSelected(pageStart - 6) }}>‹</Button>
+              <Button size="sm" disabled={page >= pageCount - 1} onClick={() => { setPage(page + 1); setSelected(pageStart + 6) }}>›</Button>
             </>
           )}
-          <button type="button" style={btn} disabled={index <= 0} onClick={() => switchGroup(-1)}>←</button>
-          <button type="button" style={btn} disabled={index < 0 || index >= groups.length - 1} onClick={() => switchGroup(1)}>→</button>
+          <Button size="sm" disabled={index <= 0} onClick={() => switchGroup(-1)}>←</Button>
+          <Button size="sm" disabled={index < 0 || index >= groups.length - 1} onClick={() => switchGroup(1)}>→</Button>
         </div>
       </div>
 
@@ -1009,11 +1002,11 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
       </div>
 
       <div className="pp-actions">
-        <button type="button" className="pp-button pp-button-danger" disabled={busy} onClick={() => decide('reject', detail.members.map((member: any) => member.id))}>
+        <Button variant="danger" disabled={busy} onClick={() => decide('reject', detail.members.map((member: any) => member.id))}>
           {t('groupRejectAll')}
-        </button>
+        </Button>
         <span style={{ flex: 1 }} />
-        <button type="button" className="pp-button pp-button-primary" disabled={busy} onClick={confirm}>{t('groupConfirm')}</button>
+        <Button variant="primary" disabled={busy} onClick={confirm}>{t('groupConfirm')}</Button>
       </div>
       <div className="pp-kbd">{t('groupHint')}</div>
     </section>
