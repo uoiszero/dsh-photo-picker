@@ -302,6 +302,7 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 4：复核、改判与导出](docs/superpowers/plans/2026-11-04-photo-picker-04-review-and-export.md)
   - [Plan 5：可移植修图配方](docs/superpowers/plans/2026-11-13-photo-picker-05-edit-recipes.md)
   - [Plan 3：网络照片源](docs/superpowers/plans/2026-11-15-photo-picker-03-network-sources.md)
+  - [Plan 6：UI 统筹整改](docs/superpowers/plans/2026-11-15-photo-picker-06-ui-consistency.md)
 
 ## 版本
 

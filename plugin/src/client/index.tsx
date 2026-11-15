@@ -9,6 +9,7 @@ const PANEL_ID = 'photo-picker'
 
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
+import { BackButton, CloseButton, StateCard } from './ui'
 
 
 const btn = {
@@ -119,47 +120,6 @@ function summarizeStats(t: (key: string) => string, stats: any) {
   }
   if (typeof stats.durationMs === 'number') parts.push(`${Math.round(stats.durationMs / 1000)}${t('secondsShort')}`)
   return parts.join(' · ')
-}
-
-function BackButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button type="button" className="pp-back" onClick={onClick}>
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M10.5 3.5 6 8l4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <span>{label}</span>
-    </button>
-  )
-}
-
-function CloseButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button type="button" className="pp-close" aria-label={label} title={label} onClick={onClick}>
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      </svg>
-    </button>
-  )
-}
-
-function StateCard({ kind, title, message, action }: {
-  kind: 'loading' | 'error' | 'empty'
-  title: string
-  message?: string | null
-  action?: React.ReactNode
-}) {
-  return (
-    <div className={`pp-state pp-state-${kind}`} role={kind === 'error' ? 'alert' : undefined}>
-      <span className="pp-state-icon" aria-hidden="true">
-        {kind === 'loading' ? <span className="pp-spinner" /> : kind === 'error' ? '!' : '—'}
-      </span>
-      <span className="pp-state-copy">
-        <strong>{title}</strong>
-        {message !== undefined && message !== null && message !== '' && <span>{message}</span>}
-      </span>
-      {action}
-    </div>
-  )
 }
 
 function CreateForm({ t, onCreated, onCancel }: {
@@ -358,9 +318,9 @@ function CreateForm({ t, onCreated, onCancel }: {
 }
 
 const VERDICT_COLORS: Record<string, string> = {
-  keep: 'var(--dsw-static-green-500, #2f9e5f)',
-  maybe: 'var(--dsw-static-amber-500, #d09a2b)',
-  reject: 'var(--dsw-static-red-500, #cc4b3f)',
+  keep: 'var(--pp-status-keep)',
+  maybe: 'var(--pp-status-maybe)',
+  reject: 'var(--pp-status-reject)',
 }
 
 const DIMENSION_LABELS: Record<string, string> = {
