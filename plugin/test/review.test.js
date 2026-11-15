@@ -107,6 +107,29 @@ test('scene filters match any label and skip photos without scenes', () => {
   rmSync(dir, { recursive: true, force: true })
 })
 
+test('listReviewPhotos paginates without duplicates and keeps total stable', () => {
+  const { db, dir, addPhoto, addAssessment } = setup()
+  for (let i = 0; i < 5; i += 1) {
+    addPhoto.run(`p${i}`, `p${i}.jpg`, 100 + i, i + 1, null, `thumbs/p${i}.webp`, 'scored', i + 1)
+    addAssessment.run(`a${i}`, `p${i}`, 9 - i, 'keep', '{}', '[]', `photo ${i}`, i + 1)
+  }
+  const page0 = listReviewPhotos(db, 'p1', { limit: 2, offset: 0 })
+  const page1 = listReviewPhotos(db, 'p1', { limit: 2, offset: 2 })
+  const page2 = listReviewPhotos(db, 'p1', { limit: 2, offset: 4 })
+  assert.equal(page0.total, 5)
+  assert.equal(page1.total, 5)
+  assert.equal(page2.total, 5)
+  assert.deepEqual(page0.items.map(item => item.id), ['p0', 'p1'])
+  assert.deepEqual(page1.items.map(item => item.id), ['p2', 'p3'])
+  assert.deepEqual(page2.items.map(item => item.id), ['p4'])
+  assert.equal(new Set([...page0.items, ...page1.items, ...page2.items].map(item => item.id)).size, 5)
+  const beyond = listReviewPhotos(db, 'p1', { limit: 2, offset: 99 })
+  assert.deepEqual(beyond.items, [])
+  assert.equal(beyond.total, 5)
+  db.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
 test('getPhotoDetail returns the group ranking', () => {
   const { db, dir, addPhoto, addAssessment } = setup()
   addPhoto.run('g1', 'g1.jpg', 100, 1, 'grp', 'thumbs/g1.webp', 'scored', 1)
