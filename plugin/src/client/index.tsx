@@ -1300,6 +1300,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
             ))}
           </div>
 
+          <div className="pp-callout">{t('sceneRescoreHint')}</div>
           <div className="pp-callout">{t('settingsHint')}</div>
           {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
           <div className="pp-modal-foot">
