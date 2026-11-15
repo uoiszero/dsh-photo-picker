@@ -209,6 +209,7 @@ function CreateForm({ t, onCreated, onCancel }: {
                   value={folder}
                   onChange={event => setFolder(event.target.value)}
                   placeholder="/Users/…/Pictures"
+                  aria-label={t('folder')}
                   style={{ flex: 1 }}
                 />
                 <Button disabled={choosing} onClick={choose}>
@@ -234,6 +235,7 @@ function CreateForm({ t, onCreated, onCancel }: {
                 value={smbUrl}
                 onChange={event => { setSmbUrl(event.target.value); setMountPoint(''); setError(null) }}
                 placeholder="smb://192.168.12.199/yueao"
+                aria-label={t('smbUrl')}
                 style={{ flex: 1 }}
               />
               <Button disabled={connecting || smbUrl === ''} onClick={connectSmb}>
@@ -928,12 +930,12 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
           {pageCount > 1 && (
             <>
-              <Button size="sm" disabled={page === 0} onClick={() => { setPage(page - 1); setSelected(pageStart - 6) }}>‹</Button>
-              <Button size="sm" disabled={page >= pageCount - 1} onClick={() => { setPage(page + 1); setSelected(pageStart + 6) }}>›</Button>
+              <Button size="sm" aria-label={t('previousPage')} title={t('previousPage')} disabled={page === 0} onClick={() => { setPage(page - 1); setSelected(pageStart - 6) }}>‹</Button>
+              <Button size="sm" aria-label={t('nextPage')} title={t('nextPage')} disabled={page >= pageCount - 1} onClick={() => { setPage(page + 1); setSelected(pageStart + 6) }}>›</Button>
             </>
           )}
-          <Button size="sm" disabled={index <= 0} onClick={() => switchGroup(-1)}>←</Button>
-          <Button size="sm" disabled={index < 0 || index >= groups.length - 1} onClick={() => switchGroup(1)}>→</Button>
+          <Button size="sm" aria-label={t('previousGroup')} title={t('previousGroup')} disabled={index <= 0} onClick={() => switchGroup(-1)}>←</Button>
+          <Button size="sm" aria-label={t('nextGroup')} title={t('nextGroup')} disabled={index < 0 || index >= groups.length - 1} onClick={() => switchGroup(1)}>→</Button>
         </div>
       </div>
 

@@ -256,7 +256,11 @@ var zh = {
   namePlaceholder: "2024 \u5A5A\u793C",
   destPlaceholder: "/Volumes/\u2026/\u7CBE\u9009",
   groupRank: "\u7EC4\u5185\u7B2C {rank}/{size}",
-  nextStage: "\u4E0B\u4E00\u9636\u6BB5"
+  nextStage: "\u4E0B\u4E00\u9636\u6BB5",
+  previousPage: "\u4E0A\u4E00\u9875",
+  nextPage: "\u4E0B\u4E00\u9875",
+  previousGroup: "\u4E0A\u4E00\u7EC4",
+  nextGroup: "\u4E0B\u4E00\u7EC4"
 };
 var en = {
   title: "Photo Picker",
@@ -473,7 +477,11 @@ var en = {
   namePlaceholder: "2024 wedding",
   destPlaceholder: "/Volumes/\u2026/selects",
   groupRank: "rank {rank}/{size} in group",
-  nextStage: "next stage"
+  nextStage: "next stage",
+  previousPage: "Previous page",
+  nextPage: "Next page",
+  previousGroup: "Previous group",
+  nextGroup: "Next group"
 };
 var STORAGE_KEY = "photoPicker.lang";
 var listeners = /* @__PURE__ */ new Set();
@@ -713,9 +721,9 @@ var STYLES = `
   background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary);
   white-space: nowrap;
 }
-.pp-pill[data-tone="keep"] { background: color-mix(in srgb, var(--pp-status-keep) 16%, transparent); color: #237a49; }
-.pp-pill[data-tone="maybe"] { background: color-mix(in srgb, var(--pp-status-maybe) 18%, transparent); color: #8a6415; }
-.pp-pill[data-tone="reject"] { background: color-mix(in srgb, var(--pp-status-reject) 14%, transparent); color: #9c352c; }
+.pp-pill[data-tone="keep"] { background: color-mix(in srgb, var(--pp-status-keep) 16%, transparent); color: color-mix(in srgb, var(--pp-status-keep) 58%, var(--dsw-alias-label-primary)); }
+.pp-pill[data-tone="maybe"] { background: color-mix(in srgb, var(--pp-status-maybe) 18%, transparent); color: color-mix(in srgb, var(--pp-status-maybe) 58%, var(--dsw-alias-label-primary)); }
+.pp-pill[data-tone="reject"] { background: color-mix(in srgb, var(--pp-status-reject) 14%, transparent); color: color-mix(in srgb, var(--pp-status-reject) 58%, var(--dsw-alias-label-primary)); }
 .pp-pill[data-tone="live"] { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent); color: var(--dsw-alias-brand-primary); }
 .pp-summary-path { margin-left: auto; max-width: 46%; }
 .pp-path {
@@ -1066,6 +1074,22 @@ var STYLES = `
   .pp-project { padding: 14px; }
   .pp-history-row { grid-template-columns: 1fr auto; }
 }
+@media (max-width: 480px) {
+  .pp-header-actions { width: 100%; justify-content: flex-end; }
+  .pp-title { font-size: 20px; }
+  .pp-summary-top { align-items: flex-start; }
+  .pp-tabs { padding: 2px; }
+  .pp-tab { padding: 7px 8px; font-size: 12px; }
+  .pp-seg { flex: 1 1 100%; width: 100%; }
+  .pp-seg button { flex: 1; padding-left: 6px !important; padding-right: 6px !important; }
+  .pp-toolbar-field { width: 100%; }
+  .pp-toolbar-field .pp-select { flex: 1; }
+  .pp-actions .pp-button { flex: 1 1 auto; }
+  .pp-overlay { padding: 0; }
+  .pp-modal { width: 100vw; max-height: 100vh; border-radius: 0; }
+  .pp-drawer { width: 100vw; }
+  .pp-history-row { grid-template-columns: 1fr; }
+}
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;
@@ -1357,6 +1381,7 @@ function CreateForm({ t, onCreated, onCancel }) {
       value: folder,
       onChange: (event) => setFolder(event.target.value),
       placeholder: "/Users/\u2026/Pictures",
+      "aria-label": t("folder"),
       style: { flex: 1 }
     }
   ), /* @__PURE__ */ h2(Button, { disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("choose")), /* @__PURE__ */ h2(Button, { onClick: () => browse(folder) }, t("browse")))), dirs.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-card pp-dir-list" }, dirs.map((dir) => /* @__PURE__ */ h2("button", { type: "button", className: "pp-dir-row", key: dir.path, onClick: () => browse(dir.path) }, dir.name)))) : /* @__PURE__ */ h2(Field, { as: "div", label: t("smbUrl"), help: t("smbHint") }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h2(
@@ -1369,6 +1394,7 @@ function CreateForm({ t, onCreated, onCancel }) {
         setError(null);
       },
       placeholder: "smb://192.168.12.199/yueao",
+      "aria-label": t("smbUrl"),
       style: { flex: 1 }
     }
   ), /* @__PURE__ */ h2(Button, { disabled: connecting || smbUrl === "", onClick: connectSmb }, connecting ? t("smbConnecting") : t("smbConnect"))), mountPoint !== "" && /* @__PURE__ */ h2("span", { className: "pp-field-help" }, t("smbConnected"), ": ", mountPoint)), /* @__PURE__ */ h2(Field, { label: t("name") }, /* @__PURE__ */ h2(Input, { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder") })), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2(Field, { label: t("theme") }, /* @__PURE__ */ h2(Select, { value: theme, onChange: (event) => setTheme(event.target.value) }, /* @__PURE__ */ h2("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h2("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h2("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h2("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h2(Field, { label: t("budget"), className: "pp-field-narrow" }, /* @__PURE__ */ h2(Input, { value: budget, onChange: (event) => setBudget(event.target.value) }))), /* @__PURE__ */ h2(ActionBar, { end: true }, /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || (sourceKind === "local" ? folder === "" : mountPoint === ""), onClick: create }, busy ? t("creating") : t("create"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error })));
@@ -1792,13 +1818,13 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
   const pageCount = Math.max(1, Math.ceil(detail.members.length / 6));
   const pageStart = page * 6;
   const visible = detail.members.slice(pageStart, pageStart + 6);
-  return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), /* @__PURE__ */ h2("span", { className: "pp-chip" }, kindLabel), /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.size, " ", t("photos")), pageCount > 1 && /* @__PURE__ */ h2("span", { className: "pp-chip" }, page + 1, " / ", pageCount), /* @__PURE__ */ h2("span", { className: "pp-muted" }, index >= 0 ? `${index + 1} / ${groups.length}` : ""), /* @__PURE__ */ h2("div", { style: { marginLeft: "auto", display: "flex", gap: 6 } }, pageCount > 1 && /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2(Button, { size: "sm", disabled: page === 0, onClick: () => {
+  return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), /* @__PURE__ */ h2("span", { className: "pp-chip" }, kindLabel), /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.size, " ", t("photos")), pageCount > 1 && /* @__PURE__ */ h2("span", { className: "pp-chip" }, page + 1, " / ", pageCount), /* @__PURE__ */ h2("span", { className: "pp-muted" }, index >= 0 ? `${index + 1} / ${groups.length}` : ""), /* @__PURE__ */ h2("div", { style: { marginLeft: "auto", display: "flex", gap: 6 } }, pageCount > 1 && /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2(Button, { size: "sm", "aria-label": t("previousPage"), title: t("previousPage"), disabled: page === 0, onClick: () => {
     setPage(page - 1);
     setSelected(pageStart - 6);
-  } }, "\u2039"), /* @__PURE__ */ h2(Button, { size: "sm", disabled: page >= pageCount - 1, onClick: () => {
+  } }, "\u2039"), /* @__PURE__ */ h2(Button, { size: "sm", "aria-label": t("nextPage"), title: t("nextPage"), disabled: page >= pageCount - 1, onClick: () => {
     setPage(page + 1);
     setSelected(pageStart + 6);
-  } }, "\u203A")), /* @__PURE__ */ h2(Button, { size: "sm", disabled: index <= 0, onClick: () => switchGroup(-1) }, "\u2190"), /* @__PURE__ */ h2(Button, { size: "sm", disabled: index < 0 || index >= groups.length - 1, onClick: () => switchGroup(1) }, "\u2192"))), /* @__PURE__ */ h2("div", { className: "pp-compare-grid" }, visible.map((member, localPosition) => {
+  } }, "\u203A")), /* @__PURE__ */ h2(Button, { size: "sm", "aria-label": t("previousGroup"), title: t("previousGroup"), disabled: index <= 0, onClick: () => switchGroup(-1) }, "\u2190"), /* @__PURE__ */ h2(Button, { size: "sm", "aria-label": t("nextGroup"), title: t("nextGroup"), disabled: index < 0 || index >= groups.length - 1, onClick: () => switchGroup(1) }, "\u2192"))), /* @__PURE__ */ h2("div", { className: "pp-compare-grid" }, visible.map((member, localPosition) => {
     const position = pageStart + localPosition;
     return /* @__PURE__ */ h2(
       "button",

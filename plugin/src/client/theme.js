@@ -197,9 +197,9 @@ export const STYLES = `
   background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary);
   white-space: nowrap;
 }
-.pp-pill[data-tone="keep"] { background: color-mix(in srgb, var(--pp-status-keep) 16%, transparent); color: #237a49; }
-.pp-pill[data-tone="maybe"] { background: color-mix(in srgb, var(--pp-status-maybe) 18%, transparent); color: #8a6415; }
-.pp-pill[data-tone="reject"] { background: color-mix(in srgb, var(--pp-status-reject) 14%, transparent); color: #9c352c; }
+.pp-pill[data-tone="keep"] { background: color-mix(in srgb, var(--pp-status-keep) 16%, transparent); color: color-mix(in srgb, var(--pp-status-keep) 58%, var(--dsw-alias-label-primary)); }
+.pp-pill[data-tone="maybe"] { background: color-mix(in srgb, var(--pp-status-maybe) 18%, transparent); color: color-mix(in srgb, var(--pp-status-maybe) 58%, var(--dsw-alias-label-primary)); }
+.pp-pill[data-tone="reject"] { background: color-mix(in srgb, var(--pp-status-reject) 14%, transparent); color: color-mix(in srgb, var(--pp-status-reject) 58%, var(--dsw-alias-label-primary)); }
 .pp-pill[data-tone="live"] { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent); color: var(--dsw-alias-brand-primary); }
 .pp-summary-path { margin-left: auto; max-width: 46%; }
 .pp-path {
@@ -549,6 +549,22 @@ export const STYLES = `
   .pp-drawer { width: 100vw; padding: 16px; }
   .pp-project { padding: 14px; }
   .pp-history-row { grid-template-columns: 1fr auto; }
+}
+@media (max-width: 480px) {
+  .pp-header-actions { width: 100%; justify-content: flex-end; }
+  .pp-title { font-size: 20px; }
+  .pp-summary-top { align-items: flex-start; }
+  .pp-tabs { padding: 2px; }
+  .pp-tab { padding: 7px 8px; font-size: 12px; }
+  .pp-seg { flex: 1 1 100%; width: 100%; }
+  .pp-seg button { flex: 1; padding-left: 6px !important; padding-right: 6px !important; }
+  .pp-toolbar-field { width: 100%; }
+  .pp-toolbar-field .pp-select { flex: 1; }
+  .pp-actions .pp-button { flex: 1 1 auto; }
+  .pp-overlay { padding: 0; }
+  .pp-modal { width: 100vw; max-height: 100vh; border-radius: 0; }
+  .pp-drawer { width: 100vw; }
+  .pp-history-row { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
