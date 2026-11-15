@@ -157,6 +157,7 @@ export const STYLES = `
 .pp-stat-value { font-size: 20px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .pp-stat-label { font-size: 11px; color: var(--dsw-alias-label-secondary); }
 .pp-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pp-modal-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .pp-actions-end { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .pp-menu {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 25;

@@ -48,6 +48,7 @@ var zh = {
   sourceType: "\u7167\u7247\u6E90",
   sourceLocal: "\u672C\u673A\u76EE\u5F55",
   sourceSmb: "SMB \u7F51\u7EDC\u5171\u4EAB",
+  smbUnavailable: "\u6682\u4E0D\u53EF\u7528",
   smbUrl: "SMB \u5730\u5740",
   smbConnect: "\u8FDE\u63A5 SMB",
   smbConnecting: "\u6B63\u5728\u7B49\u5F85\u7CFB\u7EDF\u767B\u5F55/\u6302\u8F7D\u2026",
@@ -262,6 +263,7 @@ var en = {
   sourceType: "Photo source",
   sourceLocal: "Local folder",
   sourceSmb: "SMB share",
+  smbUnavailable: "unavailable",
   smbUrl: "SMB address",
   smbConnect: "Connect SMB",
   smbConnecting: "Waiting for system login/mount\u2026",
@@ -667,6 +669,7 @@ var STYLES = `
 .pp-stat-value { font-size: 20px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .pp-stat-label { font-size: 11px; color: var(--dsw-alias-label-secondary); }
 .pp-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pp-modal-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .pp-actions-end { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .pp-menu {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 25;
@@ -997,6 +1000,7 @@ var input = {
   minWidth: 0
 };
 var muted = { color: "var(--dsw-alias-label-secondary)", fontSize: 12 };
+var SMB_ENABLED = false;
 async function api(path, init) {
   const response = await fetch(path, {
     headers: { "content-type": "application/json" },
@@ -1186,12 +1190,17 @@ function CreateForm({ t, onCreated, onCancel }) {
       role: "tab",
       className: "pp-tab",
       "aria-selected": sourceKind === "smb",
+      disabled: !SMB_ENABLED,
+      title: SMB_ENABLED ? void 0 : t("smbUnavailable"),
       onClick: () => {
-        setSourceKind("smb");
-        setError(null);
+        if (SMB_ENABLED) {
+          setSourceKind("smb");
+          setError(null);
+        }
       }
     },
-    t("sourceSmb")
+    t("sourceSmb"),
+    SMB_ENABLED ? "" : ` \xB7 ${t("smbUnavailable")}`
   ))), sourceKind === "local" ? /* @__PURE__ */ h(Fragment, null, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("folder")), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h(
     "input",
     {
@@ -1220,7 +1229,7 @@ function CreateForm({ t, onCreated, onCancel }) {
       placeholder: "smb://192.168.12.199/yueao",
       style: { ...input, flex: 1 }
     }
-  ), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: connecting || smbUrl === "", onClick: connectSmb }, connecting ? t("smbConnecting") : t("smbConnect"))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginTop: 6 } }, t("smbHint")), mountPoint !== "" && /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginTop: 4 } }, t("smbConnected"), ": ", mountPoint)), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("name")), /* @__PURE__ */ h("input", { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder"), style: input })), /* @__PURE__ */ h("div", { className: "pp-row" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("theme")), /* @__PURE__ */ h("select", { value: theme, onChange: (event) => setTheme(event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { className: "pp-field", style: { maxWidth: 140 } }, /* @__PURE__ */ h("span", null, t("budget")), /* @__PURE__ */ h("input", { value: budget, onChange: (event) => setBudget(event.target.value), style: input }))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || (sourceKind === "local" ? folder === "" : mountPoint === ""), onClick: create }, busy ? t("creating") : t("create"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error)));
+  ), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: connecting || smbUrl === "", onClick: connectSmb }, connecting ? t("smbConnecting") : t("smbConnect"))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginTop: 6 } }, t("smbHint")), mountPoint !== "" && /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginTop: 4 } }, t("smbConnected"), ": ", mountPoint)), /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("name")), /* @__PURE__ */ h("input", { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder"), style: input })), /* @__PURE__ */ h("div", { className: "pp-row" }, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("theme")), /* @__PURE__ */ h("select", { value: theme, onChange: (event) => setTheme(event.target.value), style: input }, /* @__PURE__ */ h("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h("label", { className: "pp-field", style: { maxWidth: 140 } }, /* @__PURE__ */ h("span", null, t("budget")), /* @__PURE__ */ h("input", { value: budget, onChange: (event) => setBudget(event.target.value), style: input }))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("span", { style: { flex: 1 } }), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || (sourceKind === "local" ? folder === "" : mountPoint === ""), onClick: create }, busy ? t("creating") : t("create"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error)));
 }
 var VERDICT_COLORS = {
   keep: "var(--dsw-static-green-500, #2f9e5f)",
@@ -1539,7 +1548,7 @@ function ExportDialog({ t, projectId, onClose }) {
     },
     /* @__PURE__ */ h("option", { value: "hardlink" }, t("exportHardlink")),
     /* @__PURE__ */ h("option", { value: "copy" }, t("exportCopy"))
-  )), /* @__PURE__ */ h("div", { className: "pp-checks" }, /* @__PURE__ */ h("label", null, /* @__PURE__ */ h("input", { type: "checkbox", checked: applyEdits, onChange: (event) => toggleEdits(event.target.checked) }), t("editExport"))), applyEdits && /* @__PURE__ */ h("div", { className: "pp-callout" }, t("editExportHint"))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume")), preview.editedCount > 0 && /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("editExport"), ": ", preview.editedCount)), result !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h(
+  )), /* @__PURE__ */ h("div", { className: "pp-checks" }, /* @__PURE__ */ h("label", null, /* @__PURE__ */ h("input", { type: "checkbox", checked: applyEdits, onChange: (event) => toggleEdits(event.target.checked) }), t("editExport"))), applyEdits && /* @__PURE__ */ h("div", { className: "pp-callout" }, t("editExportHint"))), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h("span", { style: { flex: 1 } }), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume")), preview.editedCount > 0 && /* @__PURE__ */ h("div", { style: { marginTop: 4 } }, t("editExport"), ": ", preview.editedCount)), result !== null && /* @__PURE__ */ h("div", { className: "pp-callout" }, /* @__PURE__ */ h("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
@@ -1656,7 +1665,7 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
       /* @__PURE__ */ h("span", { className: "pp-edit-badge" }, "#", position + 1, member.score !== null && member.score !== void 0 ? ` \xB7 ${Number(member.score).toFixed(1)}` : ""),
       member.humanVerdict !== null && /* @__PURE__ */ h("span", { className: "pp-pill", style: { position: "absolute", right: 8, bottom: 8, background: "rgba(0,0,0,.62)", color: "#fff" } }, verdictLabel(t, member.humanVerdict))
     );
-  })), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: confirm }, t("groupConfirm")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => decide("reject", detail.members.map((member) => member.id)) }, t("groupRejectAll"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("groupHint")));
+  })), /* @__PURE__ */ h("div", { className: "pp-actions" }, /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: busy, onClick: () => decide("reject", detail.members.map((member) => member.id)) }, t("groupRejectAll")), /* @__PURE__ */ h("span", { style: { flex: 1 } }), /* @__PURE__ */ h("button", { type: "button", style: btnPrimary, disabled: busy, onClick: confirm }, t("groupConfirm"))), /* @__PURE__ */ h("div", { className: "pp-kbd" }, t("groupHint")));
 }
 function CalibrationSection({ t, projectId, onApplied }) {
   const [phase, setPhase] = (0, import_react.useState)("idle");
