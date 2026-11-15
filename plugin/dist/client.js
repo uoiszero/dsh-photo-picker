@@ -729,6 +729,7 @@ var STYLES = `
 .pp-stat-value { font-size: 20px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .pp-stat-label { font-size: 11px; color: var(--dsw-alias-label-secondary); }
 .pp-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pp-actions-right { justify-content: flex-end; }
 .pp-modal-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .pp-actions-end { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .pp-menu {
@@ -974,6 +975,9 @@ var STYLES = `
   box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
 }
 .pp-form { display: grid; gap: 12px; }
+.pp-dir-list { max-height: 220px; overflow: auto; padding: 4px; }
+.pp-dir-row { display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; color: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.pp-dir-row:hover { background: var(--dsw-alias-bg-layer-2); }
 .pp-form > .pp-section-title { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--dsw-alias-border-l1); }
 .pp-form > .pp-section-title:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .pp-drawer .pp-modal-foot {
@@ -983,6 +987,7 @@ var STYLES = `
   border-top: 1px solid var(--dsw-alias-border-l1);
 }
 .pp-field { display: grid; gap: 5px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.pp-field-narrow { max-width: 140px; }
 .pp-field-help { font-size: 11px; color: var(--dsw-alias-label-secondary); line-height: 1.45; }
 .pp-section { display: grid; gap: 12px; }
 .pp-section-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -1075,14 +1080,60 @@ function installStyles() {
 var import_react = __toESM(require("react"), 1);
 var h = import_react.default.createElement;
 var Fragment = import_react.default.Fragment;
+function Button({
+  variant = "secondary",
+  size = "md",
+  className = "",
+  ...props
+}) {
+  const classes = [
+    "pp-button",
+    variant !== "secondary" ? `pp-button-${variant}` : "",
+    size === "sm" ? "pp-button-sm" : "",
+    className
+  ].filter(Boolean).join(" ");
+  return /* @__PURE__ */ h("button", { type: "button", className: classes, ...props });
+}
 function BackButton({ label, onClick }) {
   return /* @__PURE__ */ h("button", { type: "button", className: "pp-back", onClick }, /* @__PURE__ */ h("svg", { width: "14", height: "14", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h("path", { d: "M10.5 3.5 6 8l4.5 4.5", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round" })), /* @__PURE__ */ h("span", null, label));
 }
 function CloseButton({ label, onClick }) {
   return /* @__PURE__ */ h("button", { type: "button", className: "pp-close", "aria-label": label, title: label, onClick }, /* @__PURE__ */ h("svg", { width: "14", height: "14", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h("path", { d: "m4 4 8 8M12 4l-8 8", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round" })));
 }
+function Tabs({ label, items, value, onChange }) {
+  return /* @__PURE__ */ h("div", { className: "pp-tabs", role: "tablist", "aria-label": label }, items.map((item) => /* @__PURE__ */ h(
+    "button",
+    {
+      key: item.value,
+      type: "button",
+      role: "tab",
+      className: "pp-tab",
+      "aria-selected": value === item.value,
+      disabled: item.disabled === true,
+      title: item.title,
+      onClick: () => {
+        if (item.disabled !== true) onChange(item.value);
+      }
+    },
+    item.label
+  )));
+}
+function Field({ label, help, children, className = "", as = "label" }) {
+  const Tag = as;
+  return /* @__PURE__ */ h(Tag, { className: `pp-field ${className}`.trim() }, /* @__PURE__ */ h("span", null, label), children, help !== void 0 && /* @__PURE__ */ h("span", { className: "pp-field-help" }, help));
+}
+function Input(props) {
+  return /* @__PURE__ */ h("input", { className: "pp-input", ...props });
+}
+function Select(props) {
+  const { compact = false, className = "", ...rest } = props;
+  return /* @__PURE__ */ h("select", { className: `pp-select${compact ? " pp-select-sm" : ""} ${className}`.trim(), ...rest });
+}
 function StateCard({ kind, title, message, action }) {
   return /* @__PURE__ */ h("div", { className: `pp-state pp-state-${kind}`, role: kind === "error" ? "alert" : void 0 }, /* @__PURE__ */ h("span", { className: "pp-state-icon", "aria-hidden": "true" }, kind === "loading" ? /* @__PURE__ */ h("span", { className: "pp-spinner" }) : kind === "error" ? "!" : "\u2014"), /* @__PURE__ */ h("span", { className: "pp-state-copy" }, /* @__PURE__ */ h("strong", null, title), message !== void 0 && message !== null && message !== "" && /* @__PURE__ */ h("span", null, message)), action);
+}
+function ActionBar({ children, end = false }) {
+  return /* @__PURE__ */ h("div", { className: `pp-actions${end ? " pp-actions-right" : ""}` }, children);
 }
 
 // plugin/src/client/index.tsx
@@ -1269,57 +1320,36 @@ function CreateForm({ t, onCreated, onCancel }) {
       setBusy(false);
     }
   };
-  return /* @__PURE__ */ h2("div", { className: "pp-card pp-panel", style: { maxWidth: 700 } }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-page-nav" }, /* @__PURE__ */ h2(BackButton, { label: t("back"), onClick: onCancel })), /* @__PURE__ */ h2("div", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("sourceType")), /* @__PURE__ */ h2("div", { className: "pp-tabs", role: "tablist", "aria-label": t("sourceType") }, /* @__PURE__ */ h2(
-    "button",
+  return /* @__PURE__ */ h2("div", { className: "pp-card pp-panel", style: { maxWidth: 700 } }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-page-nav" }, /* @__PURE__ */ h2(BackButton, { label: t("back"), onClick: onCancel })), /* @__PURE__ */ h2(Field, { as: "div", label: t("sourceType") }, /* @__PURE__ */ h2(
+    Tabs,
     {
-      type: "button",
-      role: "tab",
-      className: "pp-tab",
-      "aria-selected": sourceKind === "local",
-      onClick: () => {
-        setSourceKind("local");
-        setMountPoint("");
+      label: t("sourceType"),
+      value: sourceKind,
+      items: [
+        { value: "local", label: t("sourceLocal") },
+        {
+          value: "smb",
+          label: `${t("sourceSmb")}${SMB_ENABLED ? "" : ` \xB7 ${t("smbUnavailable")}`}`,
+          disabled: !SMB_ENABLED,
+          title: SMB_ENABLED ? void 0 : t("smbUnavailable")
+        }
+      ],
+      onChange: (value) => {
+        if (value === "local") setMountPoint("");
+        setSourceKind(value);
         setError(null);
       }
-    },
-    t("sourceLocal")
-  ), /* @__PURE__ */ h2(
-    "button",
-    {
-      type: "button",
-      role: "tab",
-      className: "pp-tab",
-      "aria-selected": sourceKind === "smb",
-      disabled: !SMB_ENABLED,
-      title: SMB_ENABLED ? void 0 : t("smbUnavailable"),
-      onClick: () => {
-        if (SMB_ENABLED) {
-          setSourceKind("smb");
-          setError(null);
-        }
-      }
-    },
-    t("sourceSmb"),
-    SMB_ENABLED ? "" : ` \xB7 ${t("smbUnavailable")}`
-  ))), sourceKind === "local" ? /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("folder")), /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h2(
-    "input",
+    }
+  )), sourceKind === "local" ? /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2(Field, { as: "div", label: t("folder") }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h2(
+    Input,
     {
       value: folder,
       onChange: (event) => setFolder(event.target.value),
       placeholder: "/Users/\u2026/Pictures",
-      className: "pp-input",
       style: { flex: 1 }
     }
-  ), /* @__PURE__ */ h2("button", { type: "button", style: btn, disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("choose")), /* @__PURE__ */ h2("button", { type: "button", style: btn, onClick: () => browse(folder) }, t("browse")))), dirs.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-card", style: { maxHeight: 220, overflow: "auto", padding: 4 } }, dirs.map((dir) => /* @__PURE__ */ h2(
-    "div",
-    {
-      key: dir.path,
-      onClick: () => browse(dir.path),
-      style: { padding: "7px 10px", cursor: "pointer", fontSize: 13, borderRadius: 8 }
-    },
-    dir.name
-  )))) : /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("smbUrl")), /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h2(
-    "input",
+  ), /* @__PURE__ */ h2(Button, { disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("choose")), /* @__PURE__ */ h2(Button, { onClick: () => browse(folder) }, t("browse")))), dirs.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-card pp-dir-list" }, dirs.map((dir) => /* @__PURE__ */ h2("button", { type: "button", className: "pp-dir-row", key: dir.path, onClick: () => browse(dir.path) }, dir.name)))) : /* @__PURE__ */ h2(Field, { as: "div", label: t("smbUrl"), help: t("smbHint") }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h2(
+    Input,
     {
       value: smbUrl,
       onChange: (event) => {
@@ -1328,10 +1358,9 @@ function CreateForm({ t, onCreated, onCancel }) {
         setError(null);
       },
       placeholder: "smb://192.168.12.199/yueao",
-      className: "pp-input",
       style: { flex: 1 }
     }
-  ), /* @__PURE__ */ h2("button", { type: "button", style: btn, disabled: connecting || smbUrl === "", onClick: connectSmb }, connecting ? t("smbConnecting") : t("smbConnect"))), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginTop: 6 } }, t("smbHint")), mountPoint !== "" && /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginTop: 4 } }, t("smbConnected"), ": ", mountPoint)), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("name")), /* @__PURE__ */ h2("input", { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder"), className: "pp-input" })), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("theme")), /* @__PURE__ */ h2("select", { value: theme, onChange: (event) => setTheme(event.target.value), className: "pp-select" }, /* @__PURE__ */ h2("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h2("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h2("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h2("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h2("label", { className: "pp-field", style: { maxWidth: 140 } }, /* @__PURE__ */ h2("span", null, t("budget")), /* @__PURE__ */ h2("input", { value: budget, onChange: (event) => setBudget(event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-actions" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }), /* @__PURE__ */ h2("button", { type: "button", className: "pp-button pp-button-primary", disabled: busy || (sourceKind === "local" ? folder === "" : mountPoint === ""), onClick: create }, busy ? t("creating") : t("create"))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error)));
+  ), /* @__PURE__ */ h2(Button, { disabled: connecting || smbUrl === "", onClick: connectSmb }, connecting ? t("smbConnecting") : t("smbConnect"))), mountPoint !== "" && /* @__PURE__ */ h2("span", { className: "pp-field-help" }, t("smbConnected"), ": ", mountPoint)), /* @__PURE__ */ h2(Field, { label: t("name") }, /* @__PURE__ */ h2(Input, { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder") })), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2(Field, { label: t("theme") }, /* @__PURE__ */ h2(Select, { value: theme, onChange: (event) => setTheme(event.target.value) }, /* @__PURE__ */ h2("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h2("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h2("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h2("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h2(Field, { label: t("budget"), className: "pp-field-narrow" }, /* @__PURE__ */ h2(Input, { value: budget, onChange: (event) => setBudget(event.target.value) }))), /* @__PURE__ */ h2(ActionBar, { end: true }, /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || (sourceKind === "local" ? folder === "" : mountPoint === ""), onClick: create }, busy ? t("creating") : t("create"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error })));
 }
 var VERDICT_COLORS = {
   keep: "var(--pp-status-keep)",
@@ -2111,10 +2140,10 @@ function Workbench({ t }) {
       onClick: () => setLanguage(getLanguage() === "zh" ? "en" : "zh")
     },
     getLanguage() === "zh" ? "EN" : "\u4E2D"
-  ), /* @__PURE__ */ h2("button", { type: "button", className: "pp-button pp-button-primary", onClick: () => {
+  ), /* @__PURE__ */ h2(Button, { variant: "primary", onClick: () => {
     setCreating(true);
     setSelected(null);
-  } }, t("newProject")))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error", style: { marginBottom: 12 } }, error), selected !== null ? /* @__PURE__ */ h2(ProjectDetail, { t, id: selected, onBack: () => setSelected(null) }) : creating ? /* @__PURE__ */ h2(
+  } }, t("newProject")))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), selected !== null ? /* @__PURE__ */ h2(ProjectDetail, { t, id: selected, onBack: () => setSelected(null) }) : creating ? /* @__PURE__ */ h2(
     CreateForm,
     {
       t,
@@ -2125,7 +2154,15 @@ function Workbench({ t }) {
       },
       onCancel: () => setCreating(false)
     }
-  ) : projects === null ? /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") }) : list.length === 0 ? /* @__PURE__ */ h2("div", { className: "pp-empty" }, /* @__PURE__ */ h2("div", { className: "pp-empty-icon" }, /* @__PURE__ */ h2("svg", { width: "26", height: "26", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("circle", { cx: "12", cy: "12", r: "8.4", stroke: "currentColor", strokeWidth: "1.6" }), /* @__PURE__ */ h2("path", { d: "M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }), /* @__PURE__ */ h2("circle", { cx: "12", cy: "12", r: "2.6", stroke: "currentColor", strokeWidth: "1.4" }))), /* @__PURE__ */ h2("h2", null, t("empty")), /* @__PURE__ */ h2("p", null, t("subtitle")), /* @__PURE__ */ h2("button", { type: "button", className: "pp-button pp-button-primary", onClick: () => setCreating(true) }, t("newProject"))) : /* @__PURE__ */ h2("div", { className: "pp-projects" }, list.map((project) => /* @__PURE__ */ h2(
+  ) : projects === null ? /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") }) : list.length === 0 ? /* @__PURE__ */ h2(
+    StateCard,
+    {
+      kind: "empty",
+      title: t("empty"),
+      message: t("subtitle"),
+      action: /* @__PURE__ */ h2(Button, { variant: "primary", onClick: () => setCreating(true) }, t("newProject"))
+    }
+  ) : /* @__PURE__ */ h2("div", { className: "pp-projects" }, list.map((project) => /* @__PURE__ */ h2(
     "button",
     {
       type: "button",

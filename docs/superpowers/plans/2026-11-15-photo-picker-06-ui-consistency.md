@@ -32,7 +32,7 @@
   - 新增 `ui.tsx`（Button/Back/Close/Segmented/Field/Input/Select/StateCard/Toolbar/ActionBar/Section）
   - 状态色改用 `--pp-status-*`
   - 新增 `npm run check:ui`（当前只报告，37 条迁移警告）
-- [ ] **Phase 2：壳层、项目列表、新建项目**
+- [x] **Phase 2：壳层、项目列表、新建项目**
 - [ ] **Phase 3：项目详情（摘要/阶段/历史/操作区）**
 - [ ] **Phase 4：复核（工具栏/图墙/单图/组对比）**
 - [ ] **Phase 5：导出/设置/校准/Toast**
@@ -55,7 +55,7 @@ npm run check:ui
 
 ## 已知基线（Phase 1 开始时）
 
-- 27 处 `style={btn}`
+- Phase 1 开始时 27 处 `style={btn}`；Phase 2 后降到 24 处（剩余在复核/弹窗/设置/校准）
 - 1 个 legacy `btn` 常量
 - 主题中仍有少量 danger fallback 色值（非状态色 token）
 - 两套空状态：`pp-empty` 与 `pp-state`，Phase 2 合并
