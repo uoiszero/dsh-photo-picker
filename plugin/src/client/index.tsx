@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react'
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 // esbuild 用 jsxFactory: 'h' 编译 JSX；Fragment 用于多根节点。
 const h = React.createElement
@@ -294,7 +294,13 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   version: number
   onChanged?: () => void
 }) {
+  const PAGE_SIZE = 200
   const [items, setItems] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [nextOffset, setNextOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState('all')
   const [scene, setScene] = useState('all')
   const [sort, setSort] = useState('score')
@@ -303,24 +309,134 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   const [single, setSingle] = useState<string | null>(null)
   const [groupView, setGroupView] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const itemsRef = useRef<any[]>([])
+  const requestRef = useRef(0)
+  const wallRef = useRef<HTMLDivElement | null>(null)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const filterKey = `${filter}|${scene}|${sort}`
+  const lastFilterKey = useRef('')
 
-  const load = async () => {
-    const params = new URLSearchParams({ scope: 'review', sort, limit: '200' })
+  const fetchPage = async (offset: number) => {
+    const params = new URLSearchParams({ scope: 'review', sort, limit: String(PAGE_SIZE), offset: String(offset) })
     if (filter !== 'all') params.set('verdict', filter)
     if (scene !== 'all') params.set('scene', scene)
-    const data = await api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`)
-    setItems(data.items)
-    setSelected(current => current.filter(id => data.items.some((item: any) => item.id === id)))
+    return api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`)
+  }
+
+  const applyItems = (next: any[], count: number) => {
+    itemsRef.current = next
+    setItems(next)
+    setTotal(count)
+    setNextOffset(next.length)
+    setHasMore(next.length < count)
+  }
+
+  const loadPage = async (offset: number, append: boolean) => {
+    const generation = ++requestRef.current
+    if (append) setLoadingMore(true)
+    else {
+      setLoading(true)
+      setSelected([])
+    }
+    try {
+      const data = await fetchPage(offset)
+      if (generation !== requestRef.current) return
+      const seen = new Set<string>()
+      const merged: any[] = []
+      for (const item of [...(append ? itemsRef.current : []), ...(data.items ?? [])]) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id)
+          merged.push(item)
+        }
+      }
+      applyItems(merged, Number(data.total ?? merged.length))
+      setError(null)
+    } catch (cause) {
+      if (generation === requestRef.current) setError(String(cause))
+    } finally {
+      if (generation === requestRef.current) {
+        setLoading(false)
+        setLoadingMore(false)
+      }
+    }
+  }
+
+  const refreshLoaded = async () => {
+    const count = itemsRef.current.length
+    if (count === 0) {
+      await loadPage(0, false)
+      return
+    }
+    const generation = ++requestRef.current
+    setLoadingMore(true)
+    try {
+      const pages = Math.ceil(count / PAGE_SIZE)
+      const results: any[] = []
+      for (let page = 0; page < pages; page += 1) {
+        const data = await fetchPage(page * PAGE_SIZE)
+        if (generation !== requestRef.current) return
+        results.push(data)
+      }
+      const seen = new Set<string>()
+      const merged: any[] = []
+      for (const data of results) {
+        for (const item of data.items ?? []) {
+          if (!seen.has(item.id)) {
+            seen.add(item.id)
+            merged.push(item)
+          }
+        }
+      }
+      applyItems(merged, Number(results[0]?.total ?? merged.length))
+      setError(null)
+    } catch (cause) {
+      if (generation === requestRef.current) setError(String(cause))
+    } finally {
+      if (generation === requestRef.current) setLoadingMore(false)
+    }
+  }
+
+  const loadMore = async () => {
+    if (!hasMore || loading || loadingMore) return itemsRef.current
+    await loadPage(nextOffset, true)
+    return itemsRef.current
   }
 
   useEffect(() => {
-    load().catch(cause => setError(String(cause)))
+    const isFirst = lastFilterKey.current === ''
+    const reset = isFirst || lastFilterKey.current !== filterKey
+    lastFilterKey.current = filterKey
+    if (reset) {
+      void loadPage(0, false)
+      wallRef.current?.scrollIntoView({ block: 'start' })
+    } else {
+      void refreshLoaded()
+    }
   }, [filter, scene, sort, version])
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore || items.length === 0 || sentinelRef.current === null) return
+    const scrollRoot = wallRef.current?.closest(".pp-page")
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) void loadMore()
+    }, { root: scrollRoot ?? null, rootMargin: '400px' })
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [hasMore, loading, loadingMore, items.length, nextOffset, filter, scene, sort])
+
+  const markDecided = (photoIds: string[], verdict: string) => {
+    const ids = new Set(photoIds)
+    setItems(current => current.map(item => {
+      if (!ids.has(item.id)) return item
+      if (verdict === 'auto') return { ...item, humanVerdict: null, verdict: item.aiVerdict ?? 'maybe' }
+      return { ...item, humanVerdict: verdict, verdict }
+    }))
+  }
 
   const decide = async (photoIds: string[], verdict: string) => {
     if (photoIds.length === 0) return
     const previous: Record<string, string | null> = {}
-    for (const item of items) if (photoIds.includes(item.id)) previous[item.id] = item.humanVerdict
+    for (const item of itemsRef.current) if (photoIds.includes(item.id)) previous[item.id] = item.humanVerdict
     try {
       await api(`/photo-picker/api/projects/${projectId}/decisions`, {
         method: 'POST',
@@ -328,7 +444,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
       })
       setUndo(stack => [{ previous }, ...stack].slice(0, 20))
       setSelected([])
-      await load()
+      markDecided(photoIds, verdict)
       onChanged?.()
     } catch (cause) {
       setError(String(cause))
@@ -350,9 +466,9 @@ function ReviewSection({ t, projectId, version, onChanged }: {
           method: 'POST',
           body: JSON.stringify({ photoIds, verdict }),
         })
+        markDecided(photoIds, verdict)
       }
       setUndo(stack => stack.slice(1))
-      await load()
       onChanged?.()
     } catch (cause) {
       setError(String(cause))
@@ -372,7 +488,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
         version={version}
         onNavigate={setGroupView}
         onClose={() => setGroupView(null)}
-        onDecided={async () => { await load(); onChanged?.() }}
+        onDecided={async () => { await refreshLoaded(); onChanged?.() }}
       />
     )
   }
@@ -386,6 +502,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
         photoId={single}
         version={version}
         onNavigate={setSingle}
+        onNeedMore={loadMore}
         onOpenGroup={setGroupView}
         onDecide={decide}
         onClose={() => setSingle(null)}
@@ -432,14 +549,16 @@ function ReviewSection({ t, projectId, version, onChanged }: {
               <option value="rel_path">{t('sortPath')}</option>
             </select>
           </label>
-          <span className="pp-muted">{items.length} {t('photos')}</span>
+          <span className="pp-muted">{total} {t('photos')}</span>
           <Button disabled={undo.length === 0} onClick={undoLast}>{t('undoAction')}</Button>
         </div>
       </div>
 
-      {error !== null && <div className="pp-error">{error}</div>}
+      {error !== null && <div className="pp-error">{error} <Button size="sm" onClick={() => loadPage(0, false)}>{t('retry')}</Button></div>}
 
-      {items.length === 0 ? (
+      {loading && items.length === 0 ? (
+        <StateCard kind="loading" title={t('loading')} />
+      ) : items.length === 0 ? (
         <StateCard
           kind="empty"
           title={t('reviewEmpty')}
@@ -448,7 +567,8 @@ function ReviewSection({ t, projectId, version, onChanged }: {
           ) : undefined}
         />
       ) : (
-        <div className="pp-wall">
+        <>
+        <div className="pp-wall" ref={wallRef}>
           {items.map(item => {
             const sceneText = Array.isArray(item.scenes)
               ? item.scenes.map((value: string) => sceneLabel(t, value)).join(' · ')
@@ -484,6 +604,12 @@ function ReviewSection({ t, projectId, version, onChanged }: {
             )
           })}
         </div>
+        {hasMore && (
+          <div className="pp-load-more" ref={sentinelRef}>
+            {loadingMore ? t('loading') : t('loadMore')}
+          </div>
+        )}
+        </>
       )}
 
       {selected.length > 0 && (
@@ -515,7 +641,7 @@ function storeGuide(key: string, value: boolean) {
   }
 }
 
-function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }: any) {
+function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [showEdited, setShowEdited] = useState(false)
@@ -523,6 +649,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const [showGrid, setShowGrid] = useState(() => storedGuide('photoPicker.gridGuide'))
   const [showCross, setShowCross] = useState(() => storedGuide('photoPicker.crossGuide'))
   const [deciding, setDeciding] = useState(false)
+
+  const needMoreRef = useRef(onNeedMore)
+  useEffect(() => { needMoreRef.current = onNeedMore }, [onNeedMore])
 
   const loadDetail = async () => {
     const next = await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`)
@@ -551,8 +680,13 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   }
 
   const index = items.findIndex((item: any) => item.id === photoId)
-  const move = (delta: number) => {
-    const next = items[index + delta]
+  const move = async (delta: number) => {
+    let list = items
+    let next = list[index + delta]
+    if (next === undefined && delta > 0 && typeof needMoreRef.current === 'function') {
+      list = await needMoreRef.current()
+      next = list[index + delta]
+    }
     if (next !== undefined) onNavigate(next.id)
   }
 
@@ -560,8 +694,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       if (target !== null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
-      if (event.key === 'j' || event.key === 'ArrowRight') move(1)
-      else if (event.key === 'k' || event.key === 'ArrowLeft') move(-1)
+      if (event.key === 'j' || event.key === 'ArrowRight') void move(1)
+      else if (event.key === 'k' || event.key === 'ArrowLeft') void move(-1)
       else if (event.key === 'p') void decide('keep')
       else if (event.key === 'm') void decide('maybe')
       else if (event.key === 'x') void decide('reject')

@@ -73,6 +73,8 @@ var zh = {
   empty: "\u8FD8\u6CA1\u6709\u9879\u76EE\u3002\u5148\u9009\u62E9\u7167\u7247\u6587\u4EF6\u5939\uFF0C\u5EFA\u4E00\u4E2A\u9879\u76EE\u3002",
   noPhotos: "\u8FD8\u6CA1\u6709\u7F29\u7565\u56FE\u3002\u5148\u300C\u5F00\u59CB\u626B\u63CF\u300D\uFF0C\u518D\u300C\u5F00\u59CB\u9884\u5904\u7406\u300D\u3002",
   loading: "\u52A0\u8F7D\u4E2D\u2026",
+  loadMore: "\u7EE7\u7EED\u6EDA\u52A8\u52A0\u8F7D\u66F4\u591A",
+  retry: "\u91CD\u8BD5",
   errorTitle: "\u51FA\u9519\u4E86",
   themeMixed: "\u6DF7\u5408",
   themePortrait: "\u4EBA\u50CF",
@@ -303,6 +305,8 @@ var en = {
   empty: "No projects yet. Pick a photo folder to create one.",
   noPhotos: "No thumbnails yet. Run Scan, then Preprocess.",
   loading: "Loading\u2026",
+  loadMore: "Scroll for more",
+  retry: "Retry",
   errorTitle: "Something went wrong",
   themeMixed: "Mixed",
   themePortrait: "Portrait",
@@ -841,6 +845,7 @@ var STYLES = `
   box-shadow: 0 1px 2px rgba(0, 0, 0, .1) !important;
 }
 
+.pp-load-more { padding: 18px 0 4px; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12px; }
 .pp-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 10px; }
 .pp-tile-wrap { position: relative; }
 .pp-tile {
@@ -1094,7 +1099,8 @@ var STYLES = `
 
 @media (max-width: 880px) {
   .pp-single-body { grid-template-columns: 1fr; }
-  .pp-wall { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+  .pp-load-more { padding: 18px 0 4px; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.pp-wall { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
 }
 @media (max-width: 720px) {
   .pp-shell { padding: 0 16px 56px; }
@@ -1453,7 +1459,13 @@ var DIMENSION_LABELS = {
   moment: "dimensionMoment"
 };
 function ReviewSection({ t, projectId, version, onChanged }) {
+  const PAGE_SIZE = 200;
   const [items, setItems] = (0, import_react2.useState)([]);
+  const [total, setTotal] = (0, import_react2.useState)(0);
+  const [nextOffset, setNextOffset] = (0, import_react2.useState)(0);
+  const [hasMore, setHasMore] = (0, import_react2.useState)(false);
+  const [loading, setLoading] = (0, import_react2.useState)(true);
+  const [loadingMore, setLoadingMore] = (0, import_react2.useState)(false);
   const [filter, setFilter] = (0, import_react2.useState)("all");
   const [scene, setScene] = (0, import_react2.useState)("all");
   const [sort, setSort] = (0, import_react2.useState)("score");
@@ -1462,21 +1474,125 @@ function ReviewSection({ t, projectId, version, onChanged }) {
   const [single, setSingle] = (0, import_react2.useState)(null);
   const [groupView, setGroupView] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
-  const load = async () => {
-    const params = new URLSearchParams({ scope: "review", sort, limit: "200" });
+  const itemsRef = (0, import_react2.useRef)([]);
+  const requestRef = (0, import_react2.useRef)(0);
+  const wallRef = (0, import_react2.useRef)(null);
+  const sentinelRef = (0, import_react2.useRef)(null);
+  const filterKey = `${filter}|${scene}|${sort}`;
+  const lastFilterKey = (0, import_react2.useRef)("");
+  const fetchPage = async (offset) => {
+    const params = new URLSearchParams({ scope: "review", sort, limit: String(PAGE_SIZE), offset: String(offset) });
     if (filter !== "all") params.set("verdict", filter);
     if (scene !== "all") params.set("scene", scene);
-    const data = await api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`);
-    setItems(data.items);
-    setSelected((current) => current.filter((id) => data.items.some((item) => item.id === id)));
+    return api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`);
+  };
+  const applyItems = (next, count) => {
+    itemsRef.current = next;
+    setItems(next);
+    setTotal(count);
+    setNextOffset(next.length);
+    setHasMore(next.length < count);
+  };
+  const loadPage = async (offset, append) => {
+    const generation = ++requestRef.current;
+    if (append) setLoadingMore(true);
+    else {
+      setLoading(true);
+      setSelected([]);
+    }
+    try {
+      const data = await fetchPage(offset);
+      if (generation !== requestRef.current) return;
+      const seen = /* @__PURE__ */ new Set();
+      const merged = [];
+      for (const item of [...append ? itemsRef.current : [], ...data.items ?? []]) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          merged.push(item);
+        }
+      }
+      applyItems(merged, Number(data.total ?? merged.length));
+      setError(null);
+    } catch (cause) {
+      if (generation === requestRef.current) setError(String(cause));
+    } finally {
+      if (generation === requestRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    }
+  };
+  const refreshLoaded = async () => {
+    const count = itemsRef.current.length;
+    if (count === 0) {
+      await loadPage(0, false);
+      return;
+    }
+    const generation = ++requestRef.current;
+    setLoadingMore(true);
+    try {
+      const pages = Math.ceil(count / PAGE_SIZE);
+      const results = [];
+      for (let page = 0; page < pages; page += 1) {
+        const data = await fetchPage(page * PAGE_SIZE);
+        if (generation !== requestRef.current) return;
+        results.push(data);
+      }
+      const seen = /* @__PURE__ */ new Set();
+      const merged = [];
+      for (const data of results) {
+        for (const item of data.items ?? []) {
+          if (!seen.has(item.id)) {
+            seen.add(item.id);
+            merged.push(item);
+          }
+        }
+      }
+      applyItems(merged, Number(results[0]?.total ?? merged.length));
+      setError(null);
+    } catch (cause) {
+      if (generation === requestRef.current) setError(String(cause));
+    } finally {
+      if (generation === requestRef.current) setLoadingMore(false);
+    }
+  };
+  const loadMore = async () => {
+    if (!hasMore || loading || loadingMore) return itemsRef.current;
+    await loadPage(nextOffset, true);
+    return itemsRef.current;
   };
   (0, import_react2.useEffect)(() => {
-    load().catch((cause) => setError(String(cause)));
+    const isFirst = lastFilterKey.current === "";
+    const reset = isFirst || lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (reset) {
+      void loadPage(0, false);
+      wallRef.current?.scrollIntoView({ block: "start" });
+    } else {
+      void refreshLoaded();
+    }
   }, [filter, scene, sort, version]);
+  (0, import_react2.useEffect)(() => {
+    if (!hasMore || loading || loadingMore || items.length === 0 || sentinelRef.current === null) return;
+    const scrollRoot = wallRef.current?.closest(".pp-page");
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) void loadMore();
+    }, { root: scrollRoot ?? null, rootMargin: "400px" });
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, items.length, nextOffset, filter, scene, sort]);
+  const markDecided = (photoIds, verdict) => {
+    const ids = new Set(photoIds);
+    setItems((current) => current.map((item) => {
+      if (!ids.has(item.id)) return item;
+      if (verdict === "auto") return { ...item, humanVerdict: null, verdict: item.aiVerdict ?? "maybe" };
+      return { ...item, humanVerdict: verdict, verdict };
+    }));
+  };
   const decide = async (photoIds, verdict) => {
     if (photoIds.length === 0) return;
     const previous = {};
-    for (const item of items) if (photoIds.includes(item.id)) previous[item.id] = item.humanVerdict;
+    for (const item of itemsRef.current) if (photoIds.includes(item.id)) previous[item.id] = item.humanVerdict;
     try {
       await api(`/photo-picker/api/projects/${projectId}/decisions`, {
         method: "POST",
@@ -1484,7 +1600,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
       });
       setUndo((stack) => [{ previous }, ...stack].slice(0, 20));
       setSelected([]);
-      await load();
+      markDecided(photoIds, verdict);
       onChanged?.();
     } catch (cause) {
       setError(String(cause));
@@ -1505,9 +1621,9 @@ function ReviewSection({ t, projectId, version, onChanged }) {
           method: "POST",
           body: JSON.stringify({ photoIds, verdict })
         });
+        markDecided(photoIds, verdict);
       }
       setUndo((stack) => stack.slice(1));
-      await load();
       onChanged?.();
     } catch (cause) {
       setError(String(cause));
@@ -1525,7 +1641,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
         onNavigate: setGroupView,
         onClose: () => setGroupView(null),
         onDecided: async () => {
-          await load();
+          await refreshLoaded();
           onChanged?.();
         }
       }
@@ -1541,6 +1657,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
         photoId: single,
         version,
         onNavigate: setSingle,
+        onNeedMore: loadMore,
         onOpenGroup: setGroupView,
         onDecide: decide,
         onClose: () => setSingle(null)
@@ -1561,7 +1678,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
       items: filters.map(([value, label]) => ({ value, label })),
       onChange: setFilter
     }
-  )), /* @__PURE__ */ h2("div", { className: "pp-toolbar-group pp-toolbar-end" }, /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sceneFilter")), /* @__PURE__ */ h2("select", { value: scene, onChange: (event) => setScene(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h2("option", { value: "all" }, t("filterAll")), Object.keys(SCENE_KEYS).map((key) => /* @__PURE__ */ h2("option", { key, value: key }, t(SCENE_KEYS[key]))))), /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sortLabel")), /* @__PURE__ */ h2("select", { value: sort, onChange: (event) => setSort(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h2("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h2("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h2("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h2("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h2("option", { value: "rel_path" }, t("sortPath")))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, items.length, " ", t("photos")), /* @__PURE__ */ h2(Button, { disabled: undo.length === 0, onClick: undoLast }, t("undoAction")))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error), items.length === 0 ? /* @__PURE__ */ h2(
+  )), /* @__PURE__ */ h2("div", { className: "pp-toolbar-group pp-toolbar-end" }, /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sceneFilter")), /* @__PURE__ */ h2("select", { value: scene, onChange: (event) => setScene(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h2("option", { value: "all" }, t("filterAll")), Object.keys(SCENE_KEYS).map((key) => /* @__PURE__ */ h2("option", { key, value: key }, t(SCENE_KEYS[key]))))), /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sortLabel")), /* @__PURE__ */ h2("select", { value: sort, onChange: (event) => setSort(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h2("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h2("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h2("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h2("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h2("option", { value: "rel_path" }, t("sortPath")))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, total, " ", t("photos")), /* @__PURE__ */ h2(Button, { disabled: undo.length === 0, onClick: undoLast }, t("undoAction")))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error, " ", /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => loadPage(0, false) }, t("retry"))), loading && items.length === 0 ? /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") }) : items.length === 0 ? /* @__PURE__ */ h2(
     StateCard,
     {
       kind: "empty",
@@ -1571,7 +1688,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
         setScene("all");
       } }, t("clearFilters")) : void 0
     }
-  ) : /* @__PURE__ */ h2("div", { className: "pp-wall" }, items.map((item) => {
+  ) : /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("div", { className: "pp-wall", ref: wallRef }, items.map((item) => {
     const sceneText = Array.isArray(item.scenes) ? item.scenes.map((value) => sceneLabel(t, value)).join(" \xB7 ") : "";
     return /* @__PURE__ */ h2("div", { className: "pp-tile-wrap", key: item.id }, /* @__PURE__ */ h2(
       "button",
@@ -1603,7 +1720,7 @@ function ReviewSection({ t, projectId, version, onChanged }) {
         "aria-label": item.relPath
       }
     ));
-  })), selected.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-batch" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h2(Button, { variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection"))));
+  })), hasMore && /* @__PURE__ */ h2("div", { className: "pp-load-more", ref: sentinelRef }, loadingMore ? t("loading") : t("loadMore"))), selected.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-batch" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h2(Button, { variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection"))));
 }
 function storedGuide(key) {
   try {
@@ -1618,7 +1735,7 @@ function storeGuide(key, value) {
   } catch {
   }
 }
-function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpenGroup, onDecide, onClose }) {
+function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose }) {
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
   const [showEdited, setShowEdited] = (0, import_react2.useState)(false);
@@ -1626,6 +1743,10 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const [showGrid, setShowGrid] = (0, import_react2.useState)(() => storedGuide("photoPicker.gridGuide"));
   const [showCross, setShowCross] = (0, import_react2.useState)(() => storedGuide("photoPicker.crossGuide"));
   const [deciding, setDeciding] = (0, import_react2.useState)(false);
+  const needMoreRef = (0, import_react2.useRef)(onNeedMore);
+  (0, import_react2.useEffect)(() => {
+    needMoreRef.current = onNeedMore;
+  }, [onNeedMore]);
   const loadDetail = async () => {
     const next = await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`);
     setDetail(next);
@@ -1650,16 +1771,21 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
     }
   };
   const index = items.findIndex((item) => item.id === photoId);
-  const move = (delta) => {
-    const next = items[index + delta];
+  const move = async (delta) => {
+    let list = items;
+    let next = list[index + delta];
+    if (next === void 0 && delta > 0 && typeof needMoreRef.current === "function") {
+      list = await needMoreRef.current();
+      next = list[index + delta];
+    }
     if (next !== void 0) onNavigate(next.id);
   };
   (0, import_react2.useEffect)(() => {
     const onKey = (event) => {
       const target = event.target;
       if (target !== null && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
-      if (event.key === "j" || event.key === "ArrowRight") move(1);
-      else if (event.key === "k" || event.key === "ArrowLeft") move(-1);
+      if (event.key === "j" || event.key === "ArrowRight") void move(1);
+      else if (event.key === "k" || event.key === "ArrowLeft") void move(-1);
       else if (event.key === "p") void decide("keep");
       else if (event.key === "m") void decide("maybe");
       else if (event.key === "x") void decide("reject");

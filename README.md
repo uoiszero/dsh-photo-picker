@@ -237,7 +237,7 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 113 个单元/集成测试（node:test）
+npm test                 # 114 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
@@ -298,7 +298,7 @@ docs/superpowers/           # 设计 spec 与执行计划
 
 - **Windows 系统目录对话框可能显示在 DSH 窗口下层**（UTM + Win11 ARM 上已复现）：已加 TopMost owner 与单飞防止重复弹窗，但个别窗口环境仍需 `Alt+Tab` 或最小化 DSH 才能看到对话框。
 - **网络源**：SMB 首版暂停，UI 入口暂隐藏；当前仍以本机目录/已挂载路径为主。NFS 自动连接尚未实现。
-- 图墙一次最多取 200 张，尚未做虚拟滚动；超大项目建议用筛选收敛。
+- 图墙按 200 张/页无限滚动，已能访问全部照片；虚拟滚动/行窗口仍待实现，超大项目初次加载后仍需按需追加。
 - 组对比每页 6 张，超过需要翻页。
 - 校准复用已经评分的照片，不会为了校准重新跑一遍 L1–L3。
 - 修图配方 v1 只做全局调整（裁剪/旋转/曝光/对比/饱和度/锐化），不做局部蒙版、污点修复或 RAW 显影。
@@ -316,6 +316,7 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 3：网络照片源](docs/superpowers/plans/2026-11-15-photo-picker-03-network-sources.md)
   - [Plan 6：UI 统筹整改](docs/superpowers/plans/2026-11-15-photo-picker-06-ui-consistency.md)
   - [Plan 7：逐张场景自适应评分](docs/superpowers/plans/2026-11-15-photo-picker-07-scene-aware-scoring.md)
+  - [Plan 8：照片墙分页与虚拟化](docs/superpowers/plans/2026-11-15-photo-picker-08-wall-virtualization.md)
 
 ## 版本
 
