@@ -53,6 +53,26 @@ export const STYLES = `
 }
 .pp-lang:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l2); }
 
+.pp-page-nav { display: flex; align-items: center; min-height: 30px; }
+.pp-back {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 10px 0 8px;
+  border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--dsw-alias-label-secondary);
+  font-size: 13px; font-weight: 500; line-height: 1; cursor: pointer;
+}
+.pp-back svg { flex: none; opacity: .8; }
+.pp-back:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.pp-close {
+  width: 30px; height: 30px; padding: 0; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+.pp-close:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.pp-modal-head .pp-close { margin-left: auto; }
+
 .pp-muted { color: var(--dsw-alias-label-secondary); font-size: 12px; }
 .pp-chip {
   display: inline-flex; align-items: center; background: var(--dsw-alias-bg-layer-2);
