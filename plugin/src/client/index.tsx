@@ -223,24 +223,28 @@ function CreateForm({ t, onCreated, onCancel }: {
   return (
     <div className="pp-card pp-panel" style={{ maxWidth: 700 }}>
       <div className="pp-form">
-        <div className="pp-row" style={{ gap: 6 }}>
-          <span className="pp-muted">{t('sourceType')}</span>
-          <button
-            type="button"
-            style={btn}
-            aria-pressed={sourceKind === 'local'}
-            onClick={() => { setSourceKind('local'); setMountPoint(''); setError(null) }}
-          >
-            {t('sourceLocal')}
-          </button>
-          <button
-            type="button"
-            style={btn}
-            aria-pressed={sourceKind === 'smb'}
-            onClick={() => { setSourceKind('smb'); setError(null) }}
-          >
-            {t('sourceSmb')}
-          </button>
+        <div className="pp-field">
+          <span>{t('sourceType')}</span>
+          <div className="pp-tabs" role="tablist" aria-label={t('sourceType')}>
+            <button
+              type="button"
+              role="tab"
+              className="pp-tab"
+              aria-selected={sourceKind === 'local'}
+              onClick={() => { setSourceKind('local'); setMountPoint(''); setError(null) }}
+            >
+              {t('sourceLocal')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className="pp-tab"
+              aria-selected={sourceKind === 'smb'}
+              onClick={() => { setSourceKind('smb'); setError(null) }}
+            >
+              {t('sourceSmb')}
+            </button>
+          </div>
         </div>
         {sourceKind === 'local' ? (
           <>

@@ -870,6 +870,24 @@ var STYLES = `
   box-shadow: -24px 0 70px rgba(0, 0, 0, .25);
   animation: pp-slide .18s ease;
 }
+.pp-tabs {
+  display: flex; width: 100%; padding: 3px; gap: 3px;
+  border-radius: 11px; background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l1);
+}
+.pp-tab {
+  flex: 1 1 0; min-width: 0; padding: 8px 12px;
+  border: 0 !important; border-radius: 8px;
+  background: transparent; color: var(--dsw-alias-label-secondary);
+  font-size: 13px; font-weight: 500; line-height: 1.35;
+  cursor: pointer; text-align: center;
+}
+.pp-tab:hover { color: var(--dsw-alias-label-primary); }
+.pp-tab[aria-selected="true"] {
+  background: var(--dsw-alias-bg-overlay);
+  color: var(--dsw-alias-label-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
+}
 .pp-form { display: grid; gap: 12px; }
 .pp-field { display: grid; gap: 5px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
@@ -1121,12 +1139,13 @@ function CreateForm({ t, onCreated, onCancel }) {
       setBusy(false);
     }
   };
-  return /* @__PURE__ */ h("div", { className: "pp-card pp-panel", style: { maxWidth: 700 } }, /* @__PURE__ */ h("div", { className: "pp-form" }, /* @__PURE__ */ h("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("sourceType")), /* @__PURE__ */ h(
+  return /* @__PURE__ */ h("div", { className: "pp-card pp-panel", style: { maxWidth: 700 } }, /* @__PURE__ */ h("div", { className: "pp-form" }, /* @__PURE__ */ h("div", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("sourceType")), /* @__PURE__ */ h("div", { className: "pp-tabs", role: "tablist", "aria-label": t("sourceType") }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
-      style: btn,
-      "aria-pressed": sourceKind === "local",
+      role: "tab",
+      className: "pp-tab",
+      "aria-selected": sourceKind === "local",
       onClick: () => {
         setSourceKind("local");
         setMountPoint("");
@@ -1138,15 +1157,16 @@ function CreateForm({ t, onCreated, onCancel }) {
     "button",
     {
       type: "button",
-      style: btn,
-      "aria-pressed": sourceKind === "smb",
+      role: "tab",
+      className: "pp-tab",
+      "aria-selected": sourceKind === "smb",
       onClick: () => {
         setSourceKind("smb");
         setError(null);
       }
     },
     t("sourceSmb")
-  )), sourceKind === "local" ? /* @__PURE__ */ h(Fragment, null, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("folder")), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h(
+  ))), sourceKind === "local" ? /* @__PURE__ */ h(Fragment, null, /* @__PURE__ */ h("label", { className: "pp-field" }, /* @__PURE__ */ h("span", null, t("folder")), /* @__PURE__ */ h("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h(
     "input",
     {
       value: folder,

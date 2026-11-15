@@ -360,6 +360,24 @@ export const STYLES = `
   box-shadow: -24px 0 70px rgba(0, 0, 0, .25);
   animation: pp-slide .18s ease;
 }
+.pp-tabs {
+  display: flex; width: 100%; padding: 3px; gap: 3px;
+  border-radius: 11px; background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l1);
+}
+.pp-tab {
+  flex: 1 1 0; min-width: 0; padding: 8px 12px;
+  border: 0 !important; border-radius: 8px;
+  background: transparent; color: var(--dsw-alias-label-secondary);
+  font-size: 13px; font-weight: 500; line-height: 1.35;
+  cursor: pointer; text-align: center;
+}
+.pp-tab:hover { color: var(--dsw-alias-label-primary); }
+.pp-tab[aria-selected="true"] {
+  background: var(--dsw-alias-bg-overlay);
+  color: var(--dsw-alias-label-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
+}
 .pp-form { display: grid; gap: 12px; }
 .pp-field { display: grid; gap: 5px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
