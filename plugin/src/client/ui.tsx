@@ -137,6 +137,10 @@ export function StateCard({ kind, title, message, action }: {
   )
 }
 
+export function Card({ className = '', children, ...props }: React.ComponentProps<'div'>) {
+  return <div className={`pp-card ${className}`.trim()} {...props}>{children}</div>
+}
+
 export function Toolbar({ children }: { children: React.ReactNode }) {
   return <div className="pp-toolbar">{children}</div>
 }

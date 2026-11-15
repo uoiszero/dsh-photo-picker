@@ -9,7 +9,7 @@ const PANEL_ID = 'photo-picker'
 
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
-import { ActionBar, BackButton, Button, CloseButton, Field, Input, Select, StateCard, Tabs } from './ui'
+import { ActionBar, BackButton, Button, Card, CloseButton, Field, Input, Select, StateCard, Tabs } from './ui'
 
 
 const btn = {
@@ -1487,11 +1487,11 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
   }
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="pp-detail">
       <div className="pp-page-nav">
         <BackButton label={t('back')} onClick={onBack} />
       </div>
-      <section className="pp-card pp-summary">
+      <Card className="pp-summary">
         <div className="pp-summary-top">
           <strong className="pp-project-title">{detail.name}</strong>
           <span className="pp-pill">{statusLabel(t, detail.status)}</span>
@@ -1499,7 +1499,7 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
             <span className="pp-chip">{detail.sourceOnline === false ? t('networkOffline') : t('smbConnected')}</span>
           )}
           {runningLabel !== null && <span className="pp-pill" data-tone="live">{t('running')} · {runningLabel}</span>}
-          <span className="pp-path" style={{ marginLeft: 'auto', maxWidth: '46%' }} title={detail.sourcePath}>
+          <span className="pp-path pp-summary-path" title={detail.sourcePath}>
             {detail.sourcePath}
           </span>
         </div>
@@ -1515,37 +1515,35 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
           ))}
         </div>
 
-        <div className="pp-actions">
-          <button type="button" className="pp-button pp-button-primary" disabled={detail.running !== null} onClick={runAll}>
+        <ActionBar>
+          <Button variant="primary" disabled={detail.running !== null} onClick={runAll}>
             {t('autoRun')}
-          </button>
+          </Button>
           {detail.running !== null && (
-            <button type="button" style={btn} onClick={() => run(detail.running, 'pause')}>{t('pause')}</button>
+            <Button onClick={() => run(detail.running, 'pause')}>{t('pause')}</Button>
           )}
           <div style={{ position: 'relative' }}>
-            <button type="button" style={btn} onClick={() => setSingleStepsOpen(open => !open)}>
+            <Button onClick={() => setSingleStepsOpen(open => !open)}>
               {t('singleStep')} {singleStepsOpen ? '▴' : '▾'}
-            </button>
+            </Button>
             {singleStepsOpen && (
               <div className="pp-menu">
                 {stages.map(stage => (
-                  <button
+                  <Button
                     key={stage}
-                    type="button"
-                    style={btn}
                     disabled={aiDisabled && ['grid', 'rank', 'score'].includes(stage)}
                     onClick={() => { setSingleStepsOpen(false); run(stage) }}
                   >
                     {stage === 'scan' ? t('scan') : stage === 'preprocess' ? t('preprocess') : stageLabel(t, stage)}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
           </div>
           <span style={{ flex: 1 }} />
-          <button type="button" style={btn} onClick={() => setExporting(true)}>{t('export')}</button>
-          <button type="button" style={btn} onClick={() => setSettingsOpen(true)}>{t('settings')}</button>
-        </div>
+          <Button onClick={() => setExporting(true)}>{t('export')}</Button>
+          <Button onClick={() => setSettingsOpen(true)}>{t('settings')}</Button>
+        </ActionBar>
 
         <div className="pp-steps">
           {stages.map(stage => {
@@ -1584,7 +1582,7 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
         )}
 
         {aiDisabled && <div className="pp-callout">{t('aiDisabled')}</div>}
-      </section>
+      </Card>
 
       {exporting && <ExportDialog t={t} projectId={id} onClose={() => setExporting(false)} />}
       {settingsOpen && (
@@ -1597,13 +1595,13 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
         />
       )}
 
-      {error !== null && <div className="pp-error">{error}</div>}
+      {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
 
       {checkpoints.length > 0 && (
         <details className="pp-card pp-history">
           <summary>
             <span>{t('history')}</span>
-            <span className="pp-muted" style={{ marginLeft: 6 }}>
+            <span className="pp-muted pp-history-count">
               {checkpoints.filter(checkpoint => checkpoint.status === 'done').length} / {checkpoints.length}
             </span>
           </summary>
@@ -1643,13 +1641,9 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
       {pipelineNotice !== null && !noticeDismissed && (
         <div className="pp-toast" data-kind={pipelineNotice.kind} aria-live="polite">
           <span style={{ flex: 1 }}>{pipelineNotice.text}</span>
-          <button
-            type="button"
-            style={{ ...btn, padding: '2px 8px', fontSize: 12 }}
-            onClick={() => setNoticeDismissed(true)}
-          >
+          <Button size="sm" variant="ghost" onClick={() => setNoticeDismissed(true)}>
             {t('close')}
-          </button>
+          </Button>
         </div>
       )}
     </div>
