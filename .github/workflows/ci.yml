@@ -29,6 +29,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:release
       - run: npm run check:hygiene
+      - run: npm run check:ui
       - run: npm run build:client
       # 客户端产物已入库：源码改了却没重新 build 时必须失败
       - run: git diff --exit-code -- plugin/dist/client.js

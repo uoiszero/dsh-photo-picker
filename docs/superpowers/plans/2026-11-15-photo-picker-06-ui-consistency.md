@@ -37,7 +37,10 @@
 - [x] **Phase 4：复核（工具栏/图墙/单图/组对比）**
 - [x] **Phase 5：导出/设置/校准/Toast**
 - [x] **Phase 6：窄屏、深色主题、可访问性**
-- [ ] **Phase 7：check:ui 强门禁、截图、文档**
+- [x] **Phase 7：check:ui 强门禁、文档**
+  - `check:ui` 已接入 `verify`、CI checks 和 release workflow
+  - 截图矩阵暂缓：现有 `pp-fixtures` 项目的缩略图仍是纯灰测试图，需要先重建合成 fixture/缩略图再统一截图
+- [ ] **Phase 7b：截图矩阵刷新（1440/1024/720/480，light/dark）**
 
 ## 验收门禁
 
