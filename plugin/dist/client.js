@@ -1625,12 +1625,30 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const [editedFailed, setEditedFailed] = (0, import_react2.useState)(false);
   const [showGrid, setShowGrid] = (0, import_react2.useState)(() => storedGuide("photoPicker.gridGuide"));
   const [showCross, setShowCross] = (0, import_react2.useState)(() => storedGuide("photoPicker.crossGuide"));
+  const [deciding, setDeciding] = (0, import_react2.useState)(false);
+  const loadDetail = async () => {
+    const next = await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`);
+    setDetail(next);
+    setError(null);
+  };
   (0, import_react2.useEffect)(() => {
     setDetail(null);
     setShowEdited(false);
     setEditedFailed(false);
-    api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`).then(setDetail).catch((cause) => setError(String(cause)));
+    loadDetail().catch((cause) => setError(String(cause)));
   }, [photoId]);
+  const decide = async (verdict) => {
+    if (deciding) return;
+    setDeciding(true);
+    try {
+      await onDecide([photoId], verdict);
+      await loadDetail();
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setDeciding(false);
+    }
+  };
   const index = items.findIndex((item) => item.id === photoId);
   const move = (delta) => {
     const next = items[index + delta];
@@ -1642,15 +1660,15 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
       if (target !== null && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
       if (event.key === "j" || event.key === "ArrowRight") move(1);
       else if (event.key === "k" || event.key === "ArrowLeft") move(-1);
-      else if (event.key === "p") onDecide([photoId], "keep");
-      else if (event.key === "m") onDecide([photoId], "maybe");
-      else if (event.key === "x") onDecide([photoId], "reject");
+      else if (event.key === "p") void decide("keep");
+      else if (event.key === "m") void decide("maybe");
+      else if (event.key === "x") void decide("reject");
       else if (event.key === "g" && detail?.group !== void 0) onOpenGroup(detail.group.id);
       else if (event.key === " " || event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [photoId, index, items, detail]);
+  }, [photoId, index, items, detail, deciding]);
   if (error !== null) return /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error });
   if (detail === null) return /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") });
   const dimensions = detail.dimensions ?? {};
@@ -1704,7 +1722,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
       onClick: () => setShowEdited((value) => !value)
     },
     showingEdited ? t("editAfter") : t("editBefore")
-  ))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, onClick: () => onDecide([photoId], "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, onClick: () => onDecide([photoId], "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, onClick: () => onDecide([photoId], "reject") }, t("reject"))), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
+  ))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h2("div", { key, className: "pp-meter" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h2("div", { className: "pp-meter-track" }, /* @__PURE__ */ h2("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h2("span", null, value === null || value === void 0 ? "\u2014" : value));
   })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("editRecipe")), recipe !== null ? /* @__PURE__ */ h2("div", { className: "pp-chips" }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editCrop"), ": ", recipe.crop.width === 1 && recipe.crop.height === 1 ? t("editCropNone") : `${t("editCropKeep")} ${Math.round(recipe.crop.width * 100)}% \xD7 ${Math.round(recipe.crop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(recipe.crop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(recipe.crop.top * 100)}%`), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editRotate"), " ", recipe.rotate, "\xB0"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editExposure"), " ", recipe.exposureEv > 0 ? "+" : "", recipe.exposureEv, " EV"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editContrast"), " ", recipe.contrast), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editSaturation"), " ", recipe.saturation), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editSharpen"), " ", recipe.sharpen)) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe"))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));
