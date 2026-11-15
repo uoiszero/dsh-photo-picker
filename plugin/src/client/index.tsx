@@ -142,6 +142,26 @@ function CloseButton({ label, onClick }: { label: string; onClick: () => void })
   )
 }
 
+function StateCard({ kind, title, message, action }: {
+  kind: 'loading' | 'error' | 'empty'
+  title: string
+  message?: string | null
+  action?: React.ReactNode
+}) {
+  return (
+    <div className={`pp-state pp-state-${kind}`} role={kind === 'error' ? 'alert' : undefined}>
+      <span className="pp-state-icon" aria-hidden="true">
+        {kind === 'loading' ? <span className="pp-spinner" /> : kind === 'error' ? '!' : '—'}
+      </span>
+      <span className="pp-state-copy">
+        <strong>{title}</strong>
+        {message !== undefined && message !== null && message !== '' && <span>{message}</span>}
+      </span>
+      {action}
+    </div>
+  )
+}
+
 function CreateForm({ t, onCreated, onCancel }: {
   t: (key: string) => string
   onCreated: (id: string) => void
@@ -492,12 +512,13 @@ function ReviewSection({ t, projectId, version, onChanged }: {
       {error !== null && <div className="pp-error">{error}</div>}
 
       {items.length === 0 ? (
-        <div className="pp-empty" style={{ padding: '44px 20px' }}>
-          <h2>{t('reviewEmpty')}</h2>
-          {filter !== 'all' && (
+        <StateCard
+          kind="empty"
+          title={t('reviewEmpty')}
+          action={filter !== 'all' ? (
             <button type="button" style={btn} onClick={() => setFilter('all')}>{t('filterAll')}</button>
-          )}
-        </div>
+          ) : undefined}
+        />
       ) : (
         <div className="pp-wall">
           {items.map(item => (
@@ -598,8 +619,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
     return () => window.removeEventListener('keydown', onKey)
   }, [photoId, index, items, detail])
 
-  if (error !== null) return <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>
-  if (detail === null) return <div style={{ ...muted, fontSize: 13 }}>{t('loading')}</div>
+  if (error !== null) return <StateCard kind="error" title={t('errorTitle')} message={error} />
+  if (detail === null) return <StateCard kind="loading" title={t('loading')} />
 
   const dimensions = detail.dimensions ?? {}
   const recipe = detail.editRecipe ?? null
@@ -984,8 +1005,8 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
     return () => window.removeEventListener('keydown', onKey)
   }, [detail, selected, index, groups, page])
 
-  if (error !== null) return <div style={{ color: 'var(--dsw-alias-state-danger-primary, #d0453a)', fontSize: 12 }}>{error}</div>
-  if (detail === null) return <div style={{ ...muted, fontSize: 13 }}>{t('loading')}</div>
+  if (error !== null) return <StateCard kind="error" title={t('errorTitle')} message={error} />
+  if (detail === null) return <StateCard kind="loading" title={t('loading')} />
 
   const kindLabel = detail.kind === 'burst' ? t('groupKindBurst') : t('groupKindScene')
   const pageCount = Math.max(1, Math.ceil(detail.members.length / 6))
@@ -1466,7 +1487,7 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
   }
 
   if (detail === null) {
-    return <div className="pp-card pp-panel"><span className="pp-muted">{t('loading')}</span></div>
+    return <StateCard kind="loading" title={t('loading')} />
   }
 
   const counts = detail.counts ?? {}
@@ -1748,7 +1769,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
             onCancel={() => setCreating(false)}
           />
         ) : projects === null ? (
-          <div className="pp-card pp-panel"><span className="pp-muted">{t('loading')}</span></div>
+          <StateCard kind="loading" title={t('loading')} />
         ) : list.length === 0 ? (
           <div className="pp-empty">
             <div className="pp-empty-icon">

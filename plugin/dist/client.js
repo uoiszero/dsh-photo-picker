@@ -73,6 +73,7 @@ var zh = {
   empty: "\u8FD8\u6CA1\u6709\u9879\u76EE\u3002\u5148\u9009\u62E9\u7167\u7247\u6587\u4EF6\u5939\uFF0C\u5EFA\u4E00\u4E2A\u9879\u76EE\u3002",
   noPhotos: "\u8FD8\u6CA1\u6709\u7F29\u7565\u56FE\u3002\u5148\u300C\u5F00\u59CB\u626B\u63CF\u300D\uFF0C\u518D\u300C\u5F00\u59CB\u9884\u5904\u7406\u300D\u3002",
   loading: "\u52A0\u8F7D\u4E2D\u2026",
+  errorTitle: "\u51FA\u9519\u4E86",
   themeMixed: "\u6DF7\u5408",
   themePortrait: "\u4EBA\u50CF",
   themeLandscape: "\u98CE\u5149",
@@ -288,6 +289,7 @@ var en = {
   empty: "No projects yet. Pick a photo folder to create one.",
   noPhotos: "No thumbnails yet. Run Scan, then Preprocess.",
   loading: "Loading\u2026",
+  errorTitle: "Something went wrong",
   themeMixed: "Mixed",
   themePortrait: "Portrait",
   themeLandscape: "Landscape",
@@ -644,6 +646,35 @@ var STYLES = `
 }
 .pp-project-meta { display: flex; gap: 6px; flex-wrap: wrap; }
 
+.pp-state {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; border-radius: 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
+}
+.pp-state-error {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 38%, var(--dsw-alias-border-l1));
+  background: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 5%, var(--dsw-alias-bg-layer-1));
+}
+.pp-state-icon {
+  width: 30px; height: 30px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary);
+  font-size: 14px; font-weight: 700;
+}
+.pp-state-error .pp-state-icon {
+  background: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 12%, transparent);
+  color: var(--dsw-alias-state-danger-primary, #cc4b3f);
+}
+.pp-state-copy { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.pp-state-copy strong { font-size: 13px; font-weight: 600; }
+.pp-state-copy span { color: var(--dsw-alias-label-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.pp-spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--dsw-alias-border-l2); border-top-color: var(--dsw-alias-brand-primary);
+  animation: pp-spin .7s linear infinite;
+}
+@keyframes pp-spin { to { transform: rotate(360deg); } }
 .pp-empty {
   display: grid; gap: 12px; justify-items: center; text-align: center;
   padding: 56px 24px; border: 1px dashed var(--dsw-alias-border-l2);
@@ -987,6 +1018,17 @@ var STYLES = `
   .pp-single-body { grid-template-columns: 1fr; }
   .pp-wall { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
 }
+@media (max-width: 720px) {
+  .pp-shell { padding: 0 16px 56px; }
+  .pp-header { padding: 22px 0 16px; }
+  .pp-summary-top .pp-path { margin-left: 0 !important; max-width: 100%; width: 100%; }
+  .pp-toolbar { position: static; padding: 9px 10px; }
+  .pp-toolbar .pp-seg { flex: 1 1 100%; overflow-x: auto; }
+  .pp-modal { width: calc(100vw - 24px); padding: 16px; }
+  .pp-drawer { width: 100vw; padding: 16px; }
+  .pp-project { padding: 14px; }
+  .pp-history-row { grid-template-columns: 1fr auto; }
+}
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;
@@ -1023,7 +1065,6 @@ var btn = {
   cursor: "pointer",
   whiteSpace: "nowrap"
 };
-var muted = { color: "var(--dsw-alias-label-secondary)", fontSize: 12 };
 var SMB_ENABLED = false;
 async function api(path, init) {
   const response = await fetch(path, {
@@ -1119,6 +1160,9 @@ function BackButton({ label, onClick }) {
 }
 function CloseButton({ label, onClick }) {
   return /* @__PURE__ */ h("button", { type: "button", className: "pp-close", "aria-label": label, title: label, onClick }, /* @__PURE__ */ h("svg", { width: "14", height: "14", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h("path", { d: "m4 4 8 8M12 4l-8 8", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round" })));
+}
+function StateCard({ kind, title, message, action }) {
+  return /* @__PURE__ */ h("div", { className: `pp-state pp-state-${kind}`, role: kind === "error" ? "alert" : void 0 }, /* @__PURE__ */ h("span", { className: "pp-state-icon", "aria-hidden": "true" }, kind === "loading" ? /* @__PURE__ */ h("span", { className: "pp-spinner" }) : kind === "error" ? "!" : "\u2014"), /* @__PURE__ */ h("span", { className: "pp-state-copy" }, /* @__PURE__ */ h("strong", null, title), message !== void 0 && message !== null && message !== "" && /* @__PURE__ */ h("span", null, message)), action);
 }
 function CreateForm({ t, onCreated, onCancel }) {
   const [sourceKind, setSourceKind] = (0, import_react.useState)("local");
@@ -1378,7 +1422,14 @@ function ReviewSection({ t, projectId, version, onChanged }) {
       onClick: () => setFilter(value)
     },
     label
-  ))), /* @__PURE__ */ h("select", { value: sort, onChange: (event) => setSort(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h("option", { value: "rel_path" }, t("sortPath"))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, items.length, " ", t("photos")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: undo.length === 0, onClick: undoLast }, t("undoAction"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), items.length === 0 ? /* @__PURE__ */ h("div", { className: "pp-empty", style: { padding: "44px 20px" } }, /* @__PURE__ */ h("h2", null, t("reviewEmpty")), filter !== "all" && /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setFilter("all") }, t("filterAll"))) : /* @__PURE__ */ h("div", { className: "pp-wall" }, items.map((item) => /* @__PURE__ */ h("div", { className: "pp-tile-wrap", key: item.id }, /* @__PURE__ */ h(
+  ))), /* @__PURE__ */ h("select", { value: sort, onChange: (event) => setSort(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h("option", { value: "rel_path" }, t("sortPath"))), /* @__PURE__ */ h("span", { className: "pp-muted", style: { marginLeft: "auto" } }, items.length, " ", t("photos")), /* @__PURE__ */ h("button", { type: "button", style: btn, disabled: undo.length === 0, onClick: undoLast }, t("undoAction"))), error !== null && /* @__PURE__ */ h("div", { className: "pp-error" }, error), items.length === 0 ? /* @__PURE__ */ h(
+    StateCard,
+    {
+      kind: "empty",
+      title: t("reviewEmpty"),
+      action: filter !== "all" ? /* @__PURE__ */ h("button", { type: "button", style: btn, onClick: () => setFilter("all") }, t("filterAll")) : void 0
+    }
+  ) : /* @__PURE__ */ h("div", { className: "pp-wall" }, items.map((item) => /* @__PURE__ */ h("div", { className: "pp-tile-wrap", key: item.id }, /* @__PURE__ */ h(
     "button",
     {
       type: "button",
@@ -1453,8 +1504,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [photoId, index, items, detail]);
-  if (error !== null) return /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error);
-  if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
+  if (error !== null) return /* @__PURE__ */ h(StateCard, { kind: "error", title: t("errorTitle"), message: error });
+  if (detail === null) return /* @__PURE__ */ h(StateCard, { kind: "loading", title: t("loading") });
   const dimensions = detail.dimensions ?? {};
   const recipe = detail.editRecipe ?? null;
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? "none"}`;
@@ -1666,8 +1717,8 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [detail, selected, index, groups, page]);
-  if (error !== null) return /* @__PURE__ */ h("div", { style: { color: "var(--dsw-alias-state-danger-primary, #d0453a)", fontSize: 12 } }, error);
-  if (detail === null) return /* @__PURE__ */ h("div", { style: { ...muted, fontSize: 13 } }, t("loading"));
+  if (error !== null) return /* @__PURE__ */ h(StateCard, { kind: "error", title: t("errorTitle"), message: error });
+  if (detail === null) return /* @__PURE__ */ h(StateCard, { kind: "loading", title: t("loading") });
   const kindLabel = detail.kind === "burst" ? t("groupKindBurst") : t("groupKindScene");
   const pageCount = Math.max(1, Math.ceil(detail.members.length / 6));
   const pageStart = page * 6;
@@ -1916,7 +1967,7 @@ function ProjectDetail({ t, id, onBack }) {
     }
   };
   if (detail === null) {
-    return /* @__PURE__ */ h("div", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("loading")));
+    return /* @__PURE__ */ h(StateCard, { kind: "loading", title: t("loading") });
   }
   const counts = detail.counts ?? {};
   const verdicts = stats?.verdicts ?? {};
@@ -2041,7 +2092,7 @@ function Workbench({ t }) {
       },
       onCancel: () => setCreating(false)
     }
-  ) : projects === null ? /* @__PURE__ */ h("div", { className: "pp-card pp-panel" }, /* @__PURE__ */ h("span", { className: "pp-muted" }, t("loading"))) : list.length === 0 ? /* @__PURE__ */ h("div", { className: "pp-empty" }, /* @__PURE__ */ h("div", { className: "pp-empty-icon" }, /* @__PURE__ */ h("svg", { width: "26", height: "26", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h("circle", { cx: "12", cy: "12", r: "8.4", stroke: "currentColor", strokeWidth: "1.6" }), /* @__PURE__ */ h("path", { d: "M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }), /* @__PURE__ */ h("circle", { cx: "12", cy: "12", r: "2.6", stroke: "currentColor", strokeWidth: "1.4" }))), /* @__PURE__ */ h("h2", null, t("empty")), /* @__PURE__ */ h("p", null, t("subtitle")), /* @__PURE__ */ h("button", { type: "button", className: "pp-button pp-button-primary", onClick: () => setCreating(true) }, t("newProject"))) : /* @__PURE__ */ h("div", { className: "pp-projects" }, list.map((project) => /* @__PURE__ */ h(
+  ) : projects === null ? /* @__PURE__ */ h(StateCard, { kind: "loading", title: t("loading") }) : list.length === 0 ? /* @__PURE__ */ h("div", { className: "pp-empty" }, /* @__PURE__ */ h("div", { className: "pp-empty-icon" }, /* @__PURE__ */ h("svg", { width: "26", height: "26", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h("circle", { cx: "12", cy: "12", r: "8.4", stroke: "currentColor", strokeWidth: "1.6" }), /* @__PURE__ */ h("path", { d: "M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }), /* @__PURE__ */ h("circle", { cx: "12", cy: "12", r: "2.6", stroke: "currentColor", strokeWidth: "1.4" }))), /* @__PURE__ */ h("h2", null, t("empty")), /* @__PURE__ */ h("p", null, t("subtitle")), /* @__PURE__ */ h("button", { type: "button", className: "pp-button pp-button-primary", onClick: () => setCreating(true) }, t("newProject"))) : /* @__PURE__ */ h("div", { className: "pp-projects" }, list.map((project) => /* @__PURE__ */ h(
     "button",
     {
       type: "button",

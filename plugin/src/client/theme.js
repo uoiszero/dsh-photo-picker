@@ -132,6 +132,35 @@ export const STYLES = `
 }
 .pp-project-meta { display: flex; gap: 6px; flex-wrap: wrap; }
 
+.pp-state {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; border-radius: 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
+}
+.pp-state-error {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 38%, var(--dsw-alias-border-l1));
+  background: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 5%, var(--dsw-alias-bg-layer-1));
+}
+.pp-state-icon {
+  width: 30px; height: 30px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary);
+  font-size: 14px; font-weight: 700;
+}
+.pp-state-error .pp-state-icon {
+  background: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 12%, transparent);
+  color: var(--dsw-alias-state-danger-primary, #cc4b3f);
+}
+.pp-state-copy { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.pp-state-copy strong { font-size: 13px; font-weight: 600; }
+.pp-state-copy span { color: var(--dsw-alias-label-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.pp-spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--dsw-alias-border-l2); border-top-color: var(--dsw-alias-brand-primary);
+  animation: pp-spin .7s linear infinite;
+}
+@keyframes pp-spin { to { transform: rotate(360deg); } }
 .pp-empty {
   display: grid; gap: 12px; justify-items: center; text-align: center;
   padding: 56px 24px; border: 1px dashed var(--dsw-alias-border-l2);
@@ -474,6 +503,17 @@ export const STYLES = `
 @media (max-width: 880px) {
   .pp-single-body { grid-template-columns: 1fr; }
   .pp-wall { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+}
+@media (max-width: 720px) {
+  .pp-shell { padding: 0 16px 56px; }
+  .pp-header { padding: 22px 0 16px; }
+  .pp-summary-top .pp-path { margin-left: 0 !important; max-width: 100%; width: 100%; }
+  .pp-toolbar { position: static; padding: 9px 10px; }
+  .pp-toolbar .pp-seg { flex: 1 1 100%; overflow-x: auto; }
+  .pp-modal { width: calc(100vw - 24px); padding: 16px; }
+  .pp-drawer { width: 100vw; padding: 16px; }
+  .pp-project { padding: 14px; }
+  .pp-history-row { grid-template-columns: 1fr auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
