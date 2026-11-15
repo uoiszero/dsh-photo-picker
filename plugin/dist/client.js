@@ -102,6 +102,8 @@ var zh = {
   aiDisabled: "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u7247\u8F93\u5165\uFF0CAI \u9636\u6BB5\u5DF2\u7981\u7528\u3002",
   review: "\u590D\u6838",
   sortLabel: "\u6392\u5E8F",
+  sceneFilter: "\u573A\u666F",
+  clearFilters: "\u6E05\u9664\u7B5B\u9009",
   filterAll: "\u5168\u90E8",
   filterKeep: "\u4FDD\u7559",
   filterMaybe: "\u5F85\u5B9A",
@@ -330,6 +332,8 @@ var en = {
   aiDisabled: "The current model does not accept image input, so AI stages are disabled.",
   review: "Review",
   sortLabel: "Sort",
+  sceneFilter: "Scene",
+  clearFilters: "Clear filters",
   filterAll: "All",
   filterKeep: "\u4FDD\u7559",
   filterMaybe: "\u5F85\u5B9A",
@@ -851,6 +855,14 @@ var STYLES = `
 .pp-tile-score {
   position: absolute; top: 8px; left: 8px; padding: 2px 8px; border-radius: 999px;
   background: rgba(0, 0, 0, .62); color: #fff; font-size: 11px; font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+.pp-tile-scenes {
+  position: absolute; left: 8px; bottom: 9px; max-width: calc(100% - 80px);
+  padding: 2px 7px; border-radius: 999px;
+  background: rgba(0, 0, 0, .62); color: #fff;
+  font-size: 10px; line-height: 1.5; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
   backdrop-filter: blur(4px);
 }
 .pp-tile-human {
@@ -1435,6 +1447,7 @@ var DIMENSION_LABELS = {
 function ReviewSection({ t, projectId, version, onChanged }) {
   const [items, setItems] = (0, import_react2.useState)([]);
   const [filter, setFilter] = (0, import_react2.useState)("all");
+  const [scene, setScene] = (0, import_react2.useState)("all");
   const [sort, setSort] = (0, import_react2.useState)("score");
   const [selected, setSelected] = (0, import_react2.useState)([]);
   const [undo, setUndo] = (0, import_react2.useState)([]);
@@ -1444,13 +1457,14 @@ function ReviewSection({ t, projectId, version, onChanged }) {
   const load = async () => {
     const params = new URLSearchParams({ scope: "review", sort, limit: "200" });
     if (filter !== "all") params.set("verdict", filter);
+    if (scene !== "all") params.set("scene", scene);
     const data = await api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`);
     setItems(data.items);
     setSelected((current) => current.filter((id) => data.items.some((item) => item.id === id)));
   };
   (0, import_react2.useEffect)(() => {
     load().catch((cause) => setError(String(cause)));
-  }, [filter, sort, version]);
+  }, [filter, scene, sort, version]);
   const decide = async (photoIds, verdict) => {
     if (photoIds.length === 0) return;
     const previous = {};
@@ -1539,41 +1553,49 @@ function ReviewSection({ t, projectId, version, onChanged }) {
       items: filters.map(([value, label]) => ({ value, label })),
       onChange: setFilter
     }
-  )), /* @__PURE__ */ h2("div", { className: "pp-toolbar-group pp-toolbar-end" }, /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sortLabel")), /* @__PURE__ */ h2("select", { value: sort, onChange: (event) => setSort(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h2("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h2("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h2("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h2("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h2("option", { value: "rel_path" }, t("sortPath")))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, items.length, " ", t("photos")), /* @__PURE__ */ h2(Button, { disabled: undo.length === 0, onClick: undoLast }, t("undoAction")))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error), items.length === 0 ? /* @__PURE__ */ h2(
+  )), /* @__PURE__ */ h2("div", { className: "pp-toolbar-group pp-toolbar-end" }, /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sceneFilter")), /* @__PURE__ */ h2("select", { value: scene, onChange: (event) => setScene(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h2("option", { value: "all" }, t("filterAll")), Object.keys(SCENE_KEYS).map((key) => /* @__PURE__ */ h2("option", { key, value: key }, t(SCENE_KEYS[key]))))), /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sortLabel")), /* @__PURE__ */ h2("select", { value: sort, onChange: (event) => setSort(event.target.value), className: "pp-select pp-select-sm" }, /* @__PURE__ */ h2("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h2("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h2("option", { value: "group" }, t("sortGroup")), /* @__PURE__ */ h2("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h2("option", { value: "rel_path" }, t("sortPath")))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, items.length, " ", t("photos")), /* @__PURE__ */ h2(Button, { disabled: undo.length === 0, onClick: undoLast }, t("undoAction")))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error), items.length === 0 ? /* @__PURE__ */ h2(
     StateCard,
     {
       kind: "empty",
       title: t("reviewEmpty"),
-      action: filter !== "all" ? /* @__PURE__ */ h2(Button, { onClick: () => setFilter("all") }, t("filterAll")) : void 0
+      action: filter !== "all" || scene !== "all" ? /* @__PURE__ */ h2(Button, { onClick: () => {
+        setFilter("all");
+        setScene("all");
+      } }, t("clearFilters")) : void 0
     }
-  ) : /* @__PURE__ */ h2("div", { className: "pp-wall" }, items.map((item) => /* @__PURE__ */ h2("div", { className: "pp-tile-wrap", key: item.id }, /* @__PURE__ */ h2(
-    "button",
-    {
-      type: "button",
-      className: `pp-tile${selected.includes(item.id) ? " selected" : ""}`,
-      title: item.relPath,
-      onClick: () => setSingle(item.id)
-    },
-    /* @__PURE__ */ h2("img", { src: `${item.thumbUrl}?v=${version}`, alt: item.relPath, loading: "lazy" }),
-    /* @__PURE__ */ h2(
-      "span",
+  ) : /* @__PURE__ */ h2("div", { className: "pp-wall" }, items.map((item) => {
+    const sceneText = Array.isArray(item.scenes) ? item.scenes.map((value) => sceneLabel(t, value)).join(" \xB7 ") : "";
+    return /* @__PURE__ */ h2("div", { className: "pp-tile-wrap", key: item.id }, /* @__PURE__ */ h2(
+      "button",
       {
-        className: "pp-tile-bar",
-        style: { background: VERDICT_COLORS[item.verdict] ?? "var(--dsw-alias-border-l2)" }
+        type: "button",
+        className: `pp-tile${selected.includes(item.id) ? " selected" : ""}`,
+        title: sceneText === "" ? item.relPath : `${item.relPath} \xB7 ${sceneText}`,
+        "aria-label": sceneText === "" ? item.relPath : `${item.relPath} \xB7 ${sceneText}`,
+        onClick: () => setSingle(item.id)
+      },
+      /* @__PURE__ */ h2("img", { src: `${item.thumbUrl}?v=${version}`, alt: item.relPath, loading: "lazy" }),
+      /* @__PURE__ */ h2(
+        "span",
+        {
+          className: "pp-tile-bar",
+          style: { background: VERDICT_COLORS[item.verdict] ?? "var(--dsw-alias-border-l2)" }
+        }
+      ),
+      item.score !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-score" }, Number(item.score).toFixed(1)),
+      sceneText !== "" && /* @__PURE__ */ h2("span", { className: "pp-tile-scenes" }, sceneText),
+      item.humanVerdict !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-human" }, verdictLabel(t, item.humanVerdict))
+    ), /* @__PURE__ */ h2(
+      "input",
+      {
+        className: "pp-check",
+        type: "checkbox",
+        checked: selected.includes(item.id),
+        onChange: () => toggle(item.id),
+        "aria-label": item.relPath
       }
-    ),
-    item.score !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-score" }, Number(item.score).toFixed(1)),
-    item.humanVerdict !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-human" }, verdictLabel(t, item.humanVerdict))
-  ), /* @__PURE__ */ h2(
-    "input",
-    {
-      className: "pp-check",
-      type: "checkbox",
-      checked: selected.includes(item.id),
-      onChange: () => toggle(item.id),
-      "aria-label": item.relPath
-    }
-  )))), selected.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-batch" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h2(Button, { variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection"))));
+    ));
+  })), selected.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-batch" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h2(Button, { variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection"))));
 }
 function storedGuide(key) {
   try {

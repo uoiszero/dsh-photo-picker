@@ -315,6 +315,14 @@ export const STYLES = `
   background: rgba(0, 0, 0, .62); color: #fff; font-size: 11px; font-weight: 600;
   backdrop-filter: blur(4px);
 }
+.pp-tile-scenes {
+  position: absolute; left: 8px; bottom: 9px; max-width: calc(100% - 80px);
+  padding: 2px 7px; border-radius: 999px;
+  background: rgba(0, 0, 0, .62); color: #fff;
+  font-size: 10px; line-height: 1.5; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  backdrop-filter: blur(4px);
+}
 .pp-tile-human {
   position: absolute; right: 8px; bottom: 9px; padding: 2px 7px; border-radius: 999px;
   background: rgba(0, 0, 0, .62); color: #fff; font-size: 10px;

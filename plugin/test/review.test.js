@@ -84,6 +84,29 @@ test('listReviewPhotos resolves human > ai > maybe and hides filtered states by 
   rmSync(dir, { recursive: true, force: true })
 })
 
+test('scene filters match any label and skip photos without scenes', () => {
+  const { db, dir, addPhoto, addAssessment } = setup()
+  addPhoto.run('a', 'a.jpg', 100, 1, null, 'thumbs/a.webp', 'scored', 1)
+  addAssessment.run('aa', 'a', 8.5, 'keep', '{}', '[]', '活动人像', 1, null, ['portrait', 'event'], 'portrait')
+  addPhoto.run('b', 'b.jpg', 200, 2, null, 'thumbs/b.webp', 'scored', 2)
+  addAssessment.run('ab', 'b', 7.2, 'maybe', '{}', '[]', '建筑', 2, null, ['architecture'], 'architecture')
+  addPhoto.run('c', 'c.jpg', 300, 3, null, 'thumbs/c.webp', 'scored', 3)
+  addAssessment.run('ac', 'c', 6.1, 'maybe', '{}', '[]', '旧评分', 3)
+
+  assert.deepEqual(listReviewPhotos(db, 'p1', { scene: 'portrait' }).items.map(item => item.id), ['a'])
+  assert.deepEqual(listReviewPhotos(db, 'p1', { scene: 'event' }).items.map(item => item.id), ['a'])
+  assert.deepEqual(listReviewPhotos(db, 'p1', { scene: 'architecture' }).items.map(item => item.id), ['b'])
+  assert.deepEqual(listReviewPhotos(db, 'p1', { scene: 'landscape' }).items, [])
+  assert.deepEqual(
+    listReviewPhotos(db, 'p1', { scene: 'portrait', verdict: 'keep' }).items.map(item => item.id),
+    ['a'],
+  )
+  assert.equal(listReviewPhotos(db, 'p1', { scene: 'bogus' }).total, 3)
+
+  db.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
 test('getPhotoDetail returns the group ranking', () => {
   const { db, dir, addPhoto, addAssessment } = setup()
   addPhoto.run('g1', 'g1.jpg', 100, 1, 'grp', 'thumbs/g1.webp', 'scored', 1)

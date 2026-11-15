@@ -54,6 +54,12 @@
 - 旧库迁移可重复执行
 - `npm test` 112/112；`npm run verify`、`npm run check:ui`
 
+## 图墙标签与筛选
+
+- 图墙缩略图左下角显示 `scenes` 标签（最多 3 个，` · ` 连接）
+- 复核工具栏增加场景筛选；`scene=portrait` 等参数由 review API 过滤
+- 标签只做 UI 展示，不写入源照片
+
 ## 非目标
 
 - 全量原图分类
