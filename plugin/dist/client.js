@@ -846,7 +846,8 @@ var STYLES = `
 }
 
 .pp-load-more { padding: 18px 0 4px; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12px; }
-.pp-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 10px; }
+.pp-wall { position: relative; }
+.pp-wall-row { position: absolute; left: 0; right: 0; display: grid; gap: 10px; }
 .pp-tile-wrap { position: relative; }
 .pp-tile {
   display: block; width: 100%; padding: 0 !important; border-radius: 12px !important;
@@ -1099,8 +1100,6 @@ var STYLES = `
 
 @media (max-width: 880px) {
   .pp-single-body { grid-template-columns: 1fr; }
-  .pp-load-more { padding: 18px 0 4px; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12px; }
-.pp-wall { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
 }
 @media (max-width: 720px) {
   .pp-shell { padding: 0 16px 56px; }
@@ -1144,6 +1143,38 @@ function installStyles() {
   style.id = "dsh-photo-picker-styles";
   style.textContent = STYLES;
   document.head.appendChild(style);
+}
+
+// plugin/src/client/virtual.js
+var TILE_GAP = 10;
+var TILE_MIN = 158;
+var TILE_MIN_NARROW = 128;
+function computeColumns(width, minTile = TILE_MIN, gap = TILE_GAP) {
+  const available = Number(width);
+  if (!Number.isFinite(available) || available <= 0) return 1;
+  return Math.max(1, Math.floor((available + gap) / (minTile + gap)));
+}
+function computeRowHeight(width, columns, gap = TILE_GAP) {
+  if (!Number.isFinite(width) || width <= 0 || columns <= 0) return 0;
+  const tileWidth = (width - gap * (columns - 1)) / columns;
+  return Math.max(0, tileWidth + gap);
+}
+function computeVisibleRows({
+  scrollTop,
+  wallTop,
+  rowHeight,
+  totalRows,
+  viewportHeight,
+  overscan = 2
+}) {
+  if (!Number.isFinite(rowHeight) || rowHeight <= 0 || totalRows <= 0) {
+    return { start: 0, end: 0 };
+  }
+  const first = Math.floor((Number(scrollTop) - Number(wallTop)) / rowHeight);
+  const visible = Math.ceil(Math.max(0, Number(viewportHeight)) / rowHeight);
+  const start = Math.min(totalRows, Math.max(0, first - overscan));
+  const end = Math.min(totalRows, Math.max(0, first) + visible + overscan);
+  return { start, end: Math.max(start, end) };
 }
 
 // plugin/src/client/ui.tsx
@@ -1478,6 +1509,8 @@ function ReviewSection({ t, projectId, version, onChanged }) {
   const requestRef = (0, import_react2.useRef)(0);
   const wallRef = (0, import_react2.useRef)(null);
   const sentinelRef = (0, import_react2.useRef)(null);
+  const [wallWidth, setWallWidth] = (0, import_react2.useState)(0);
+  const [visibleRange, setVisibleRange] = (0, import_react2.useState)({ start: 0, end: 20 });
   const filterKey = `${filter}|${scene}|${sort}`;
   const lastFilterKey = (0, import_react2.useRef)("");
   const fetchPage = async (offset) => {
@@ -1580,7 +1613,54 @@ function ReviewSection({ t, projectId, version, onChanged }) {
     }, { root: scrollRoot ?? null, rootMargin: "400px" });
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loading, loadingMore, items.length, nextOffset, filter, scene, sort]);
+  }, [hasMore, loading, loadingMore, items.length, nextOffset, filter, scene, sort, wallWidth]);
+  (0, import_react2.useEffect)(() => {
+    const el = wallRef.current;
+    if (el === null) return;
+    const update = () => setWallWidth(el.clientWidth);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [items.length, single, groupView]);
+  const narrow = typeof window !== "undefined" && window.matchMedia("(max-width: 880px)").matches;
+  const columns = computeColumns(wallWidth, narrow ? TILE_MIN_NARROW : TILE_MIN, TILE_GAP);
+  const rowHeight = computeRowHeight(wallWidth, columns, TILE_GAP);
+  const totalRows = Math.ceil(items.length / columns);
+  (0, import_react2.useEffect)(() => {
+    const wall = wallRef.current;
+    if (wall === null) return;
+    const root = wall.closest(".pp-page");
+    if (root === null) return;
+    let frame = 0;
+    const update = () => {
+      const wallTop = wall.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
+      const next = computeVisibleRows({
+        scrollTop: root.scrollTop,
+        wallTop,
+        rowHeight,
+        totalRows,
+        viewportHeight: root.clientHeight,
+        overscan: 2
+      });
+      setVisibleRange((current) => current.start === next.start && current.end === next.end ? current : next);
+    };
+    const onScroll = () => {
+      if (frame !== 0) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+    root.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+    return () => {
+      if (frame !== 0) cancelAnimationFrame(frame);
+      root.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [wallWidth, rowHeight, totalRows, items.length, single, groupView]);
   const markDecided = (photoIds, verdict) => {
     const ids = new Set(photoIds);
     setItems((current) => current.map((item) => {
@@ -1688,39 +1768,55 @@ function ReviewSection({ t, projectId, version, onChanged }) {
         setScene("all");
       } }, t("clearFilters")) : void 0
     }
-  ) : /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("div", { className: "pp-wall", ref: wallRef }, items.map((item) => {
-    const sceneText = Array.isArray(item.scenes) ? item.scenes.map((value) => sceneLabel(t, value)).join(" \xB7 ") : "";
-    return /* @__PURE__ */ h2("div", { className: "pp-tile-wrap", key: item.id }, /* @__PURE__ */ h2(
-      "button",
+  ) : /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("div", { className: "pp-wall", ref: wallRef, style: { height: totalRows * rowHeight } }, Array.from({ length: Math.max(0, visibleRange.end - visibleRange.start) }, (_, offset) => {
+    const row = visibleRange.start + offset;
+    const rowItems = items.slice(row * columns, (row + 1) * columns);
+    if (rowItems.length === 0) return null;
+    return /* @__PURE__ */ h2(
+      "div",
       {
-        type: "button",
-        className: `pp-tile${selected.includes(item.id) ? " selected" : ""}`,
-        title: sceneText === "" ? item.relPath : `${item.relPath} \xB7 ${sceneText}`,
-        "aria-label": sceneText === "" ? item.relPath : `${item.relPath} \xB7 ${sceneText}`,
-        onClick: () => setSingle(item.id)
-      },
-      /* @__PURE__ */ h2("img", { src: `${item.thumbUrl}?v=${version}`, alt: item.relPath, loading: "lazy" }),
-      /* @__PURE__ */ h2(
-        "span",
-        {
-          className: "pp-tile-bar",
-          style: { background: VERDICT_COLORS[item.verdict] ?? "var(--dsw-alias-border-l2)" }
+        className: "pp-wall-row",
+        key: `row-${row}`,
+        style: {
+          top: row * rowHeight,
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`
         }
-      ),
-      item.score !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-score" }, Number(item.score).toFixed(1)),
-      sceneText !== "" && /* @__PURE__ */ h2("span", { className: "pp-tile-scenes" }, sceneText),
-      item.humanVerdict !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-human" }, verdictLabel(t, item.humanVerdict))
-    ), /* @__PURE__ */ h2(
-      "input",
-      {
-        className: "pp-check",
-        type: "checkbox",
-        checked: selected.includes(item.id),
-        onChange: () => toggle(item.id),
-        "aria-label": item.relPath
-      }
-    ));
-  })), hasMore && /* @__PURE__ */ h2("div", { className: "pp-load-more", ref: sentinelRef }, loadingMore ? t("loading") : t("loadMore"))), selected.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-batch" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h2(Button, { variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection"))));
+      },
+      rowItems.map((item) => {
+        const sceneText = Array.isArray(item.scenes) ? item.scenes.map((value) => sceneLabel(t, value)).join(" \xB7 ") : "";
+        return /* @__PURE__ */ h2("div", { className: "pp-tile-wrap", key: item.id }, /* @__PURE__ */ h2(
+          "button",
+          {
+            type: "button",
+            className: `pp-tile${selected.includes(item.id) ? " selected" : ""}`,
+            title: sceneText === "" ? item.relPath : `${item.relPath} \xB7 ${sceneText}`,
+            "aria-label": sceneText === "" ? item.relPath : `${item.relPath} \xB7 ${sceneText}`,
+            onClick: () => setSingle(item.id)
+          },
+          /* @__PURE__ */ h2("img", { src: `${item.thumbUrl}?v=${version}`, alt: item.relPath, loading: "lazy" }),
+          /* @__PURE__ */ h2(
+            "span",
+            {
+              className: "pp-tile-bar",
+              style: { background: VERDICT_COLORS[item.verdict] ?? "var(--dsw-alias-border-l2)" }
+            }
+          ),
+          item.score !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-score" }, Number(item.score).toFixed(1)),
+          sceneText !== "" && /* @__PURE__ */ h2("span", { className: "pp-tile-scenes" }, sceneText),
+          item.humanVerdict !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-human" }, verdictLabel(t, item.humanVerdict))
+        ), /* @__PURE__ */ h2(
+          "input",
+          {
+            className: "pp-check",
+            type: "checkbox",
+            checked: selected.includes(item.id),
+            onChange: () => toggle(item.id),
+            "aria-label": item.relPath
+          }
+        ));
+      })
+    );
+  })), hasMore && wallWidth > 0 && /* @__PURE__ */ h2("div", { className: "pp-load-more", ref: sentinelRef }, loadingMore ? t("loading") : t("loadMore"))), selected.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-batch" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h2(Button, { variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection"))));
 }
 function storedGuide(key) {
   try {
