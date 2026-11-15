@@ -48,6 +48,9 @@ const input = {
 
 const muted = { color: 'var(--dsw-alias-label-secondary)', fontSize: 12 }
 
+// Plan 3 SMB 首版等待 macOS 网络卷权限方案，先隐藏入口；Host/API 代码保留。
+const SMB_ENABLED = false
+
 const chip = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -264,9 +267,11 @@ function CreateForm({ t, onCreated, onCancel }: {
               role="tab"
               className="pp-tab"
               aria-selected={sourceKind === 'smb'}
-              onClick={() => { setSourceKind('smb'); setError(null) }}
+              disabled={!SMB_ENABLED}
+              title={SMB_ENABLED ? undefined : t('smbUnavailable')}
+              onClick={() => { if (SMB_ENABLED) { setSourceKind('smb'); setError(null) } }}
             >
-              {t('sourceSmb')}
+              {t('sourceSmb')}{SMB_ENABLED ? '' : ` · ${t('smbUnavailable')}`}
             </button>
           </div>
         </div>
@@ -339,6 +344,7 @@ function CreateForm({ t, onCreated, onCancel }: {
           </label>
         </div>
         <div className="pp-actions">
+          <span style={{ flex: 1 }} />
           <button type="button" style={btnPrimary} disabled={busy || (sourceKind === 'local' ? folder === '' : mountPoint === '')} onClick={create}>
             {busy ? t('creating') : t('create')}
           </button>
@@ -863,6 +869,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
 
         <div className="pp-actions">
           <button type="button" style={btn} disabled={busy || dest === ''} onClick={() => execute('preview')}>{t('exportPreview')}</button>
+          <span style={{ flex: 1 }} />
           <button type="button" style={btnPrimary} disabled={busy || dest === '' || preview === null} onClick={() => execute('run')}>{t('exportRun')}</button>
         </div>
 
@@ -1047,10 +1054,11 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
       </div>
 
       <div className="pp-actions">
-        <button type="button" style={btnPrimary} disabled={busy} onClick={confirm}>{t('groupConfirm')}</button>
         <button type="button" style={btn} disabled={busy} onClick={() => decide('reject', detail.members.map((member: any) => member.id))}>
           {t('groupRejectAll')}
         </button>
+        <span style={{ flex: 1 }} />
+        <button type="button" style={btnPrimary} disabled={busy} onClick={confirm}>{t('groupConfirm')}</button>
       </div>
       <div className="pp-kbd">{t('groupHint')}</div>
     </section>
