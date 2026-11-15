@@ -934,6 +934,14 @@ var STYLES = `
   border-color: var(--dsw-alias-brand-primary);
   color: #fff;
 }
+.pp-stage-scenes {
+  position: absolute; left: 10px; bottom: 10px; z-index: 2;
+  max-width: calc(100% - 20px); padding: 4px 9px; border-radius: 999px;
+  background: rgba(0, 0, 0, .58); color: #fff;
+  font-size: 11px; line-height: 1.3; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  backdrop-filter: blur(6px);
+}
 .pp-photo-badge {
   position: absolute; top: 10px; right: 10px; z-index: 2;
   padding: 4px 9px; border-radius: 999px; cursor: pointer;
@@ -1650,7 +1658,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? "none"}`;
   const canCompare = recipe !== null && !editedFailed;
   const showingEdited = showEdited && canCompare;
-  return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), detail.group !== void 0 && /* @__PURE__ */ h2(Button, { onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h2("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), Array.isArray(detail.scenes) && detail.scenes.length > 0 && /* @__PURE__ */ h2("span", { className: "pp-scene-chips" }, detail.scenes.map((scene) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: scene }, sceneLabel(t, scene)))), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h2("div", { className: "pp-single-body" }, /* @__PURE__ */ h2("div", { className: "pp-stage" }, /* @__PURE__ */ h2("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h2(
+  const sceneText = Array.isArray(detail.scenes) ? detail.scenes.map((scene) => sceneLabel(t, scene)).join(" \xB7 ") : "";
+  return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), detail.group !== void 0 && /* @__PURE__ */ h2(Button, { onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h2("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h2("div", { className: "pp-single-body" }, /* @__PURE__ */ h2("div", { className: "pp-stage" }, /* @__PURE__ */ h2("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h2(
     "img",
     {
       src: showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`,
@@ -1659,7 +1668,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
         if (showingEdited) setEditedFailed(true);
       }
     }
-  ), showGrid && /* @__PURE__ */ h2("div", { className: "pp-guide pp-guide-grid", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "v", style: { left: "66.666%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "66.666%" } })), showCross && /* @__PURE__ */ h2("div", { className: "pp-guide pp-guide-cross", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "50%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "50%" } })), /* @__PURE__ */ h2("div", { className: "pp-stage-tools" }, /* @__PURE__ */ h2(
+  ), sceneText !== "" && /* @__PURE__ */ h2("span", { className: "pp-stage-scenes", title: sceneText }, sceneText), showGrid && /* @__PURE__ */ h2("div", { className: "pp-guide pp-guide-grid", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "v", style: { left: "66.666%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "66.666%" } })), showCross && /* @__PURE__ */ h2("div", { className: "pp-guide pp-guide-cross", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "50%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "50%" } })), /* @__PURE__ */ h2("div", { className: "pp-stage-tools" }, /* @__PURE__ */ h2(
     "button",
     {
       type: "button",

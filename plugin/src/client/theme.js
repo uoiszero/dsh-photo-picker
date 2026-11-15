@@ -392,6 +392,14 @@ export const STYLES = `
   border-color: var(--dsw-alias-brand-primary);
   color: #fff;
 }
+.pp-stage-scenes {
+  position: absolute; left: 10px; bottom: 10px; z-index: 2;
+  max-width: calc(100% - 20px); padding: 4px 9px; border-radius: 999px;
+  background: rgba(0, 0, 0, .58); color: #fff;
+  font-size: 11px; line-height: 1.3; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  backdrop-filter: blur(6px);
+}
 .pp-photo-badge {
   position: absolute; top: 10px; right: 10px; z-index: 2;
   padding: 4px 9px; border-radius: 999px; cursor: pointer;
