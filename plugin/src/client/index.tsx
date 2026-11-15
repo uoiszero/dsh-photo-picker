@@ -1807,10 +1807,13 @@ function Workbench({ t }: { t: (key: string) => string }) {
                 </span>
                 <span className="pp-project-path" title={project.sourcePath}>{project.sourcePath}</span>
                 <span className="pp-project-meta">
+                  <span className="pp-chip">
+                    {Object.values(project.counts ?? {}).reduce((sum: number, n: any) => sum + Number(n ?? 0), 0)} {t('photos')}
+                  </span>
                   {Object.entries(project.counts ?? {}).map(([state, n]) => (
                     <span className="pp-chip" key={state}>{stateLabel(t, state)} {String(n)}</span>
                   ))}
-                  <span className="pp-chip">{t('spent')} ¥{Number(project.cost?.spentCny ?? 0).toFixed(4)}</span>
+                  <span className="pp-project-spent">{t('spent')} ¥{Number(project.cost?.spentCny ?? 0).toFixed(4)}</span>
                 </span>
               </button>
             ))}

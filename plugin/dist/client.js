@@ -646,7 +646,8 @@ var STYLES = `
   font-size: 12px; color: var(--dsw-alias-label-secondary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pp-project-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.pp-project-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pp-project-spent { margin-left: auto; color: var(--dsw-alias-label-secondary); font-size: 11px; white-space: nowrap; }
 
 .pp-state {
   display: flex; align-items: center; gap: 12px;
@@ -967,6 +968,14 @@ var STYLES = `
   box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
 }
 .pp-form { display: grid; gap: 12px; }
+.pp-form > .pp-section-title { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-form > .pp-section-title:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.pp-drawer .pp-modal-foot {
+  position: sticky; bottom: -20px; z-index: 2;
+  margin: 0 -20px -20px; padding: 12px 20px;
+  background: var(--dsw-alias-bg-overlay);
+  border-top: 1px solid var(--dsw-alias-border-l1);
+}
 .pp-field { display: grid; gap: 5px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-input, .pp-select {
   height: 34px; padding: 0 10px;
@@ -2110,7 +2119,7 @@ function Workbench({ t }) {
     },
     /* @__PURE__ */ h("span", { className: "pp-project-top" }, /* @__PURE__ */ h("strong", { className: "pp-project-name" }, project.name), /* @__PURE__ */ h("span", { className: "pp-pill" }, statusLabel(t, project.status)), /* @__PURE__ */ h("span", { className: "pp-chevron" }, "\u2192")),
     /* @__PURE__ */ h("span", { className: "pp-project-path", title: project.sourcePath }, project.sourcePath),
-    /* @__PURE__ */ h("span", { className: "pp-project-meta" }, Object.entries(project.counts ?? {}).map(([state, n]) => /* @__PURE__ */ h("span", { className: "pp-chip", key: state }, stateLabel(t, state), " ", String(n))), /* @__PURE__ */ h("span", { className: "pp-chip" }, t("spent"), " \xA5", Number(project.cost?.spentCny ?? 0).toFixed(4)))
+    /* @__PURE__ */ h("span", { className: "pp-project-meta" }, /* @__PURE__ */ h("span", { className: "pp-chip" }, Object.values(project.counts ?? {}).reduce((sum, n) => sum + Number(n ?? 0), 0), " ", t("photos")), Object.entries(project.counts ?? {}).map(([state, n]) => /* @__PURE__ */ h("span", { className: "pp-chip", key: state }, stateLabel(t, state), " ", String(n))), /* @__PURE__ */ h("span", { className: "pp-project-spent" }, t("spent"), " \xA5", Number(project.cost?.spentCny ?? 0).toFixed(4)))
   )))));
 }
 function PhotoPickerIcon({ size }) {
