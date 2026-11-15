@@ -269,6 +269,9 @@ export const STYLES = `
   background: color-mix(in srgb, var(--dsw-alias-bg-base) 86%, transparent);
   backdrop-filter: blur(12px);
 }
+.pp-toolbar-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.pp-toolbar-end { margin-left: auto; }
+.pp-toolbar-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-seg {
   display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px;
   background: var(--dsw-alias-bg-layer-2);
@@ -510,6 +513,8 @@ export const STYLES = `
   .pp-summary-top .pp-path { margin-left: 0 !important; max-width: 100%; width: 100%; }
   .pp-toolbar { position: static; padding: 9px 10px; }
   .pp-toolbar .pp-seg { flex: 1 1 100%; overflow-x: auto; }
+  .pp-toolbar-end { margin-left: 0; width: 100%; }
+  .pp-toolbar-field { flex: 1; }
   .pp-modal { width: calc(100vw - 24px); padding: 16px; }
   .pp-drawer { width: 100vw; padding: 16px; }
   .pp-project { padding: 14px; }
