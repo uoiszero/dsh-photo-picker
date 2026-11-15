@@ -207,6 +207,7 @@ export const STYLES = `
   font-size: 12px; color: var(--dsw-alias-label-secondary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
 }
+.pp-calibration-summary { display: grid; gap: 12px; }
 .pp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
 .pp-stat {
   display: grid; gap: 1px; padding: 10px 12px; border-radius: 12px;
@@ -421,6 +422,7 @@ export const STYLES = `
   background: rgba(0, 0, 0, .62); color: #fff; font-size: 11px; font-weight: 600;
 }
 
+.pp-drawer-scrim { position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, .32); }
 .pp-overlay {
   position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
   padding: 20px; background: rgba(0, 0, 0, .38); backdrop-filter: blur(3px);

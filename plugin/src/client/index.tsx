@@ -9,42 +9,11 @@ const PANEL_ID = 'photo-picker'
 
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
-import { ActionBar, BackButton, Button, Card, CloseButton, Field, Input, Segmented, Select, StateCard, Tabs } from './ui'
+import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, Select, StateCard, Tabs } from './ui'
 
-
-const btn = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 6,
-  background: 'var(--dsw-alias-bg-layer-1)',
-  color: 'var(--dsw-alias-label-primary)',
-  border: '1px solid var(--dsw-alias-border-l1)',
-  borderRadius: 10,
-  padding: '7px 13px',
-  fontSize: 13,
-  fontWeight: 500,
-  lineHeight: 1.3,
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-}
-
-const muted = { color: 'var(--dsw-alias-label-secondary)', fontSize: 12 }
 
 // Plan 3 SMB 首版等待 macOS 网络卷权限方案，先隐藏入口；Host/API 代码保留。
 const SMB_ENABLED = false
-
-const chip = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  background: 'var(--dsw-alias-bg-layer-2)',
-  borderRadius: 999,
-  padding: '2px 9px',
-  fontSize: 11,
-  color: 'var(--dsw-alias-label-secondary)',
-  lineHeight: 1.6,
-  whiteSpace: 'nowrap',
-}
 
 async function api(path: string, init?: RequestInit) {
   const response = await fetch(path, {
@@ -765,14 +734,8 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
   }
 
   return (
-    <div className="pp-overlay" onClick={onClose}>
-      <div className="pp-modal" onClick={event => event.stopPropagation()}>
-        <div className="pp-modal-head">
-          <span>{t('exportTitle')}</span>
-          <CloseButton label={t('close')} onClick={onClose} />
-        </div>
-
-        <div className="pp-form">
+    <ModalShell title={t('exportTitle')} closeLabel={t('close')} onClose={onClose}>
+      <div className="pp-form">
           <label className="pp-field">
             <span>{t('exportDest')}</span>
             <div className="pp-row" style={{ alignItems: 'stretch' }}>
@@ -782,9 +745,9 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
                 placeholder={t('destPlaceholder')}
                 className="pp-input" style={{ flex: 1 }}
               />
-              <button type="button" style={btn} disabled={choosing} onClick={choose}>
+              <Button disabled={choosing} onClick={choose}>
                 {choosing ? t('choosingFolder') : t('exportChoose')}
-              </button>
+              </Button>
             </div>
           </label>
           <div className="pp-row" style={{ alignItems: 'center' }}>
@@ -816,9 +779,9 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
         </div>
 
         <div className="pp-actions">
-          <button type="button" style={btn} disabled={busy || dest === ''} onClick={() => execute('preview')}>{t('exportPreview')}</button>
+          <Button disabled={busy || dest === ''} onClick={() => execute('preview')}>{t('exportPreview')}</Button>
           <span style={{ flex: 1 }} />
-          <button type="button" className="pp-button pp-button-primary" disabled={busy || dest === '' || preview === null} onClick={() => execute('run')}>{t('exportRun')}</button>
+          <Button variant="primary" disabled={busy || dest === '' || preview === null} onClick={() => execute('run')}>{t('exportRun')}</Button>
         </div>
 
         {error !== null && <div className="pp-error">{error}</div>}
@@ -843,22 +806,19 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
             <div>{t('exportResult')}: {Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(' · ')}</div>
             <div style={{ marginTop: 4, wordBreak: 'break-all' }}>{t('manifest')}: {result.manifestPath}</div>
             <div className="pp-actions" style={{ marginTop: 8 }}>
-              <button
-                type="button"
-                style={btn}
+              <Button
                 onClick={() => api('/photo-picker/api/fs/reveal', {
                   method: 'POST',
                   body: JSON.stringify({ path: result.manifestPath ?? dest }),
                 }).catch(cause => setError(String(cause)))}
               >
                 {t('revealInFinder')}
-              </button>
+              </Button>
             </div>
             {result.failureCount > 0 && <div className="pp-error" style={{ marginTop: 4 }}>{t('exportConflict')}: {result.failureCount}</div>}
           </div>
         )}
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -1101,7 +1061,7 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
   }
 
   const summary = (data: any) => (
-    <div style={{ display: 'grid', gap: 12 }}>
+    <div className="pp-calibration-summary">
       <div className="pp-stats">
         {[
           [t('calibrationPrecision'), (data.keep?.precision ?? 0).toFixed(2)],
@@ -1119,24 +1079,24 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
         <span className="pp-chip">
           {t('calibrationSuggested')}: {verdictLabel(t, 'keep')} ≥ {data.suggestedKeep} · {verdictLabel(t, 'maybe')} ≥ {data.suggestedMaybe}
         </span>
-        <button type="button" style={btn} disabled={busy} onClick={apply}>
+        <Button disabled={busy} onClick={apply}>
           {applied ? t('calibrationApplied') : t('calibrationApply')}
-        </button>
+        </Button>
       </div>
     </div>
   )
 
   return (
-    <section className="pp-card pp-panel">
+    <Card className="pp-panel">
       <div className="pp-row" style={{ alignItems: 'center' }}>
         <div className="pp-section-title">{t('calibration')}</div>
-        <button type="button" style={btn} disabled={busy} onClick={start}>{t('calibrationStart')}</button>
+        <Button disabled={busy} onClick={start}>{t('calibrationStart')}</Button>
         {phase === 'idle' && latest?.metrics !== null && latest?.metrics !== undefined && (
           <span className="pp-muted" style={{ marginLeft: 'auto' }}>{t('calibrationLast')}: {latest.sampleSize} {t('photos')}</span>
         )}
       </div>
 
-      {error !== null && <div className="pp-error">{error}</div>}
+      {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
 
       {phase === 'idle' && latest?.metrics !== null && latest?.metrics !== undefined && summary(latest.metrics)}
 
@@ -1151,15 +1111,15 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
             <img src={items[index].previewUrl} alt={items[index].relPath} />
           </div>
           <div className="pp-actions">
-            <button type="button" style={btn} disabled={busy} onClick={() => label('keep')}>{t('keep')}</button>
-            <button type="button" style={btn} disabled={busy} onClick={() => label('maybe')}>{t('maybe')}</button>
-            <button type="button" style={btn} disabled={busy} onClick={() => label('reject')}>{t('reject')}</button>
+            <Button disabled={busy} onClick={() => label('keep')}>{t('keep')}</Button>
+            <Button disabled={busy} onClick={() => label('maybe')}>{t('maybe')}</Button>
+            <Button variant="danger" disabled={busy} onClick={() => label('reject')}>{t('reject')}</Button>
           </div>
         </div>
       )}
 
       {phase === 'report' && report !== null && summary(report)}
-    </section>
+    </Card>
   )
 }
 
@@ -1231,13 +1191,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.32)', zIndex: 80 }}>
-      <div className="pp-drawer" onClick={event => event.stopPropagation()}>
-        <div className="pp-modal-head">
-          <span>{t('settingsTitle')}</span>
-          <CloseButton label={t('close')} onClick={onClose} />
-        </div>
-
+    <DrawerShell title={t('settingsTitle')} closeLabel={t('close')} onClose={onClose}>
         <div className="pp-form">
           <div className="pp-section-title">{t('settingsBasic')}</div>
           <label className="pp-field">
@@ -1343,21 +1297,20 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
           <div className="pp-section-title">{t('rerunStages')}</div>
           <div className="pp-actions">
             {['preprocess', 'grid', 'rank', 'score'].map(stage => (
-              <button key={stage} type="button" style={btn} onClick={() => onRunStage?.(stage)}>
+              <Button key={stage} onClick={() => onRunStage?.(stage)}>
                 {t('rerun')} {stageLabel(t, stage)}
-              </button>
+              </Button>
             ))}
           </div>
 
           <div className="pp-callout">{t('settingsHint')}</div>
-          {error !== null && <div className="pp-error">{error}</div>}
+          {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
           <div className="pp-modal-foot">
-            <button type="button" className="pp-button pp-button-primary" disabled={busy} onClick={save}>{t('save')}</button>
+            <Button variant="primary" disabled={busy} onClick={save}>{t('save')}</Button>
             {saved && <span className="pp-muted">{t('saved')}</span>}
           </div>
         </div>
-      </div>
-    </div>
+    </DrawerShell>
   )
 }
 
