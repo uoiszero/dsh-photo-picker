@@ -28,16 +28,6 @@ const btn = {
   whiteSpace: 'nowrap',
 }
 
-const input = {
-  background: 'var(--dsw-alias-bg-base)',
-  color: 'var(--dsw-alias-label-primary)',
-  border: '1px solid var(--dsw-alias-border-l1)',
-  borderRadius: 9,
-  padding: '7px 10px',
-  fontSize: 13,
-  minWidth: 0,
-}
-
 const muted = { color: 'var(--dsw-alias-label-secondary)', fontSize: 12 }
 
 // Plan 3 SMB 首版等待 macOS 网络卷权限方案，先隐藏入口；Host/API 代码保留。
@@ -276,7 +266,7 @@ function CreateForm({ t, onCreated, onCancel }: {
                   value={folder}
                   onChange={event => setFolder(event.target.value)}
                   placeholder="/Users/…/Pictures"
-                  style={{ ...input, flex: 1 }}
+                  className="pp-input" style={{ flex: 1 }}
                 />
                 <button type="button" style={btn} disabled={choosing} onClick={choose}>
                   {choosing ? t('choosingFolder') : t('choose')}
@@ -306,7 +296,7 @@ function CreateForm({ t, onCreated, onCancel }: {
                 value={smbUrl}
                 onChange={event => { setSmbUrl(event.target.value); setMountPoint(''); setError(null) }}
                 placeholder="smb://192.168.12.199/yueao"
-                style={{ ...input, flex: 1 }}
+                className="pp-input" style={{ flex: 1 }}
               />
               <button type="button" style={btn} disabled={connecting || smbUrl === ''} onClick={connectSmb}>
                 {connecting ? t('smbConnecting') : t('smbConnect')}
@@ -318,12 +308,12 @@ function CreateForm({ t, onCreated, onCancel }: {
         )}
         <label className="pp-field">
           <span>{t('name')}</span>
-          <input value={name} onChange={event => setName(event.target.value)} placeholder={t('namePlaceholder')} style={input} />
+          <input value={name} onChange={event => setName(event.target.value)} placeholder={t('namePlaceholder')} className="pp-input" />
         </label>
         <div className="pp-row">
           <label className="pp-field">
             <span>{t('theme')}</span>
-            <select value={theme} onChange={event => setTheme(event.target.value)} style={input}>
+            <select value={theme} onChange={event => setTheme(event.target.value)} className="pp-select">
               <option value="mixed">{t('themeMixed')}</option>
               <option value="portrait">{t('themePortrait')}</option>
               <option value="landscape">{t('themeLandscape')}</option>
@@ -332,7 +322,7 @@ function CreateForm({ t, onCreated, onCancel }: {
           </label>
           <label className="pp-field" style={{ maxWidth: 140 }}>
             <span>{t('budget')}</span>
-            <input value={budget} onChange={event => setBudget(event.target.value)} style={input} />
+            <input value={budget} onChange={event => setBudget(event.target.value)} className="pp-input" />
           </label>
         </div>
         <div className="pp-actions">
@@ -488,7 +478,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
             </button>
           ))}
         </div>
-        <select value={sort} onChange={event => setSort(event.target.value)} style={{ ...input, padding: '5px 8px', fontSize: 12 }}>
+        <select value={sort} onChange={event => setSort(event.target.value)} className="pp-select pp-select-sm">
           <option value="score">{t('sortScore')}</option>
           <option value="score_asc">{t('sortScoreAsc')}</option>
           <option value="group">{t('sortGroup')}</option>
@@ -824,7 +814,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
                 value={dest}
                 onChange={event => setDest(event.target.value)}
                 placeholder={t('destPlaceholder')}
-                style={{ ...input, flex: 1 }}
+                className="pp-input" style={{ flex: 1 }}
               />
               <button type="button" style={btn} disabled={choosing} onClick={choose}>
                 {choosing ? t('choosingFolder') : t('exportChoose')}
@@ -844,7 +834,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
               value={applyEdits ? 'copy' : mode}
               disabled={applyEdits}
               onChange={event => setMode(event.target.value)}
-              style={{ ...input, padding: '4px 8px', fontSize: 12 }}
+              className="pp-select pp-select-sm"
             >
               <option value="hardlink">{t('exportHardlink')}</option>
               <option value="copy">{t('exportCopy')}</option>
@@ -1286,7 +1276,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
           <div className="pp-section-title">{t('settingsBasic')}</div>
           <label className="pp-field">
             <span>{t('theme')}</span>
-            <select value={form.theme} onChange={event => set('theme', event.target.value)} style={input}>
+            <select value={form.theme} onChange={event => set('theme', event.target.value)} className="pp-select">
               <option value="mixed">{t('themeMixed')}</option>
               <option value="portrait">{t('themePortrait')}</option>
               <option value="landscape">{t('themeLandscape')}</option>
@@ -1295,7 +1285,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
           </label>
           <label className="pp-field">
             <span>{t('model')}</span>
-            <select value={form.modelId} onChange={event => set('modelId', event.target.value)} style={input}>
+            <select value={form.modelId} onChange={event => set('modelId', event.target.value)} className="pp-select">
               {(models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model: any) => {
                 const supportsImage = Array.isArray(model.inputModalities)
                   ? model.inputModalities.includes('image')
@@ -1311,11 +1301,11 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
           <div className="pp-row">
             <label className="pp-field">
               <span>{t('concurrency')}</span>
-              <input value={form.concurrency} onChange={event => set('concurrency', event.target.value)} style={input} />
+              <input value={form.concurrency} onChange={event => set('concurrency', event.target.value)} className="pp-input" />
             </label>
             <label className="pp-field">
               <span>{t('budget')}</span>
-              <input value={form.budgetCny} onChange={event => set('budgetCny', event.target.value)} style={input} />
+              <input value={form.budgetCny} onChange={event => set('budgetCny', event.target.value)} className="pp-input" />
             </label>
           </div>
 
@@ -1323,21 +1313,21 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
           <div className="pp-row">
             <label className="pp-field">
               <span>{t('gridCols')}</span>
-              <input value={form.gridCols} onChange={event => set('gridCols', event.target.value)} style={input} />
+              <input value={form.gridCols} onChange={event => set('gridCols', event.target.value)} className="pp-input" />
             </label>
             <label className="pp-field">
               <span>{t('gridRows')}</span>
-              <input value={form.gridRows} onChange={event => set('gridRows', event.target.value)} style={input} />
+              <input value={form.gridRows} onChange={event => set('gridRows', event.target.value)} className="pp-input" />
             </label>
           </div>
           <div className="pp-row">
             <label className="pp-field">
               <span>{t('thresholdKeep')}</span>
-              <input value={form.thresholdKeep} onChange={event => set('thresholdKeep', event.target.value)} style={input} />
+              <input value={form.thresholdKeep} onChange={event => set('thresholdKeep', event.target.value)} className="pp-input" />
             </label>
             <label className="pp-field">
               <span>{t('thresholdMaybe')}</span>
-              <input value={form.thresholdMaybe} onChange={event => set('thresholdMaybe', event.target.value)} style={input} />
+              <input value={form.thresholdMaybe} onChange={event => set('thresholdMaybe', event.target.value)} className="pp-input" />
             </label>
           </div>
 
@@ -1345,21 +1335,21 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
           <div className="pp-row">
             <label className="pp-field">
               <span>{t('burstSeconds')}</span>
-              <input value={form.groupBurstSeconds} onChange={event => set('groupBurstSeconds', event.target.value)} style={input} />
+              <input value={form.groupBurstSeconds} onChange={event => set('groupBurstSeconds', event.target.value)} className="pp-input" />
             </label>
             <label className="pp-field">
               <span>{t('burstHamming')}</span>
-              <input value={form.groupBurstHamming} onChange={event => set('groupBurstHamming', event.target.value)} style={input} />
+              <input value={form.groupBurstHamming} onChange={event => set('groupBurstHamming', event.target.value)} className="pp-input" />
             </label>
           </div>
           <div className="pp-row">
             <label className="pp-field">
               <span>{t('sceneSeconds')}</span>
-              <input value={form.groupSceneSeconds} onChange={event => set('groupSceneSeconds', event.target.value)} style={input} />
+              <input value={form.groupSceneSeconds} onChange={event => set('groupSceneSeconds', event.target.value)} className="pp-input" />
             </label>
             <label className="pp-field">
               <span>{t('sceneHamming')}</span>
-              <input value={form.groupSceneHamming} onChange={event => set('groupSceneHamming', event.target.value)} style={input} />
+              <input value={form.groupSceneHamming} onChange={event => set('groupSceneHamming', event.target.value)} className="pp-input" />
             </label>
           </div>
 
