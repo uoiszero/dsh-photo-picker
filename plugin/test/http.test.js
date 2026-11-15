@@ -42,6 +42,8 @@ function stub() {
     async exportPreview(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
     async exportRun(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
     async listDir() { return [{ name: 'Pictures', path: '~/Pictures' }] },
+    async listNetworkVolumes() { return [{ name: 'yueao', path: '/Volumes/yueao', network: true }] },
+    async connectSmb(url) { return { mounted: true, share: 'yueao', mountPoint: '/Volumes/yueao', sourcePath: '/Volumes/yueao', url } },
     async chooseFolder() { return '~/Pictures' },
     async thumbFile() { return undefined },
     async editedFile() { return undefined },
@@ -251,4 +253,23 @@ test('edit preview route streams JPEG and returns structured 404', async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+
+test('network volume and SMB connect routes', async () => {
+  await withServer(async origin => {
+    const volumes = await fetch(`${origin}/photo-picker/api/fs/volumes`)
+    assert.equal(volumes.status, 200)
+    assert.deepEqual(await volumes.json(), [{ name: 'yueao', path: '/Volumes/yueao', network: true }])
+
+    const connected = await fetch(`${origin}/photo-picker/api/fs/smb/connect`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: 'smb://192.168.12.199/yueao' }),
+    })
+    assert.equal(connected.status, 200)
+    const payload = await connected.json()
+    assert.equal(payload.mountPoint, '/Volumes/yueao')
+    assert.equal(payload.url, 'smb://192.168.12.199/yueao')
+  })
 })

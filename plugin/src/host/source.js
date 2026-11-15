@@ -73,3 +73,20 @@ export class LocalSource {
     }
   }
 }
+
+
+/** 已挂载的 SMB/NFS 共享仍通过本地挂载点读写；kind 用于健康检查和 UI。 */
+export class NetworkSource extends LocalSource {
+  constructor(root, { kind = 'smb', url = null } = {}) {
+    super(root)
+    this.kind = kind
+    this.url = url
+  }
+}
+
+export function sourceFor(project) {
+  if (project.sourceKind === 'smb' || project.sourceKind === 'nfs') {
+    return new NetworkSource(project.sourcePath, { kind: project.sourceKind })
+  }
+  return new LocalSource(project.sourcePath)
+}

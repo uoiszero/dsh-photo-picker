@@ -141,6 +141,10 @@ function CreateForm({ t, onCreated, onCancel }: {
   onCreated: (id: string) => void
   onCancel: () => void
 }) {
+  const [sourceKind, setSourceKind] = useState<'local' | 'smb'>('local')
+  const [smbUrl, setSmbUrl] = useState('')
+  const [mountPoint, setMountPoint] = useState('')
+  const [connecting, setConnecting] = useState(false)
   const [folder, setFolder] = useState('')
   const [dirs, setDirs] = useState<{ name: string; path: string }[]>([])
   const [name, setName] = useState('')
@@ -174,14 +178,35 @@ function CreateForm({ t, onCreated, onCancel }: {
     }
   }
 
+  const connectSmb = async () => {
+    if (connecting) return
+    setConnecting(true)
+    setError(null)
+    try {
+      const connected = await api('/photo-picker/api/fs/smb/connect', {
+        method: 'POST',
+        body: JSON.stringify({ url: smbUrl }),
+      })
+      setMountPoint(connected.mountPoint)
+      setFolder(connected.sourcePath ?? connected.mountPoint)
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setConnecting(false)
+    }
+  }
+
   const create = async () => {
     setBusy(true)
     setError(null)
     try {
+      const source = sourceKind === 'smb'
+        ? { kind: 'smb', path: folder || mountPoint, mountPoint, url: smbUrl }
+        : { kind: 'local', path: folder }
       const project = await api('/photo-picker/api/projects', {
         method: 'POST',
         body: JSON.stringify({
-          source: { kind: 'local', path: folder },
+          source,
           name: name === '' ? undefined : name,
           theme,
           budgetCny: Number(budget) || 30,
@@ -198,33 +223,73 @@ function CreateForm({ t, onCreated, onCancel }: {
   return (
     <div className="pp-card pp-panel" style={{ maxWidth: 700 }}>
       <div className="pp-form">
-        <label className="pp-field">
-          <span>{t('folder')}</span>
-          <div className="pp-row" style={{ alignItems: 'stretch' }}>
-            <input
-              value={folder}
-              onChange={event => setFolder(event.target.value)}
-              placeholder="/Users/…/Pictures"
-              style={{ ...input, flex: 1 }}
-            />
-            <button type="button" style={btn} disabled={choosing} onClick={choose}>
-              {choosing ? t('choosingFolder') : t('choose')}
-            </button>
-            <button type="button" style={btn} onClick={() => browse(folder)}>{t('browse')}</button>
-          </div>
-        </label>
-        {dirs.length > 0 && (
-          <div className="pp-card" style={{ maxHeight: 220, overflow: 'auto', padding: 4 }}>
-            {dirs.map(dir => (
-              <div
-                key={dir.path}
-                onClick={() => browse(dir.path)}
-                style={{ padding: '7px 10px', cursor: 'pointer', fontSize: 13, borderRadius: 8 }}
-              >
-                {dir.name}
+        <div className="pp-row" style={{ gap: 6 }}>
+          <span className="pp-muted">{t('sourceType')}</span>
+          <button
+            type="button"
+            style={btn}
+            aria-pressed={sourceKind === 'local'}
+            onClick={() => { setSourceKind('local'); setMountPoint(''); setError(null) }}
+          >
+            {t('sourceLocal')}
+          </button>
+          <button
+            type="button"
+            style={btn}
+            aria-pressed={sourceKind === 'smb'}
+            onClick={() => { setSourceKind('smb'); setError(null) }}
+          >
+            {t('sourceSmb')}
+          </button>
+        </div>
+        {sourceKind === 'local' ? (
+          <>
+            <label className="pp-field">
+              <span>{t('folder')}</span>
+              <div className="pp-row" style={{ alignItems: 'stretch' }}>
+                <input
+                  value={folder}
+                  onChange={event => setFolder(event.target.value)}
+                  placeholder="/Users/…/Pictures"
+                  style={{ ...input, flex: 1 }}
+                />
+                <button type="button" style={btn} disabled={choosing} onClick={choose}>
+                  {choosing ? t('choosingFolder') : t('choose')}
+                </button>
+                <button type="button" style={btn} onClick={() => browse(folder)}>{t('browse')}</button>
               </div>
-            ))}
-          </div>
+            </label>
+            {dirs.length > 0 && (
+              <div className="pp-card" style={{ maxHeight: 220, overflow: 'auto', padding: 4 }}>
+                {dirs.map(dir => (
+                  <div
+                    key={dir.path}
+                    onClick={() => browse(dir.path)}
+                    style={{ padding: '7px 10px', cursor: 'pointer', fontSize: 13, borderRadius: 8 }}
+                  >
+                    {dir.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <label className="pp-field">
+            <span>{t('smbUrl')}</span>
+            <div className="pp-row" style={{ alignItems: 'stretch' }}>
+              <input
+                value={smbUrl}
+                onChange={event => { setSmbUrl(event.target.value); setMountPoint(''); setError(null) }}
+                placeholder="smb://192.168.12.199/yueao"
+                style={{ ...input, flex: 1 }}
+              />
+              <button type="button" style={btn} disabled={connecting || smbUrl === ''} onClick={connectSmb}>
+                {connecting ? t('smbConnecting') : t('smbConnect')}
+              </button>
+            </div>
+            <span className="pp-muted" style={{ marginTop: 6 }}>{t('smbHint')}</span>
+            {mountPoint !== '' && <span className="pp-muted" style={{ marginTop: 4 }}>{t('smbConnected')}: {mountPoint}</span>}
+          </label>
         )}
         <label className="pp-field">
           <span>{t('name')}</span>
@@ -246,7 +311,7 @@ function CreateForm({ t, onCreated, onCancel }: {
           </label>
         </div>
         <div className="pp-actions">
-          <button type="button" style={btnPrimary} disabled={busy || folder === ''} onClick={create}>
+          <button type="button" style={btnPrimary} disabled={busy || (sourceKind === 'local' ? folder === '' : mountPoint === '')} onClick={create}>
             {busy ? t('creating') : t('create')}
           </button>
           <button type="button" style={btn} onClick={onCancel}>{t('back')}</button>
@@ -1438,6 +1503,9 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
         <div className="pp-summary-top">
           <strong className="pp-project-title">{detail.name}</strong>
           <span className="pp-pill">{statusLabel(t, detail.status)}</span>
+          {detail.sourceKind !== 'local' && (
+            <span className="pp-chip">{detail.sourceOnline === false ? t('networkOffline') : t('smbConnected')}</span>
+          )}
           {runningLabel !== null && <span className="pp-pill" data-tone="live">{t('running')} · {runningLabel}</span>}
           <span className="pp-path" style={{ marginLeft: 'auto', maxWidth: '46%' }} title={detail.sourcePath}>
             {detail.sourcePath}

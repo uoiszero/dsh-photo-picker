@@ -18,10 +18,10 @@ export function createPhotoPickerTool(service) {
       source: {
         type: 'object',
         additionalProperties: false,
-        description: 'create 必填：本机照片目录',
+        description: 'create 必填：本机目录或 SMB URL',
         properties: {
-          kind: { type: 'string', required: true, enum: ['local'] },
-          path: { type: 'string', required: true },
+          kind: { type: 'string', required: true, enum: ['local', 'smb', 'nfs'] },
+          path: { type: 'string', required: true, description: '本机目录，或 smb://host/share URL' },
         },
       },
       name: { type: 'string', description: '项目名；省略时取文件夹名' },

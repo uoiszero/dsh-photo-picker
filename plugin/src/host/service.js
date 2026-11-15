@@ -10,6 +10,7 @@ import { renderEditedFile } from './edit.js'
 import { previewExport, runExport } from './export.js'
 import { renderPreview } from './images.js'
 import { fromPortablePath, platform } from './platform.js'
+import { connectSmb as connectSmbHost, defaultListVolumes } from './network.js'
 import { runPipeline } from './orchestrator.js'
 import { runGridStage, runRankStage, runScoreStage } from './pipeline.js'
 import { ProjectStore, toProject } from './projects.js'
@@ -26,7 +27,7 @@ import {
 } from './prompts.js'
 import { normalizeRecipe, recipeSignature } from './recipe.js'
 import { scanProject } from './scan.js'
-import { LocalSource } from './source.js'
+import { sourceFor } from './source.js'
 import { createPhotoPickerExportTool, createPhotoPickerTool } from './tools.js'
 
 const STAGES = new Set(['scan', 'preprocess', 'grid', 'rank', 'score'])
@@ -68,8 +69,31 @@ export class PhotoPickerService extends Service {
   }
 
   async createProject(input) {
-    const project = await this.store.create(input)
+    let source = input.source
+    if (source?.kind === 'smb' && source.mountPoint === undefined) {
+      const connected = await this.connectSmb(source.url ?? source.path)
+      source = {
+        ...source,
+        path: connected.sourcePath,
+        mountPoint: connected.mountPoint,
+        url: connected.url,
+      }
+    }
+    const project = await this.store.create({ ...input, source })
     return this.getProjectDetail(project.id)
+  }
+
+  /** 打开系统 SMB 登录框并等待挂载；密码只进系统钥匙串。 */
+  async connectSmb(rawUrl) {
+    if (!platform.isMac) {
+      throw stageError('SMB auto-connect is currently macOS-only; use a mapped drive or UNC path as a local source', 'UNSUPPORTED_PLATFORM', 400)
+    }
+    return connectSmbHost({ rawUrl, platform })
+  }
+
+  async listNetworkVolumes() {
+    const names = await defaultListVolumes()
+    return names.map(name => ({ name, path: path.join('/Volumes', name), network: true }))
   }
 
   /** 每次启动阶段前重读项目行，避免用到打开时的旧设置。 */
@@ -128,8 +152,17 @@ export class PhotoPickerService extends Service {
       }
     })
     const spent = db.prepare('SELECT COALESCE(SUM(cost_cny), 0) AS spent FROM stage_runs WHERE project_id = ?').get(id).spent
+    let sourceOnline = true
+    if (project.sourceKind !== 'local') {
+      try {
+        sourceOnline = await sourceFor(project).health()
+      } catch {
+        sourceOnline = false
+      }
+    }
     return {
       ...project,
+      sourceOnline,
       counts,
       stages,
       cost: { spentCny: spent, budgetCny: project.budgetCny },
@@ -244,33 +277,86 @@ export class PhotoPickerService extends Service {
   stageTask(stage, { db, project, controller }) {
     const id = project.id
     const onProgress = progress => this.events.emit('event', { projectId: id, ...progress })
-    if (stage === 'scan') {
-      return scanProject({ db, projectId: id, source: new LocalSource(project.sourcePath), onProgress })
-    }
-    if (stage === 'preprocess') {
-      return preprocessProject({
+    const build = () => {
+      if (stage === 'scan') {
+        return scanProject({ db, projectId: id, source: sourceFor(project), onProgress })
+      }
+      if (stage === 'preprocess') {
+        return preprocessProject({
+          db,
+          projectId: id,
+          sourceRoot: project.sourcePath,
+          workspaceDir: project.workspaceDir,
+          onProgress,
+        })
+      }
+      const source = sourceFor(project)
+      const deps = {
         db,
         projectId: id,
-        sourceRoot: project.sourcePath,
+        project,
+        llm: this.ctx.llm,
+        attachments: this.ctx.attachments,
         workspaceDir: project.workspaceDir,
-        onProgress,
-      })
+        signal: controller.signal,
+        onEvent: onProgress,
+        thumbFor: photo => readFile(path.join(project.workspaceDir, photo.thumb_path)).catch(() => undefined),
+        loadPhoto: photo => source.absolute(photo.rel_path),
+      }
+      return stage === 'grid' ? runGridStage(deps)
+        : stage === 'rank' ? runRankStage(deps)
+          : runScoreStage(deps)
     }
-    const deps = {
-      db,
-      projectId: id,
-      project,
-      llm: this.ctx.llm,
-      attachments: this.ctx.attachments,
-      workspaceDir: project.workspaceDir,
-      signal: controller.signal,
-      onEvent: onProgress,
-      thumbFor: photo => readFile(path.join(project.workspaceDir, photo.thumb_path)).catch(() => undefined),
-      loadPhoto: photo => path.join(project.sourcePath, photo.rel_path),
+    if (project.sourceKind === 'local') return build()
+    return this.runNetworkStage(project, controller, build)
+  }
+
+  async runNetworkStage(project, controller, build) {
+    const source = sourceFor(project)
+    if (!(await source.health())) {
+      throw stageError('network source is not available; reconnect the share first', 'NETWORK_LOST', 409)
     }
-    return stage === 'grid' ? runGridStage(deps)
-      : stage === 'rank' ? runRankStage(deps)
-        : runScoreStage(deps)
+    let misses = 0
+    let lost = false
+    const timer = setInterval(async () => {
+      if (await source.health()) {
+        misses = 0
+        return
+      }
+      misses += 1
+      if (misses >= 5 && !lost) {
+        lost = true
+        controller.abort()
+        this.events.emit('event', { projectId: project.id, network: 'lost' })
+      }
+    }, 15_000)
+    timer.unref?.()
+    try {
+      const result = await build()
+      if (lost) await this.markNetworkPaused(project.id)
+      return result
+    } catch (error) {
+      if (lost || ['ENOENT', 'EIO', 'ETIMEDOUT', 'ECONNRESET', 'EHOSTDOWN', 'ENETDOWN'].includes(error?.code)) {
+        await this.markNetworkPaused(project.id)
+      }
+      throw error
+    } finally {
+      clearInterval(timer)
+    }
+  }
+
+  async markNetworkPaused(projectId) {
+    try {
+      const { db } = await this.store.open(projectId)
+      const now = Date.now()
+      db.prepare("UPDATE stage_runs SET status = 'paused', finished_at = ? WHERE project_id = ? AND status = 'running'").run(now, projectId)
+      db.prepare('UPDATE projects SET status = ?, updated_at = ? WHERE id = ?').run('paused', now, projectId)
+      db.prepare(`INSERT INTO errors (id, project_id, stage, photo_id, code, message, created_at)
+        VALUES (?, ?, NULL, NULL, 'NETWORK_LOST', 'network source was lost; reconnect and resume', ?)`)
+        .run(`err-${now}-${Math.random().toString(36).slice(2, 8)}`, projectId, now)
+    } catch {
+      // 状态更新失败不应掩盖原始网络错误
+    }
   }
 
   /** 自动串联阶段；stage_pause=1 时每阶段结束停下，预算暂停也会停下。 */
