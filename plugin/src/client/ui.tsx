@@ -141,6 +141,45 @@ export function Card({ className = '', children, ...props }: React.ComponentProp
   return <div className={`pp-card ${className}`.trim()} {...props}>{children}</div>
 }
 
+export function ModalShell({ title, closeLabel, onClose, children, className = '' }: {
+  title: string
+  closeLabel: string
+  onClose: () => void
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className="pp-overlay" onClick={onClose}>
+      <div className={`pp-modal ${className}`.trim()} onClick={event => event.stopPropagation()}>
+        <div className="pp-modal-head">
+          <span>{title}</span>
+          <CloseButton label={closeLabel} onClick={onClose} />
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function DrawerShell({ title, closeLabel, onClose, children }: {
+  title: string
+  closeLabel: string
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="pp-drawer-scrim" onClick={onClose}>
+      <div className="pp-drawer" onClick={event => event.stopPropagation()}>
+        <div className="pp-modal-head">
+          <span>{title}</span>
+          <CloseButton label={closeLabel} onClick={onClose} />
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export function Toolbar({ children }: { children: React.ReactNode }) {
   return <div className="pp-toolbar">{children}</div>
 }
