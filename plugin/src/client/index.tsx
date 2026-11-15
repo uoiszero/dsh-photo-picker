@@ -136,6 +136,27 @@ function summarizeStats(t: (key: string) => string, stats: any) {
   return parts.join(' · ')
 }
 
+function BackButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" className="pp-back" onClick={onClick}>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M10.5 3.5 6 8l4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span>{label}</span>
+    </button>
+  )
+}
+
+function CloseButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" className="pp-close" aria-label={label} title={label} onClick={onClick}>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    </button>
+  )
+}
+
 function CreateForm({ t, onCreated, onCancel }: {
   t: (key: string) => string
   onCreated: (id: string) => void
@@ -223,6 +244,9 @@ function CreateForm({ t, onCreated, onCancel }: {
   return (
     <div className="pp-card pp-panel" style={{ maxWidth: 700 }}>
       <div className="pp-form">
+        <div className="pp-page-nav">
+          <BackButton label={t('back')} onClick={onCancel} />
+        </div>
         <div className="pp-field">
           <span>{t('sourceType')}</span>
           <div className="pp-tabs" role="tablist" aria-label={t('sourceType')}>
@@ -318,7 +342,6 @@ function CreateForm({ t, onCreated, onCancel }: {
           <button type="button" style={btnPrimary} disabled={busy || (sourceKind === 'local' ? folder === '' : mountPoint === '')} onClick={create}>
             {busy ? t('creating') : t('create')}
           </button>
-          <button type="button" style={btn} onClick={onCancel}>{t('back')}</button>
         </div>
         {error !== null && <div className="pp-error">{error}</div>}
       </div>
@@ -598,7 +621,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   return (
     <section className="pp-single">
       <div className="pp-single-head">
-        <button type="button" style={btn} onClick={onClose}>← {t('backToWall')}</button>
+        <BackButton label={t('backToWall')} onClick={onClose} />
         {detail.group !== undefined && (
           <button type="button" style={btn} onClick={() => onOpenGroup(detail.group.id)}>{t('groupCompare')}</button>
         )}
@@ -792,7 +815,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
       <div className="pp-modal" onClick={event => event.stopPropagation()}>
         <div className="pp-modal-head">
           <span>{t('exportTitle')}</span>
-          <button type="button" style={btn} onClick={onClose}>{t('close')}</button>
+          <CloseButton label={t('close')} onClick={onClose} />
         </div>
 
         <div className="pp-form">
@@ -982,7 +1005,7 @@ function GroupCompare({ t, projectId, groupId, version, onNavigate, onClose, onD
   return (
     <section className="pp-single">
       <div className="pp-single-head">
-        <button type="button" style={btn} onClick={onClose}>← {t('backToWall')}</button>
+        <BackButton label={t('backToWall')} onClick={onClose} />
         <span className="pp-chip">{kindLabel}</span>
         <span className="pp-chip">{detail.size} {t('photos')}</span>
         {pageCount > 1 && <span className="pp-chip">{page + 1} / {pageCount}</span>}
@@ -1166,6 +1189,7 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
           <div className="pp-row" style={{ alignItems: 'center' }}>
             <span className="pp-chip">{t('calibrationProgress').replace('{n}', String(index + 1)).replace('{total}', String(items.length))}</span>
             <span className="pp-muted" style={{ marginLeft: 'auto' }}>{t('calibrationHint')}</span>
+            <CloseButton label={t('close')} onClick={() => setPhase('idle')} />
           </div>
           <div className="pp-stage" style={{ minHeight: 0, padding: 10 }}>
             <img src={items[index].previewUrl} alt={items[index].relPath} />
@@ -1174,8 +1198,6 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
             <button type="button" style={btn} disabled={busy} onClick={() => label('keep')}>{t('keep')}</button>
             <button type="button" style={btn} disabled={busy} onClick={() => label('maybe')}>{t('maybe')}</button>
             <button type="button" style={btn} disabled={busy} onClick={() => label('reject')}>{t('reject')}</button>
-            <span style={{ flex: 1 }} />
-            <button type="button" style={btn} disabled={busy} onClick={() => setPhase('idle')}>{t('close')}</button>
           </div>
         </div>
       )}
@@ -1257,7 +1279,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
       <div className="pp-drawer" onClick={event => event.stopPropagation()}>
         <div className="pp-modal-head">
           <span>{t('settingsTitle')}</span>
-          <button type="button" style={btn} onClick={onClose}>{t('close')}</button>
+          <CloseButton label={t('close')} onClick={onClose} />
         </div>
 
         <div className="pp-form">
@@ -1383,7 +1405,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
   )
 }
 
-function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
+function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: string; onBack: () => void }) {
   const [detail, setDetail] = useState<any>(null)
   const [stats, setStats] = useState<any>(null)
   const [progress, setProgress] = useState<any>(null)
@@ -1503,6 +1525,9 @@ function ProjectDetail({ t, id }: { t: (key: string) => string; id: string }) {
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
+      <div className="pp-page-nav">
+        <BackButton label={t('back')} onClick={onBack} />
+      </div>
       <section className="pp-card pp-summary">
         <div className="pp-summary-top">
           <strong className="pp-project-title">{detail.name}</strong>
@@ -1716,9 +1741,6 @@ function Workbench({ t }: { t: (key: string) => string }) {
             >
               {getLanguage() === 'zh' ? 'EN' : '中'}
             </button>
-            {selected !== null && (
-              <button type="button" style={btn} onClick={() => setSelected(null)}>{t('back')}</button>
-            )}
             <button type="button" style={btnPrimary} onClick={() => { setCreating(true); setSelected(null) }}>
               {t('newProject')}
             </button>
@@ -1728,7 +1750,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
         {error !== null && <div className="pp-error" style={{ marginBottom: 12 }}>{error}</div>}
 
         {selected !== null ? (
-          <ProjectDetail t={t} id={selected} />
+          <ProjectDetail t={t} id={selected} onBack={() => setSelected(null)} />
         ) : creating ? (
           <CreateForm
             t={t}
