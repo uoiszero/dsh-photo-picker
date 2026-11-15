@@ -9,7 +9,7 @@ const PANEL_ID = 'photo-picker'
 
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
-import { BackButton, CloseButton, StateCard } from './ui'
+import { ActionBar, BackButton, Button, CloseButton, Field, Input, Select, StateCard, Tabs } from './ui'
 
 
 const btn = {
@@ -212,106 +212,90 @@ function CreateForm({ t, onCreated, onCancel }: {
         <div className="pp-page-nav">
           <BackButton label={t('back')} onClick={onCancel} />
         </div>
-        <div className="pp-field">
-          <span>{t('sourceType')}</span>
-          <div className="pp-tabs" role="tablist" aria-label={t('sourceType')}>
-            <button
-              type="button"
-              role="tab"
-              className="pp-tab"
-              aria-selected={sourceKind === 'local'}
-              onClick={() => { setSourceKind('local'); setMountPoint(''); setError(null) }}
-            >
-              {t('sourceLocal')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className="pp-tab"
-              aria-selected={sourceKind === 'smb'}
-              disabled={!SMB_ENABLED}
-              title={SMB_ENABLED ? undefined : t('smbUnavailable')}
-              onClick={() => { if (SMB_ENABLED) { setSourceKind('smb'); setError(null) } }}
-            >
-              {t('sourceSmb')}{SMB_ENABLED ? '' : ` · ${t('smbUnavailable')}`}
-            </button>
-          </div>
-        </div>
+        <Field as="div" label={t('sourceType')}>
+          <Tabs
+            label={t('sourceType')}
+            value={sourceKind}
+            items={[
+              { value: 'local', label: t('sourceLocal') },
+              {
+                value: 'smb',
+                label: `${t('sourceSmb')}${SMB_ENABLED ? '' : ` · ${t('smbUnavailable')}`}`,
+                disabled: !SMB_ENABLED,
+                title: SMB_ENABLED ? undefined : t('smbUnavailable'),
+              },
+            ]}
+            onChange={value => {
+              if (value === 'local') setMountPoint('')
+              setSourceKind(value as 'local' | 'smb')
+              setError(null)
+            }}
+          />
+        </Field>
         {sourceKind === 'local' ? (
           <>
-            <label className="pp-field">
-              <span>{t('folder')}</span>
+            <Field as="div" label={t('folder')}>
               <div className="pp-row" style={{ alignItems: 'stretch' }}>
-                <input
+                <Input
                   value={folder}
                   onChange={event => setFolder(event.target.value)}
                   placeholder="/Users/…/Pictures"
-                  className="pp-input" style={{ flex: 1 }}
+                  style={{ flex: 1 }}
                 />
-                <button type="button" style={btn} disabled={choosing} onClick={choose}>
+                <Button disabled={choosing} onClick={choose}>
                   {choosing ? t('choosingFolder') : t('choose')}
-                </button>
-                <button type="button" style={btn} onClick={() => browse(folder)}>{t('browse')}</button>
+                </Button>
+                <Button onClick={() => browse(folder)}>{t('browse')}</Button>
               </div>
-            </label>
+            </Field>
             {dirs.length > 0 && (
-              <div className="pp-card" style={{ maxHeight: 220, overflow: 'auto', padding: 4 }}>
+              <div className="pp-card pp-dir-list">
                 {dirs.map(dir => (
-                  <div
-                    key={dir.path}
-                    onClick={() => browse(dir.path)}
-                    style={{ padding: '7px 10px', cursor: 'pointer', fontSize: 13, borderRadius: 8 }}
-                  >
+                  <button type="button" className="pp-dir-row" key={dir.path} onClick={() => browse(dir.path)}>
                     {dir.name}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </>
         ) : (
-          <label className="pp-field">
-            <span>{t('smbUrl')}</span>
+          <Field as="div" label={t('smbUrl')} help={t('smbHint')}>
             <div className="pp-row" style={{ alignItems: 'stretch' }}>
-              <input
+              <Input
                 value={smbUrl}
                 onChange={event => { setSmbUrl(event.target.value); setMountPoint(''); setError(null) }}
                 placeholder="smb://192.168.12.199/yueao"
-                className="pp-input" style={{ flex: 1 }}
+                style={{ flex: 1 }}
               />
-              <button type="button" style={btn} disabled={connecting || smbUrl === ''} onClick={connectSmb}>
+              <Button disabled={connecting || smbUrl === ''} onClick={connectSmb}>
                 {connecting ? t('smbConnecting') : t('smbConnect')}
-              </button>
+              </Button>
             </div>
-            <span className="pp-muted" style={{ marginTop: 6 }}>{t('smbHint')}</span>
-            {mountPoint !== '' && <span className="pp-muted" style={{ marginTop: 4 }}>{t('smbConnected')}: {mountPoint}</span>}
-          </label>
+            {mountPoint !== '' && <span className="pp-field-help">{t('smbConnected')}: {mountPoint}</span>}
+          </Field>
         )}
-        <label className="pp-field">
-          <span>{t('name')}</span>
-          <input value={name} onChange={event => setName(event.target.value)} placeholder={t('namePlaceholder')} className="pp-input" />
-        </label>
+        <Field label={t('name')}>
+          <Input value={name} onChange={event => setName(event.target.value)} placeholder={t('namePlaceholder')} />
+        </Field>
         <div className="pp-row">
-          <label className="pp-field">
-            <span>{t('theme')}</span>
-            <select value={theme} onChange={event => setTheme(event.target.value)} className="pp-select">
+          <Field label={t('theme')}>
+            <Select value={theme} onChange={event => setTheme(event.target.value)}>
               <option value="mixed">{t('themeMixed')}</option>
               <option value="portrait">{t('themePortrait')}</option>
               <option value="landscape">{t('themeLandscape')}</option>
               <option value="event">{t('themeEvent')}</option>
-            </select>
-          </label>
-          <label className="pp-field" style={{ maxWidth: 140 }}>
-            <span>{t('budget')}</span>
-            <input value={budget} onChange={event => setBudget(event.target.value)} className="pp-input" />
-          </label>
+            </Select>
+          </Field>
+          <Field label={t('budget')} className="pp-field-narrow">
+            <Input value={budget} onChange={event => setBudget(event.target.value)} />
+          </Field>
         </div>
-        <div className="pp-actions">
-          <span style={{ flex: 1 }} />
-          <button type="button" className="pp-button pp-button-primary" disabled={busy || (sourceKind === 'local' ? folder === '' : mountPoint === '')} onClick={create}>
+        <ActionBar end>
+          <Button variant="primary" disabled={busy || (sourceKind === 'local' ? folder === '' : mountPoint === '')} onClick={create}>
             {busy ? t('creating') : t('create')}
-          </button>
-        </div>
-        {error !== null && <div className="pp-error">{error}</div>}
+          </Button>
+        </ActionBar>
+        {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
       </div>
     </div>
   )
@@ -1720,13 +1704,13 @@ function Workbench({ t }: { t: (key: string) => string }) {
             >
               {getLanguage() === 'zh' ? 'EN' : '中'}
             </button>
-            <button type="button" className="pp-button pp-button-primary" onClick={() => { setCreating(true); setSelected(null) }}>
+            <Button variant="primary" onClick={() => { setCreating(true); setSelected(null) }}>
               {t('newProject')}
-            </button>
+            </Button>
           </div>
         </header>
 
-        {error !== null && <div className="pp-error" style={{ marginBottom: 12 }}>{error}</div>}
+        {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
 
         {selected !== null ? (
           <ProjectDetail t={t} id={selected} onBack={() => setSelected(null)} />
@@ -1739,18 +1723,12 @@ function Workbench({ t }: { t: (key: string) => string }) {
         ) : projects === null ? (
           <StateCard kind="loading" title={t('loading')} />
         ) : list.length === 0 ? (
-          <div className="pp-empty">
-            <div className="pp-empty-icon">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="8.4" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                <circle cx="12" cy="12" r="2.6" stroke="currentColor" strokeWidth="1.4" />
-              </svg>
-            </div>
-            <h2>{t('empty')}</h2>
-            <p>{t('subtitle')}</p>
-            <button type="button" className="pp-button pp-button-primary" onClick={() => setCreating(true)}>{t('newProject')}</button>
-          </div>
+          <StateCard
+            kind="empty"
+            title={t('empty')}
+            message={t('subtitle')}
+            action={<Button variant="primary" onClick={() => setCreating(true)}>{t('newProject')}</Button>}
+          />
         ) : (
           <div className="pp-projects">
             {list.map(project => (

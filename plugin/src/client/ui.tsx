@@ -65,18 +65,46 @@ export function Segmented({ label, items, value, onChange }: {
   )
 }
 
-export function Field({ label, help, children, className = '' }: {
+export function Tabs({ label, items, value, onChange }: {
+  label: string
+  items: Array<{ value: string; label: string; disabled?: boolean; title?: string }>
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="pp-tabs" role="tablist" aria-label={label}>
+      {items.map(item => (
+        <button
+          key={item.value}
+          type="button"
+          role="tab"
+          className="pp-tab"
+          aria-selected={value === item.value}
+          disabled={item.disabled === true}
+          title={item.title}
+          onClick={() => { if (item.disabled !== true) onChange(item.value) }}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function Field({ label, help, children, className = '', as = 'label' }: {
   label: string
   help?: string
   children: React.ReactNode
   className?: string
+  as?: 'label' | 'div'
 }) {
+  const Tag = as as any
   return (
-    <label className={`pp-field ${className}`.trim()}>
+    <Tag className={`pp-field ${className}`.trim()}>
       <span>{label}</span>
       {children}
       {help !== undefined && <span className="pp-field-help">{help}</span>}
-    </label>
+    </Tag>
   )
 }
 
@@ -117,8 +145,8 @@ export function ToolbarGroup({ children, end = false }: { children: React.ReactN
   return <div className={`pp-toolbar-group${end ? ' pp-toolbar-end' : ''}`}>{children}</div>
 }
 
-export function ActionBar({ children }: { children: React.ReactNode }) {
-  return <div className="pp-actions">{children}</div>
+export function ActionBar({ children, end = false }: { children: React.ReactNode; end?: boolean }) {
+  return <div className={`pp-actions${end ? ' pp-actions-right' : ''}`}>{children}</div>
 }
 
 export function Section({ title, actions, children }: {
