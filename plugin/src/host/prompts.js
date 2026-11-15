@@ -1,24 +1,17 @@
 /** 提示词版本；改动提示词时同步 bump，assessments 幂等键依赖它。 */
-export const PROMPT_VERSION = 'v4'
-
-const THEME_HINTS = {
-  portrait: '这是一个以人像为主的项目：优先看眼神、皮肤、表情与人物姿态，容许背景虚化。',
-  landscape: '这是一个以风光为主的项目：优先看构图层次、光线时刻、地平线与清晰度。',
-  event: '这是一个活动纪实项目：优先看瞬间、人物互动、叙事性与主体可辨识度。',
-  mixed: '',
-}
+export const PROMPT_VERSION = 'v5'
 
 export const GRID_SYSTEM = '你是一位有经验的摄影编辑，只输出 JSON，不输出任何解释。'
 
 /** 网格粗筛的 user 提示词（spec 18.2 v1）。 */
-export function gridUserPrompt({ count, cols, rows, theme = 'mixed' }) {
-  const hint = THEME_HINTS[theme] ?? ''
+export function gridUserPrompt({ count, cols, rows }) {
   const lines = [
     `下面是一张由 ${count} 张照片拼成的网格图（${cols} 列 × ${rows} 行），每格左上角有编号 A1–${String.fromCharCode(64 + cols)}${rows}，编号按行优先排列。`,
     '',
+    '这些照片可能包含人像、风光、建筑、街拍、活动等混合内容；不要假设项目题材，按每格画面本身判断主体、构图、光影和清晰度。',
+    '',
     '请选出构图有重点、光影有层次、主体清晰、值得进入下一轮的照片，目标大约选出 30%。如果同一场景/连拍有多张相似照片，只选其中最好的一张。',
   ]
-  if (hint !== '') lines.push('', hint)
   lines.push('', '只返回一个 JSON 数组，元素是格子编号字符串，例如 ["A1","B3","C2"]。不要输出任何解释。')
   return lines.join('\n')
 }
@@ -42,10 +35,24 @@ export function rankUserPrompt({ count }) {
 export const SCORE_SYSTEM = '你是一位有经验的摄影编辑，只输出 JSON，不输出任何解释。'
 
 /** 单张精评的 user 提示词。 */
-export function scoreUserPrompt({ theme = 'mixed' } = {}) {
-  const hint = THEME_HINTS[theme] ?? ''
+export function scoreUserPrompt() {
   const lines = [
-    '你是一位有经验的摄影编辑。请从六个维度评价这张照片（0–10 分）：',
+    '你是一位有经验的摄影编辑。请先判断这张照片的主要内容，再从六个维度评价它（0–10 分）。',
+    '',
+    '先输出 scenes（1–3 个场景/题材标签，按画面本身判断）：',
+    'portrait 人像、landscape 风光、architecture 建筑、street 街拍、event 活动/纪实、other 其他。',
+    '再输出 primary_scene，选择最贴近画面主体的一个；primary_scene 必须在 scenes 中。',
+    '允许一张照片有多个标签，例如活动中的单人瞬间可以是 ["portrait","event"]；',
+    '但不要为了凑标签而强行添加，混合/街拍内容按主要主体判断。',
+    '',
+    '评分时以 primary_scene 相应的标准为主，但仍要兼顾六维完整评分：',
+    '- portrait：眼神、表情、皮肤、姿态；背景虚化可接受。',
+    '- landscape：构图层次、光线时刻、地平线、清晰度。',
+    '- architecture：线条、透视、对称、畸变、细节。',
+    '- street / event：瞬间、人物互动、叙事性、主体可辨识度。',
+    '- other：通用构图与光影。',
+    '',
+    '六个维度（0–10 分）：',
     '构图 composition、光影 light、色彩 color、技术质量 technique、',
     '后期潜力 post_potential、瞬间与叙事 moment。',
     '',
@@ -65,11 +72,10 @@ export function scoreUserPrompt({ theme = 'mixed' } = {}) {
     'exposureEv 是曝光补偿（-2–2）；contrast/saturation 是 -1–1；sharpen 是 0–2。',
     '没有明确可执行的调整时，省略 edit_recipe 或返回全 0/全画幅；不要编造 8% 边距。',
   ]
-  if (hint !== '') lines.push('', hint)
   lines.push(
     '',
     '只返回如下结构的 JSON（不要围栏、不要解释）；示例中的 crop 是全画幅，数字只是字段格式，不要照抄：',
-    '{"score":8.2,"dimensions":{"composition":8,"light":7,"color":8,"technique":9,"post_potential":7,"moment":6},"verdict":"keep","post_processing":["crop_right"],"edit_recipe":{"version":1,"crop":{"left":0,"top":0,"width":1,"height":1},"rotate":0,"exposureEv":0,"contrast":0,"saturation":0,"sharpen":0},"reason":"主体清晰，侧光有层次"}',
+    '{"scenes":["architecture","street"],"primary_scene":"architecture","score":8.2,"dimensions":{"composition":8,"light":7,"color":8,"technique":9,"post_potential":7,"moment":6},"verdict":"keep","post_processing":["crop_right"],"edit_recipe":{"version":1,"crop":{"left":0,"top":0,"width":1,"height":1},"rotate":0,"exposureEv":0,"contrast":0,"saturation":0,"sharpen":0},"reason":"线条清晰，侧光有层次"}',
   )
   return lines.join('\n')
 }

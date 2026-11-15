@@ -24,13 +24,14 @@ function setup() {
     VALUES (?, 'p1', ?, 10, ?, 'jpeg', ?, ?, ?, ?, ?)`)
   const insertAssessment = db.prepare(`INSERT INTO assessments (id, project_id, target_kind, target_id,
       stage, model_id, prompt_version, score, verdict, dimensions_json, post_processing_json,
-      recipe_json, reason, created_at)
-    VALUES (?, 'p1', 'photo', ?, 'single', 'deepseek-flash', 'v1', ?, ?, ?, ?, ?, ?, ?)`)
+      recipe_json, scenes_json, primary_scene, reason, created_at)
+    VALUES (?, 'p1', 'photo', ?, 'single', 'deepseek-flash', 'v1', ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
   const addAssessment = {
-    run(id, targetId, score, verdict, dimensions, postProcessing, reason, createdAt, recipe = null) {
+    run(id, targetId, score, verdict, dimensions, postProcessing, reason, createdAt, recipe = null, scenes = [], primaryScene = null) {
       insertAssessment.run(
         id, targetId, score, verdict, dimensions, postProcessing,
         recipe === null || recipe === undefined ? null : JSON.stringify(recipe),
+        JSON.stringify(scenes), primaryScene,
         reason, createdAt,
       )
     },
@@ -41,7 +42,7 @@ function setup() {
 test('listReviewPhotos resolves human > ai > maybe and hides filtered states by default', () => {
   const { db, dir, addPhoto, addAssessment } = setup()
   addPhoto.run('a', 'a.jpg', 100, 1, null, 'thumbs/a.webp', 'scored', 1)
-  addAssessment.run('aa', 'a', 8.5, 'keep', '{"composition":8}', '["crop_right"]', '很好', 1)
+  addAssessment.run('aa', 'a', 8.5, 'keep', '{"composition":8}', '["crop_right"]', '很好', 1, null, ['architecture'], 'architecture')
   addPhoto.run('b', 'b.jpg', 200, 2, null, 'thumbs/b.webp', 'scored', 2)
   addAssessment.run('ab', 'b', 6.4, 'maybe', '{}', '[]', '一般', 2)
   addPhoto.run('c', 'c.jpg', 300, 3, null, 'thumbs/c.webp', 'scored', 3)
@@ -66,6 +67,8 @@ test('listReviewPhotos resolves human > ai > maybe and hides filtered states by 
   assert.equal(byId.d.verdict, 'maybe')
   assert.equal(byId.a.score, 8.5)
   assert.deepEqual(byId.a.postProcessing, ['crop_right'])
+  assert.deepEqual(byId.a.scenes, ['architecture'])
+  assert.equal(byId.a.primaryScene, 'architecture')
   assert.equal(items[0].id, 'a') // 默认按分数降序
   assert.equal(items[items.length - 1].id, 'd') // 无分数排最后
 

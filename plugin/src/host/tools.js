@@ -25,7 +25,6 @@ export function createPhotoPickerTool(service) {
         },
       },
       name: { type: 'string', description: '项目名；省略时取文件夹名' },
-      theme: { type: 'string', enum: ['portrait', 'landscape', 'event', 'mixed'] },
       budgetCny: { type: 'number' },
       stage: { type: 'string', enum: ['scan', 'preprocess', 'grid', 'rank', 'score'] },
     },
@@ -46,7 +45,6 @@ export function createPhotoPickerTool(service) {
           payload = await service.createProject({
             source: args.source,
             name: args.name,
-            theme: args.theme,
             budgetCny: args.budgetCny,
           })
           break

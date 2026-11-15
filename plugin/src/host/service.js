@@ -567,18 +567,17 @@ export class PhotoPickerService extends Service {
       const opened = await this.store.open(projectId)
       project = opened.project
     }
-    const theme = project?.theme ?? 'mixed'
     const cols = project?.gridCols ?? 4
     const rows = project?.gridRows ?? 4
     return {
       version: PROMPT_VERSION,
       prompts: {
         gridSystem: GRID_SYSTEM,
-        gridUser: gridUserPrompt({ count: cols * rows, cols, rows, theme }),
+        gridUser: gridUserPrompt({ count: cols * rows, cols, rows }),
         rankSystem: RANK_SYSTEM,
         rankUser: rankUserPrompt({ count: 6 }),
         scoreSystem: SCORE_SYSTEM,
-        scoreUser: scoreUserPrompt({ theme }),
+        scoreUser: scoreUserPrompt(),
       },
     }
   }

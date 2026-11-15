@@ -32,9 +32,9 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 ## Features
 
 - **Local first**: scanning, dedupe, technical filters, burst/scene grouping and thumbnails run on your machine.
-- **Layered AI**: grid triage → group ranking → single-photo scoring. Human decisions always override AI.
+- **Layered AI**: grid triage → group ranking → single-photo scoring. Single-photo scoring detects the scene (portrait / landscape / architecture / street / event / other) and adapts its criteria; human decisions always override AI.
 - **Budget and stability**: live USD/CNY usage, budget pause, concurrency/retry/backoff, off-peak mode, resumable stages.
-- **Review workbench**: filterable wall, 1600px single view, group compare, bulk decisions, undo.
+- **Review workbench**: filterable wall, 1600px single view with AI scene tags, group compare, bulk decisions, undo.
 - **Portable edit recipes**: the scoring model can suggest crop/straighten/exposure/contrast/saturation/sharpen. The plugin renders them with the bundled sharp engine, previews original vs. edited from the image badge, shows rule-of-thirds/crosshair guides, and exports JPEG copies while keeping sources untouched.
 - **No black corners**: straightening auto-crops the largest inscribed rectangle.
 - **No micro-crops**: recipes whose trimmed edges are all below 18% are treated as uncropped; the UI shows retained size and offsets.
