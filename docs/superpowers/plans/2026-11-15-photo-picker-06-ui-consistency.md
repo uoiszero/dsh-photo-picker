@@ -36,7 +36,7 @@
 - [x] **Phase 3：项目详情（摘要/阶段/历史/操作区）**
 - [x] **Phase 4：复核（工具栏/图墙/单图/组对比）**
 - [x] **Phase 5：导出/设置/校准/Toast**
-- [ ] **Phase 6：窄屏、深色主题、可访问性**
+- [x] **Phase 6：窄屏、深色主题、可访问性**
 - [ ] **Phase 7：check:ui 强门禁、截图、文档**
 
 ## 验收门禁
@@ -55,7 +55,7 @@ npm run check:ui
 
 ## 已知基线（Phase 1 开始时）
 
-- Phase 1 开始时 27 处 `style={btn}`；Phase 2 后降到 24 处，Phase 3 后降到 19 处，Phase 5 后降到 **0 处内联 btn**；剩余 check:ui 警告仅为 theme 里的 danger fallback 色
+- Phase 1 开始时 27 处 `style={btn}`；Phase 2 后降到 24 处，Phase 3 后降到 19 处，Phase 5 后降到 **0 处内联 btn**；Phase 6 增加 aria 标签、480px 规则和语义色混合，剩余 check:ui 警告仅为 theme 里的 danger fallback 色
 - 1 个 legacy `btn` 常量
 - 主题中仍有少量 danger fallback 色值（非状态色 token）
 - 两套空状态：`pp-empty` 与 `pp-state`，Phase 2 合并

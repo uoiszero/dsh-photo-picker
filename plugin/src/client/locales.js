@@ -215,6 +215,10 @@ const zh = {
   destPlaceholder: '/Volumes/…/精选',
   groupRank: '组内第 {rank}/{size}',
   nextStage: '下一阶段',
+  previousPage: '上一页',
+  nextPage: '下一页',
+  previousGroup: '上一组',
+  nextGroup: '下一组',
 }
 
 const en = {
@@ -433,6 +437,10 @@ const en = {
   destPlaceholder: '/Volumes/…/selects',
   groupRank: 'rank {rank}/{size} in group',
   nextStage: 'next stage',
+  previousPage: 'Previous page',
+  nextPage: 'Next page',
+  previousGroup: 'Previous group',
+  nextGroup: 'Next group',
 }
 
 const STORAGE_KEY = 'photoPicker.lang'
