@@ -25,6 +25,7 @@ npm run acceptance:4     # 复核/改判/导出/源零写入
 npm run acceptance:5     # 修图配方渲染 + 编辑副本导出（mock LLM）
 npm run check:release    # 版本号三处一致（打 tag 时还要与 tag 一致）
 npm run check:hygiene    # 个人路径/密钥/数据库/本地 file: 依赖
+npm run check:ui         # 禁止内联按钮样式与散落状态色
 npm run verify           # 以上全串一遍，与 CI 同一套门禁
 ```
 
@@ -94,7 +95,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 ## CI
 
 - `.github/workflows/ci.yml`：push 到 `main`、PR、手动触发。四个 job 都应在合并前绿（`windows` 目前为回归项，规则集必需检查仍为前三项）：
-  - `checks`（ubuntu）：`npm ci` → `npm test` → `typecheck` → `check:release` → `check:hygiene` → `build:client` + 产物必须与源码同步；
+  - `checks`（ubuntu）：`npm ci` → `npm test` → `typecheck` → `check:release` → `check:hygiene` → `check:ui` → `build:client` + 产物必须与源码同步；
   - `acceptance`（ubuntu）：`fixtures` + `acceptance:1/2/4/5`（假 LLM，零费用、无密钥）；
   - `macOS`：主平台回归，测试 + 四个验收脚本；
   - `windows`：`npm ci` → 测试 → 类型检查 → 版本/卫生检查 → 构建客户端（Windows 路径与平台层回归；原生对话框/解码已在 Win11 ARM64 真机验证）。
