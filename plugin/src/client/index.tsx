@@ -522,15 +522,33 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const [editedFailed, setEditedFailed] = useState(false)
   const [showGrid, setShowGrid] = useState(() => storedGuide('photoPicker.gridGuide'))
   const [showCross, setShowCross] = useState(() => storedGuide('photoPicker.crossGuide'))
+  const [deciding, setDeciding] = useState(false)
+
+  const loadDetail = async () => {
+    const next = await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`)
+    setDetail(next)
+    setError(null)
+  }
 
   useEffect(() => {
     setDetail(null)
     setShowEdited(false)
     setEditedFailed(false)
-    api(`/photo-picker/api/projects/${projectId}/photos/${photoId}`)
-      .then(setDetail)
-      .catch(cause => setError(String(cause)))
+    loadDetail().catch(cause => setError(String(cause)))
   }, [photoId])
+
+  const decide = async (verdict: string) => {
+    if (deciding) return
+    setDeciding(true)
+    try {
+      await onDecide([photoId], verdict)
+      await loadDetail()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setDeciding(false)
+    }
+  }
 
   const index = items.findIndex((item: any) => item.id === photoId)
   const move = (delta: number) => {
@@ -544,15 +562,15 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
       if (target !== null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
       if (event.key === 'j' || event.key === 'ArrowRight') move(1)
       else if (event.key === 'k' || event.key === 'ArrowLeft') move(-1)
-      else if (event.key === 'p') onDecide([photoId], 'keep')
-      else if (event.key === 'm') onDecide([photoId], 'maybe')
-      else if (event.key === 'x') onDecide([photoId], 'reject')
+      else if (event.key === 'p') void decide('keep')
+      else if (event.key === 'm') void decide('maybe')
+      else if (event.key === 'x') void decide('reject')
       else if (event.key === 'g' && detail?.group !== undefined) onOpenGroup(detail.group.id)
       else if (event.key === ' ' || event.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [photoId, index, items, detail])
+  }, [photoId, index, items, detail, deciding])
 
   if (error !== null) return <StateCard kind="error" title={t('errorTitle')} message={error} />
   if (detail === null) return <StateCard kind="loading" title={t('loading')} />
@@ -642,9 +660,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
         </div>
         <aside className="pp-card pp-panel">
           <div className="pp-row" style={{ gap: 6 }}>
-            <Button style={{ flex: 1 }} onClick={() => onDecide([photoId], 'keep')}>{t('keep')}</Button>
-            <Button style={{ flex: 1 }} onClick={() => onDecide([photoId], 'maybe')}>{t('maybe')}</Button>
-            <Button variant="danger" style={{ flex: 1 }} onClick={() => onDecide([photoId], 'reject')}>{t('reject')}</Button>
+            <Button style={{ flex: 1 }} disabled={deciding} onClick={() => decide('keep')}>{t('keep')}</Button>
+            <Button style={{ flex: 1 }} disabled={deciding} onClick={() => decide('maybe')}>{t('maybe')}</Button>
+            <Button variant="danger" style={{ flex: 1 }} disabled={deciding} onClick={() => decide('reject')}>{t('reject')}</Button>
           </div>
           <div className="pp-kbd">{t('keyboardHint')}</div>
           <div className="pp-meters">
