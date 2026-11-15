@@ -9,6 +9,7 @@ const PANEL_ID = 'photo-picker'
 
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
+import { computeColumns, computeRowHeight, computeVisibleRows, TILE_GAP, TILE_MIN, TILE_MIN_NARROW } from './virtual.js'
 import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, StateCard, Tabs } from './ui'
 
 
@@ -313,6 +314,8 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   const requestRef = useRef(0)
   const wallRef = useRef<HTMLDivElement | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const [wallWidth, setWallWidth] = useState(0)
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 20 })
   const filterKey = `${filter}|${scene}|${sort}`
   const lastFilterKey = useRef('')
 
@@ -422,7 +425,56 @@ function ReviewSection({ t, projectId, version, onChanged }: {
     }, { root: scrollRoot ?? null, rootMargin: '400px' })
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
-  }, [hasMore, loading, loadingMore, items.length, nextOffset, filter, scene, sort])
+  }, [hasMore, loading, loadingMore, items.length, nextOffset, filter, scene, sort, wallWidth])
+
+  useEffect(() => {
+    const el = wallRef.current
+    if (el === null) return
+    const update = () => setWallWidth(el.clientWidth)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [items.length, single, groupView])
+
+  const narrow = typeof window !== 'undefined' && window.matchMedia('(max-width: 880px)').matches
+  const columns = computeColumns(wallWidth, narrow ? TILE_MIN_NARROW : TILE_MIN, TILE_GAP)
+  const rowHeight = computeRowHeight(wallWidth, columns, TILE_GAP)
+  const totalRows = Math.ceil(items.length / columns)
+
+  useEffect(() => {
+    const wall = wallRef.current
+    if (wall === null) return
+    const root = wall.closest(".pp-page")
+    if (root === null) return
+    let frame = 0
+    const update = () => {
+      const wallTop = wall.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop
+      const next = computeVisibleRows({
+        scrollTop: root.scrollTop,
+        wallTop,
+        rowHeight,
+        totalRows,
+        viewportHeight: root.clientHeight,
+        overscan: 2,
+      })
+      setVisibleRange(current => (
+        current.start === next.start && current.end === next.end ? current : next
+      ))
+    }
+    const onScroll = () => {
+      if (frame !== 0) return
+      frame = requestAnimationFrame(() => { frame = 0; update() })
+    }
+    root.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    update()
+    return () => {
+      if (frame !== 0) cancelAnimationFrame(frame)
+      root.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [wallWidth, rowHeight, totalRows, items.length, single, groupView])
 
   const markDecided = (photoIds: string[], verdict: string) => {
     const ids = new Set(photoIds)
@@ -568,43 +620,59 @@ function ReviewSection({ t, projectId, version, onChanged }: {
         />
       ) : (
         <>
-        <div className="pp-wall" ref={wallRef}>
-          {items.map(item => {
-            const sceneText = Array.isArray(item.scenes)
-              ? item.scenes.map((value: string) => sceneLabel(t, value)).join(' · ')
-              : ''
+        <div className="pp-wall" ref={wallRef} style={{ height: totalRows * rowHeight }}>
+          {Array.from({ length: Math.max(0, visibleRange.end - visibleRange.start) }, (_, offset) => {
+            const row = visibleRange.start + offset
+            const rowItems = items.slice(row * columns, (row + 1) * columns)
+            if (rowItems.length === 0) return null
             return (
-            <div className="pp-tile-wrap" key={item.id}>
-              <button
-                type="button"
-                className={`pp-tile${selected.includes(item.id) ? ' selected' : ''}`}
-                title={sceneText === '' ? item.relPath : `${item.relPath} · ${sceneText}`}
-                aria-label={sceneText === '' ? item.relPath : `${item.relPath} · ${sceneText}`}
-                onClick={() => setSingle(item.id)}
+              <div
+                className="pp-wall-row"
+                key={`row-${row}`}
+                style={{
+                  top: row * rowHeight,
+                  gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                }}
               >
-                <img src={`${item.thumbUrl}?v=${version}`} alt={item.relPath} loading="lazy" />
-                <span
-                  className="pp-tile-bar"
-                  style={{ background: VERDICT_COLORS[item.verdict] ?? 'var(--dsw-alias-border-l2)' }}
-                />
-                {item.score !== null && <span className="pp-tile-score">{Number(item.score).toFixed(1)}</span>}
-                {sceneText !== '' && <span className="pp-tile-scenes">{sceneText}</span>}
-                {item.humanVerdict !== null && (
-                  <span className="pp-tile-human">{verdictLabel(t, item.humanVerdict)}</span>
-                )}
-              </button>
-              <input
-                className="pp-check"
-                type="checkbox"
-                checked={selected.includes(item.id)}
-                onChange={() => toggle(item.id)}
-                aria-label={item.relPath}
-              />
-            </div>
+                {rowItems.map(item => {
+                  const sceneText = Array.isArray(item.scenes)
+                    ? item.scenes.map((value: string) => sceneLabel(t, value)).join(' · ')
+                    : ''
+                  return (
+                    <div className="pp-tile-wrap" key={item.id}>
+                      <button
+                        type="button"
+                        className={`pp-tile${selected.includes(item.id) ? ' selected' : ''}`}
+                        title={sceneText === '' ? item.relPath : `${item.relPath} · ${sceneText}`}
+                        aria-label={sceneText === '' ? item.relPath : `${item.relPath} · ${sceneText}`}
+                        onClick={() => setSingle(item.id)}
+                      >
+                        <img src={`${item.thumbUrl}?v=${version}`} alt={item.relPath} loading="lazy" />
+                        <span
+                          className="pp-tile-bar"
+                          style={{ background: VERDICT_COLORS[item.verdict] ?? 'var(--dsw-alias-border-l2)' }}
+                        />
+                        {item.score !== null && <span className="pp-tile-score">{Number(item.score).toFixed(1)}</span>}
+                        {sceneText !== '' && <span className="pp-tile-scenes">{sceneText}</span>}
+                        {item.humanVerdict !== null && (
+                          <span className="pp-tile-human">{verdictLabel(t, item.humanVerdict)}</span>
+                        )}
+                      </button>
+                      <input
+                        className="pp-check"
+                        type="checkbox"
+                        checked={selected.includes(item.id)}
+                        onChange={() => toggle(item.id)}
+                        aria-label={item.relPath}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
             )
           })}
         </div>
-        {hasMore && (
+        {hasMore && wallWidth > 0 && (
           <div className="pp-load-more" ref={sentinelRef}>
             {loadingMore ? t('loading') : t('loadMore')}
           </div>

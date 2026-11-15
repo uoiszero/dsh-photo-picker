@@ -300,7 +300,8 @@ export const STYLES = `
 }
 
 .pp-load-more { padding: 18px 0 4px; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12px; }
-.pp-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 10px; }
+.pp-wall { position: relative; }
+.pp-wall-row { position: absolute; left: 0; right: 0; display: grid; gap: 10px; }
 .pp-tile-wrap { position: relative; }
 .pp-tile {
   display: block; width: 100%; padding: 0 !important; border-radius: 12px !important;
@@ -553,8 +554,6 @@ export const STYLES = `
 
 @media (max-width: 880px) {
   .pp-single-body { grid-template-columns: 1fr; }
-  .pp-load-more { padding: 18px 0 4px; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12px; }
-.pp-wall { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
 }
 @media (max-width: 720px) {
   .pp-shell { padding: 0 16px 56px; }
