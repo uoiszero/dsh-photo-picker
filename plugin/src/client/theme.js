@@ -253,7 +253,6 @@ export const STYLES = `
   background: var(--dsw-alias-bg-layer-1) !important; color: var(--dsw-alias-label-primary) !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .1) !important;
 }
-.pp-toolbar select { padding: 5px 8px !important; font-size: 12px !important; }
 
 .pp-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 10px; }
 .pp-tile-wrap { position: relative; }
@@ -421,6 +420,27 @@ export const STYLES = `
 }
 .pp-form { display: grid; gap: 12px; }
 .pp-field { display: grid; gap: 5px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.pp-input, .pp-select {
+  height: 34px; padding: 0 10px;
+  border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px;
+  background-color: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px; line-height: 1.3; min-width: 0;
+}
+.pp-input:hover, .pp-select:hover { border-color: var(--dsw-alias-border-l2); }
+.pp-input::placeholder { color: var(--dsw-alias-label-secondary); opacity: .8; }
+.pp-select {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m2.5 4.5 3.5 3.5 3.5-3.5' fill='none' stroke='%23888f98' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 12px 12px;
+}
+.pp-select-sm {
+  height: 30px; padding: 0 26px 0 9px; font-size: 12px;
+  background-position: right 8px center;
+}
+.pp-input:disabled, .pp-select:disabled { opacity: .55; cursor: not-allowed; }
+
 .pp-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 .pp-row .pp-field { flex: 1; min-width: 96px; }
 .pp-callout {
