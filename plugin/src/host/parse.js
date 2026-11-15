@@ -21,6 +21,34 @@ const DIMENSION_ALIASES = {
   post_potential: ['post_potential', '后期潜力'],
   moment: ['moment', '瞬间与叙事', '瞬间', '叙事'],
 }
+export const SCENE_VALUES = ['portrait', 'landscape', 'architecture', 'street', 'event', 'other']
+const SCENE_ALIASES = new Map([
+  ['portrait', 'portrait'], ['人像', 'portrait'], ['人物', 'portrait'],
+  ['landscape', 'landscape'], ['风光', 'landscape'], ['风景', 'landscape'],
+  ['architecture', 'architecture'], ['建筑', 'architecture'],
+  ['street', 'street'], ['街拍', 'street'], ['街头', 'street'],
+  ['event', 'event'], ['活动', 'event'], ['纪实', 'event'],
+  ['other', 'other'], ['其他', 'other'], ['其它', 'other'],
+])
+
+function normalizeScene(value) {
+  if (typeof value !== 'string') return null
+  const raw = value.trim()
+  return SCENE_ALIASES.get(raw.toLowerCase()) ?? SCENE_ALIASES.get(raw) ?? null
+}
+
+function parseScenes(value, primaryValue) {
+  const raw = value.scenes ?? value['场景'] ?? value['题材'] ?? value.scene ?? value['场景类型']
+  const list = Array.isArray(raw) ? raw : (raw === undefined ? [] : [raw])
+  const scenes = [...new Set(list.map(normalizeScene).filter(Boolean))].slice(0, 3)
+  let primary = normalizeScene(primaryValue ?? value.primary_scene ?? value['主场景'] ?? value['主要题材'])
+  if (primary === null && scenes.length > 0) primary = scenes[0]
+  if (primary !== null && !scenes.includes(primary)) scenes.unshift(primary)
+  if (scenes.length > 3) scenes.length = 3
+  if (primary === null && scenes.length > 0) primary = scenes[0]
+  return { scenes, primaryScene: primary }
+}
+
 const VERDICTS = new Set(['keep', 'maybe', 'reject'])
 const VERDICT_ALIASES = new Map([
   ['keep', 'keep'], ['保留', 'keep'], ['留', 'keep'],
@@ -176,8 +204,11 @@ export function parseScore(text) {
   const editRecipe = normalizeRecipe(
     pickObject(value.edit_recipe, value.editRecipe, value['修图配方'], value['修图建议参数']),
   )
+  const { scenes, primaryScene } = parseScenes(value)
   return {
     score: Math.min(10, Math.max(0, Math.round(score * 10) / 10)),
+    scenes,
+    primaryScene,
     verdict,
     dimensions,
     postProcessing,

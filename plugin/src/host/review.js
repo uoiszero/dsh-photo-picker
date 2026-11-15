@@ -65,6 +65,8 @@ function toReviewPhoto(row, projectId) {
     reason: row.reason ?? null,
     dimensions: parseJson(row.dimensions_json),
     postProcessing: parseJson(row.post_processing_json) ?? [],
+    scenes: parseJson(row.scenes_json) ?? [],
+    primaryScene: row.primary_scene ?? null,
     editRecipe,
     editSignature: editRecipe === null ? null : recipeSignature(editRecipe),
     thumbUrl: `/photo-picker/media/thumb/${projectId}/${row.id}`,
@@ -114,6 +116,7 @@ export function listReviewPhotos(db, projectId, opts = {}) {
     SELECT p.id, p.rel_path, p.state, p.width, p.height, p.taken_at, p.group_id,
            d.verdict AS human_verdict,
            a.score, a.verdict AS ai_verdict, a.reason, a.dimensions_json, a.post_processing_json,
+           a.scenes_json, a.primary_scene,
            ${VERDICT_SQL} AS verdict
     ${BASE_FROM}${where}
     ORDER BY ${order}
@@ -127,6 +130,7 @@ export function getPhotoDetail(db, projectId, photoId) {
     SELECT p.id, p.rel_path, p.state, p.width, p.height, p.taken_at, p.group_id, p.camera, p.lens,
            d.verdict AS human_verdict,
            a.score, a.verdict AS ai_verdict, a.reason, a.dimensions_json, a.post_processing_json,
+           a.scenes_json, a.primary_scene,
            a.recipe_json,
            ${VERDICT_SQL} AS verdict
     ${BASE_FROM} AND p.id = ?

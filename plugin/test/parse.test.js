@@ -7,7 +7,7 @@ import {
   parseRank,
   parseScore,
 } from '../src/host/parse.js'
-import { PROMPT_VERSION, gridUserPrompt } from '../src/host/prompts.js'
+import { PROMPT_VERSION, gridUserPrompt, scoreUserPrompt } from '../src/host/prompts.js'
 
 const DIMENSIONS = ['composition', 'light', 'color', 'technique', 'post_potential', 'moment']
 
@@ -75,15 +75,21 @@ test('parseRank validates order and best against the given labels', () => {
   )
 })
 
-test('post processing whitelist and prompt version are the spec values', () => {
-  assert.equal(PROMPT_VERSION, 'v4')
+test('post processing whitelist, prompt version and scene-aware prompts are current', () => {
+  assert.equal(PROMPT_VERSION, 'v5')
   assert.ok(POST_PROCESSING_CODES.has('crop_right'))
   assert.ok(isPostProcessingCode('straighten_+1.5'))
   assert.ok(isPostProcessingCode('exposure_-0.3'))
   assert.ok(!isPostProcessingCode('rotate'))
-  const prompt = gridUserPrompt({ count: 16, cols: 4, rows: 4, theme: 'portrait' })
-  assert.match(prompt, /4 列 × 4 行/)
-  assert.match(prompt, /人像/)
+  const grid = gridUserPrompt({ count: 16, cols: 4, rows: 4 })
+  assert.match(grid, /4 列 × 4 行/)
+  assert.match(grid, /不要假设项目题材/)
+  assert.doesNotMatch(grid, /这是一个以人像为主的项目/)
+  const score = scoreUserPrompt()
+  assert.match(score, /scenes/)
+  assert.match(score, /primary_scene/)
+  assert.match(score, /architecture/)
+  assert.match(score, /portrait/)
 })
 
 test('parseScore accepts Chinese keys and flat dimensions', () => {
@@ -100,6 +106,38 @@ test('parseScore accepts Chinese keys and flat dimensions', () => {
   assert.equal(parsed.dimensions.moment, 8)
   assert.deepEqual(parsed.postProcessing, ['crop_left', 'warm'])
   assert.equal(parsed.reason, '光线不错')
+})
+
+test('parseScore normalizes per-photo scenes and primary scene', () => {
+  const parsed = parseScore(JSON.stringify({
+    scenes: ['人像', '建筑', '建筑', 'street'],
+    primary_scene: '建筑',
+    score: 8.1,
+    verdict: 'keep',
+    dimensions: { composition: 8 },
+    reason: '线条和人物都不错',
+  }))
+  assert.deepEqual(parsed.scenes, ['portrait', 'architecture', 'street'])
+  assert.equal(parsed.primaryScene, 'architecture')
+})
+
+test('parseScore tolerates missing or invalid scenes without failing the score', () => {
+  const missing = parseScore(JSON.stringify({
+    score: 7.2,
+    verdict: 'maybe',
+    dimensions: {},
+  }))
+  assert.deepEqual(missing.scenes, [])
+  assert.equal(missing.primaryScene, null)
+  const invalid = parseScore(JSON.stringify({
+    scenes: ['unknown'],
+    primary_scene: 'portrait',
+    score: 7.2,
+    verdict: 'maybe',
+    dimensions: {},
+  }))
+  assert.deepEqual(invalid.scenes, ['portrait'])
+  assert.equal(invalid.primaryScene, 'portrait')
 })
 
 test('parseScore accepts an optional edit_recipe', () => {

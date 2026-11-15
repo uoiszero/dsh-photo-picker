@@ -9,7 +9,7 @@ const PANEL_ID = 'photo-picker'
 
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
-import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, Select, StateCard, Tabs } from './ui'
+import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, StateCard, Tabs } from './ui'
 
 
 // Plan 3 SMB 首版等待 macOS 网络卷权限方案，先隐藏入口；Host/API 代码保留。
@@ -69,6 +69,19 @@ function verdictLabel(t: (key: string) => string, verdict: string | null | undef
   return VERDICT_KEYS[verdict] === undefined ? verdict : t(VERDICT_KEYS[verdict])
 }
 
+const SCENE_KEYS: Record<string, string> = {
+  portrait: 'scenePortrait',
+  landscape: 'sceneLandscape',
+  architecture: 'sceneArchitecture',
+  street: 'sceneStreet',
+  event: 'sceneEvent',
+  other: 'sceneOther',
+}
+
+function sceneLabel(t: (key: string) => string, scene: string) {
+  return SCENE_KEYS[scene] === undefined ? scene : t(SCENE_KEYS[scene])
+}
+
 function stateLabel(t: (key: string) => string, state: string) {
   return STATE_KEYS[state] === undefined ? state : t(STATE_KEYS[state])
 }
@@ -103,7 +116,6 @@ function CreateForm({ t, onCreated, onCancel }: {
   const [folder, setFolder] = useState('')
   const [dirs, setDirs] = useState<{ name: string; path: string }[]>([])
   const [name, setName] = useState('')
-  const [theme, setTheme] = useState('mixed')
   const [budget, setBudget] = useState('30')
   const [busy, setBusy] = useState(false)
   const [choosing, setChoosing] = useState(false)
@@ -163,7 +175,6 @@ function CreateForm({ t, onCreated, onCancel }: {
         body: JSON.stringify({
           source,
           name: name === '' ? undefined : name,
-          theme,
           budgetCny: Number(budget) || 30,
         }),
       })
@@ -248,19 +259,9 @@ function CreateForm({ t, onCreated, onCancel }: {
         <Field label={t('name')}>
           <Input value={name} onChange={event => setName(event.target.value)} placeholder={t('namePlaceholder')} />
         </Field>
-        <div className="pp-row">
-          <Field label={t('theme')}>
-            <Select value={theme} onChange={event => setTheme(event.target.value)}>
-              <option value="mixed">{t('themeMixed')}</option>
-              <option value="portrait">{t('themePortrait')}</option>
-              <option value="landscape">{t('themeLandscape')}</option>
-              <option value="event">{t('themeEvent')}</option>
-            </Select>
-          </Field>
-          <Field label={t('budget')} className="pp-field-narrow">
-            <Input value={budget} onChange={event => setBudget(event.target.value)} />
-          </Field>
-        </div>
+        <Field label={t('budget')} className="pp-field-narrow">
+          <Input value={budget} onChange={event => setBudget(event.target.value)} />
+        </Field>
         <ActionBar end>
           <Button variant="primary" disabled={busy || (sourceKind === 'local' ? folder === '' : mountPoint === '')} onClick={create}>
             {busy ? t('creating') : t('create')}
@@ -553,6 +554,11 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
         <span className="pp-chip">{index + 1} / {items.length}</span>
         <span className="pp-pill" data-tone={detail.verdict}>{verdictLabel(t, detail.verdict)}</span>
         {detail.score !== null && <span className="pp-chip">{t('scoreLabel')} {detail.score}</span>}
+        {Array.isArray(detail.scenes) && detail.scenes.length > 0 && (
+          <span className="pp-scene-chips">
+            {detail.scenes.map((scene: string) => <span className="pp-chip" key={scene}>{sceneLabel(t, scene)}</span>)}
+          </span>
+        )}
         <span className="pp-muted" style={{ marginLeft: 'auto' }}>{detail.relPath}</span>
       </div>
 
@@ -1127,7 +1133,6 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
 
 function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
   const [form, setForm] = useState<any>(() => ({
-    theme: detail.theme ?? 'mixed',
     modelId: detail.modelId ?? 'deepseek-flash',
     concurrency: String(detail.concurrency ?? 8),
     budgetCny: String(detail.budgetCny ?? 30),
@@ -1167,7 +1172,6 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
       await api(`/photo-picker/api/projects/${detail.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          theme: form.theme,
           modelId: form.modelId,
           concurrency: Number(form.concurrency),
           budgetCny: Number(form.budgetCny),
@@ -1196,15 +1200,6 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
     <DrawerShell title={t('settingsTitle')} closeLabel={t('close')} onClose={onClose}>
         <div className="pp-form">
           <div className="pp-section-title">{t('settingsBasic')}</div>
-          <label className="pp-field">
-            <span>{t('theme')}</span>
-            <select value={form.theme} onChange={event => set('theme', event.target.value)} className="pp-select">
-              <option value="mixed">{t('themeMixed')}</option>
-              <option value="portrait">{t('themePortrait')}</option>
-              <option value="landscape">{t('themeLandscape')}</option>
-              <option value="event">{t('themeEvent')}</option>
-            </select>
-          </label>
           <label className="pp-field">
             <span>{t('model')}</span>
             <select value={form.modelId} onChange={event => set('modelId', event.target.value)} className="pp-select">

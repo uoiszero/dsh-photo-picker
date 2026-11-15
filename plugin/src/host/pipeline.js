@@ -70,19 +70,21 @@ function hasAssessment(db, targetKind, targetId, stage, modelId) {
     .get(targetKind, targetId, stage, modelId ?? null, PROMPT_VERSION) !== undefined
 }
 
-function insertAssessment(db, projectId, { targetKind, targetId, stage, modelId, modelRoute, score, verdict, dimensions, postProcessing, recipe, reason, raw, tokensIn, tokensOut, costCny }) {
+function insertAssessment(db, projectId, { targetKind, targetId, stage, modelId, modelRoute, score, verdict, dimensions, postProcessing, recipe, scenes, primaryScene, reason, raw, tokensIn, tokensOut, costCny }) {
   if (hasAssessment(db, targetKind, targetId, stage, modelId)) return false
   db.prepare(`
     INSERT INTO assessments (id, project_id, target_kind, target_id, stage, model_route, model_id,
       prompt_version, score, verdict, dimensions_json, post_processing_json, recipe_json,
-      reason, raw_json, tokens_in, tokens_out, cost_cny, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      scenes_json, primary_scene, reason, raw_json, tokens_in, tokens_out, cost_cny, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     nanoid(), projectId, targetKind, targetId, stage, modelRoute ?? null, modelId ?? null, PROMPT_VERSION,
     score ?? null, verdict ?? null,
     dimensions === undefined ? null : JSON.stringify(dimensions),
     postProcessing === undefined ? null : JSON.stringify(postProcessing),
     recipe === undefined || recipe === null ? null : JSON.stringify(recipe),
+    scenes === undefined || scenes === null ? null : JSON.stringify(scenes),
+    primaryScene ?? null,
     reason ?? null, raw === undefined ? null : JSON.stringify(raw),
     tokensIn ?? 0, tokensOut ?? 0, costCny ?? 0, Date.now(),
   )
@@ -140,7 +142,7 @@ export async function runGridStage({
     const data = await readFile(rendered.path)
     const image = await attachments.saveImage({ data, mediaType: 'image/jpeg' })
     const validCodes = Object.keys(rendered.cellMap)
-    const prompt = gridUserPrompt({ count: grid.photos.length, cols, rows, theme: project.theme })
+    const prompt = gridUserPrompt({ count: grid.photos.length, cols, rows })
     const gridId = nanoid()
     const createdAt = Date.now()
 
@@ -402,10 +404,10 @@ export async function runScoreStage({
       const bytes = await loadPhoto(photo)
       const rendered = await renderPhotoForModel(bytes)
       const image = await attachments.saveImage({ data: rendered.data, mediaType: rendered.mediaType })
-      const prompt = scoreUserPrompt({ theme: project.theme })
+      const prompt = scoreUserPrompt()
       const first = await completeText({
         llm, provider: project.modelRoute, model: project.modelId,
-        system: SCORE_SYSTEM, prompt, image, reasoningEffort: 'off', maxTokens: 300, temperature: 0, signal,
+        system: SCORE_SYSTEM, prompt, image, reasoningEffort: 'off', maxTokens: 400, temperature: 0, signal,
       })
       usage = sumUsage(usage, first.usage)
       cost += usageCost(first.usage, peak)
@@ -417,7 +419,7 @@ export async function runScoreStage({
         const retry = await completeText({
           llm, provider: project.modelRoute, model: project.modelId,
           system: SCORE_SYSTEM, prompt: `${prompt}\n\n上一次返回不是合法 JSON，请只返回合法 JSON。`,
-          image, reasoningEffort: 'off', maxTokens: 300, temperature: 0, signal,
+          image, reasoningEffort: 'off', maxTokens: 400, temperature: 0, signal,
         })
         usage = sumUsage(usage, retry.usage)
         cost += usageCost(retry.usage, peak)
@@ -450,7 +452,8 @@ export async function runScoreStage({
         targetKind: 'photo', targetId: photo.id, stage: 'single',
         modelId: project.modelId, modelRoute: project.modelRoute,
         score: result.score, verdict, dimensions: result.dimensions,
-        postProcessing: result.postProcessing, recipe: result.editRecipe, reason: result.reason,
+        postProcessing: result.postProcessing, recipe: result.editRecipe,
+        scenes: result.scenes, primaryScene: result.primaryScene, reason: result.reason,
         raw: result, tokensIn: usage.inputTokens, tokensOut: usage.outputTokens, costCny: cost,
       })
       upsertAiDecision(db, projectId, photo.id, verdict)

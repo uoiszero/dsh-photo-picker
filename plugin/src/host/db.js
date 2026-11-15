@@ -112,6 +112,8 @@ CREATE TABLE IF NOT EXISTS assessments (
   dimensions_json TEXT,
   post_processing_json TEXT,
   recipe_json TEXT,
+  scenes_json TEXT,
+  primary_scene TEXT,
   reason TEXT,
   raw_json TEXT,
   tokens_in INTEGER NOT NULL DEFAULT 0,
@@ -184,6 +186,17 @@ export function ensureAssessmentRecipeColumn(db) {
   }
 }
 
+/** v5 新增逐图场景标签；旧库显式补列。 */
+export function ensureAssessmentSceneColumns(db) {
+  const columns = db.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
+  if (!columns.includes('scenes_json')) {
+    db.exec('ALTER TABLE assessments ADD COLUMN scenes_json TEXT')
+  }
+  if (!columns.includes('primary_scene')) {
+    db.exec('ALTER TABLE assessments ADD COLUMN primary_scene TEXT')
+  }
+}
+
 /** 打开（必要时创建）一个项目数据库。 */
 export function openDb(workspaceDir) {
   mkdirSync(workspaceDir, { recursive: true })
@@ -192,6 +205,7 @@ export function openDb(workspaceDir) {
   db.exec('PRAGMA foreign_keys=ON;')
   db.exec(SCHEMA)
   ensureAssessmentRecipeColumn(db)
+  ensureAssessmentSceneColumns(db)
   return db
 }
 

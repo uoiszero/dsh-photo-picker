@@ -78,6 +78,12 @@ var zh = {
   themePortrait: "\u4EBA\u50CF",
   themeLandscape: "\u98CE\u5149",
   themeEvent: "\u6D3B\u52A8",
+  scenePortrait: "\u4EBA\u50CF",
+  sceneLandscape: "\u98CE\u5149",
+  sceneArchitecture: "\u5EFA\u7B51",
+  sceneStreet: "\u8857\u62CD",
+  sceneEvent: "\u6D3B\u52A8",
+  sceneOther: "\u5176\u4ED6",
   statusCreated: "\u65B0\u5EFA",
   statusScanned: "\u5DF2\u626B\u63CF",
   statusPreprocessed: "\u5DF2\u9884\u5904\u7406",
@@ -299,6 +305,12 @@ var en = {
   themePortrait: "Portrait",
   themeLandscape: "Landscape",
   themeEvent: "Event",
+  scenePortrait: "Portrait",
+  sceneLandscape: "Landscape",
+  sceneArchitecture: "Architecture",
+  sceneStreet: "Street",
+  sceneEvent: "Event",
+  sceneOther: "Other",
   statusCreated: "New",
   statusScanned: "Scanned",
   statusPreprocessed: "Preprocessed",
@@ -624,6 +636,7 @@ var STYLES = `
 .pp-modal-head .pp-close { margin-left: auto; }
 
 .pp-muted { color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.pp-scene-chips { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .pp-chip {
   display: inline-flex; align-items: center; background: var(--dsw-alias-bg-layer-2);
   border-radius: 999px; padding: 2px 9px; font-size: 11px;
@@ -1167,10 +1180,6 @@ function Field({ label, help, children, className = "", as = "label" }) {
 function Input(props) {
   return /* @__PURE__ */ h("input", { className: "pp-input", ...props });
 }
-function Select(props) {
-  const { compact = false, className = "", ...rest } = props;
-  return /* @__PURE__ */ h("select", { className: `pp-select${compact ? " pp-select-sm" : ""} ${className}`.trim(), ...rest });
-}
 function StateCard({ kind, title, message, action }) {
   return /* @__PURE__ */ h("div", { className: `pp-state pp-state-${kind}`, role: kind === "error" ? "alert" : void 0 }, /* @__PURE__ */ h("span", { className: "pp-state-icon", "aria-hidden": "true" }, kind === "loading" ? /* @__PURE__ */ h("span", { className: "pp-spinner" }) : kind === "error" ? "!" : "\u2014"), /* @__PURE__ */ h("span", { className: "pp-state-copy" }, /* @__PURE__ */ h("strong", null, title), message !== void 0 && message !== null && message !== "" && /* @__PURE__ */ h("span", null, message)), action);
 }
@@ -1264,6 +1273,17 @@ function verdictLabel(t, verdict) {
   if (verdict === null || verdict === void 0) return "\u2014";
   return VERDICT_KEYS[verdict] === void 0 ? verdict : t(VERDICT_KEYS[verdict]);
 }
+var SCENE_KEYS = {
+  portrait: "scenePortrait",
+  landscape: "sceneLandscape",
+  architecture: "sceneArchitecture",
+  street: "sceneStreet",
+  event: "sceneEvent",
+  other: "sceneOther"
+};
+function sceneLabel(t, scene) {
+  return SCENE_KEYS[scene] === void 0 ? scene : t(SCENE_KEYS[scene]);
+}
 function stateLabel(t, state) {
   return STATE_KEYS[state] === void 0 ? state : t(STATE_KEYS[state]);
 }
@@ -1290,7 +1310,6 @@ function CreateForm({ t, onCreated, onCancel }) {
   const [folder, setFolder] = (0, import_react2.useState)("");
   const [dirs, setDirs] = (0, import_react2.useState)([]);
   const [name, setName] = (0, import_react2.useState)("");
-  const [theme, setTheme] = (0, import_react2.useState)("mixed");
   const [budget, setBudget] = (0, import_react2.useState)("30");
   const [busy, setBusy] = (0, import_react2.useState)(false);
   const [choosing, setChoosing] = (0, import_react2.useState)(false);
@@ -1344,7 +1363,6 @@ function CreateForm({ t, onCreated, onCancel }) {
         body: JSON.stringify({
           source,
           name: name === "" ? void 0 : name,
-          theme,
           budgetCny: Number(budget) || 30
         })
       });
@@ -1397,7 +1415,7 @@ function CreateForm({ t, onCreated, onCancel }) {
       "aria-label": t("smbUrl"),
       style: { flex: 1 }
     }
-  ), /* @__PURE__ */ h2(Button, { disabled: connecting || smbUrl === "", onClick: connectSmb }, connecting ? t("smbConnecting") : t("smbConnect"))), mountPoint !== "" && /* @__PURE__ */ h2("span", { className: "pp-field-help" }, t("smbConnected"), ": ", mountPoint)), /* @__PURE__ */ h2(Field, { label: t("name") }, /* @__PURE__ */ h2(Input, { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder") })), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2(Field, { label: t("theme") }, /* @__PURE__ */ h2(Select, { value: theme, onChange: (event) => setTheme(event.target.value) }, /* @__PURE__ */ h2("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h2("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h2("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h2("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h2(Field, { label: t("budget"), className: "pp-field-narrow" }, /* @__PURE__ */ h2(Input, { value: budget, onChange: (event) => setBudget(event.target.value) }))), /* @__PURE__ */ h2(ActionBar, { end: true }, /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || (sourceKind === "local" ? folder === "" : mountPoint === ""), onClick: create }, busy ? t("creating") : t("create"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error })));
+  ), /* @__PURE__ */ h2(Button, { disabled: connecting || smbUrl === "", onClick: connectSmb }, connecting ? t("smbConnecting") : t("smbConnect"))), mountPoint !== "" && /* @__PURE__ */ h2("span", { className: "pp-field-help" }, t("smbConnected"), ": ", mountPoint)), /* @__PURE__ */ h2(Field, { label: t("name") }, /* @__PURE__ */ h2(Input, { value: name, onChange: (event) => setName(event.target.value), placeholder: t("namePlaceholder") })), /* @__PURE__ */ h2(Field, { label: t("budget"), className: "pp-field-narrow" }, /* @__PURE__ */ h2(Input, { value: budget, onChange: (event) => setBudget(event.target.value) })), /* @__PURE__ */ h2(ActionBar, { end: true }, /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || (sourceKind === "local" ? folder === "" : mountPoint === ""), onClick: create }, busy ? t("creating") : t("create"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error })));
 }
 var VERDICT_COLORS = {
   keep: "var(--pp-status-keep)",
@@ -1608,7 +1626,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onOpen
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? "none"}`;
   const canCompare = recipe !== null && !editedFailed;
   const showingEdited = showEdited && canCompare;
-  return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), detail.group !== void 0 && /* @__PURE__ */ h2(Button, { onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h2("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h2("div", { className: "pp-single-body" }, /* @__PURE__ */ h2("div", { className: "pp-stage" }, /* @__PURE__ */ h2("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h2(
+  return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), detail.group !== void 0 && /* @__PURE__ */ h2(Button, { onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h2("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), Array.isArray(detail.scenes) && detail.scenes.length > 0 && /* @__PURE__ */ h2("span", { className: "pp-scene-chips" }, detail.scenes.map((scene) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: scene }, sceneLabel(t, scene)))), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h2("div", { className: "pp-single-body" }, /* @__PURE__ */ h2("div", { className: "pp-stage" }, /* @__PURE__ */ h2("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h2(
     "img",
     {
       src: showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`,
@@ -1932,7 +1950,6 @@ function CalibrationSection({ t, projectId, onApplied }) {
 }
 function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
   const [form, setForm] = (0, import_react2.useState)(() => ({
-    theme: detail.theme ?? "mixed",
     modelId: detail.modelId ?? "deepseek-flash",
     concurrency: String(detail.concurrency ?? 8),
     budgetCny: String(detail.budgetCny ?? 30),
@@ -1969,7 +1986,6 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
       await api(`/photo-picker/api/projects/${detail.id}`, {
         method: "PATCH",
         body: JSON.stringify({
-          theme: form.theme,
           modelId: form.modelId,
           concurrency: Number(form.concurrency),
           budgetCny: Number(form.budgetCny),
@@ -1993,7 +2009,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
       setBusy(false);
     }
   };
-  return /* @__PURE__ */ h2(DrawerShell, { title: t("settingsTitle"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("settingsBasic")), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("theme")), /* @__PURE__ */ h2("select", { value: form.theme, onChange: (event) => set("theme", event.target.value), className: "pp-select" }, /* @__PURE__ */ h2("option", { value: "mixed" }, t("themeMixed")), /* @__PURE__ */ h2("option", { value: "portrait" }, t("themePortrait")), /* @__PURE__ */ h2("option", { value: "landscape" }, t("themeLandscape")), /* @__PURE__ */ h2("option", { value: "event" }, t("themeEvent")))), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("model")), /* @__PURE__ */ h2("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), className: "pp-select" }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
+  return /* @__PURE__ */ h2(DrawerShell, { title: t("settingsTitle"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("settingsBasic")), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("model")), /* @__PURE__ */ h2("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), className: "pp-select" }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
     const supportsImage = Array.isArray(model.inputModalities) ? model.inputModalities.includes("image") : true;
     return /* @__PURE__ */ h2("option", { key: model.id, value: model.id, disabled: !supportsImage }, model.name ?? model.id, supportsImage ? "" : ` \u2014 ${t("settingsNoImageModel")}`);
   }))), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("concurrency")), /* @__PURE__ */ h2("input", { value: form.concurrency, onChange: (event) => set("concurrency", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("budget")), /* @__PURE__ */ h2("input", { value: form.budgetCny, onChange: (event) => set("budgetCny", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("gridSize"), " / ", t("thresholds")), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("gridCols")), /* @__PURE__ */ h2("input", { value: form.gridCols, onChange: (event) => set("gridCols", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("gridRows")), /* @__PURE__ */ h2("input", { value: form.gridRows, onChange: (event) => set("gridRows", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("thresholdKeep")), /* @__PURE__ */ h2("input", { value: form.thresholdKeep, onChange: (event) => set("thresholdKeep", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("thresholdMaybe")), /* @__PURE__ */ h2("input", { value: form.thresholdMaybe, onChange: (event) => set("thresholdMaybe", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("grouping")), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("burstSeconds")), /* @__PURE__ */ h2("input", { value: form.groupBurstSeconds, onChange: (event) => set("groupBurstSeconds", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("burstHamming")), /* @__PURE__ */ h2("input", { value: form.groupBurstHamming, onChange: (event) => set("groupBurstHamming", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("sceneSeconds")), /* @__PURE__ */ h2("input", { value: form.groupSceneSeconds, onChange: (event) => set("groupSceneSeconds", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("sceneHamming")), /* @__PURE__ */ h2("input", { value: form.groupSceneHamming, onChange: (event) => set("groupSceneHamming", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("runOptions")), /* @__PURE__ */ h2("div", { className: "pp-checks" }, /* @__PURE__ */ h2("label", null, /* @__PURE__ */ h2("input", { type: "checkbox", checked: form.stagePause, onChange: (event) => set("stagePause", event.target.checked) }), t("stagePause")), /* @__PURE__ */ h2("label", null, /* @__PURE__ */ h2("input", { type: "checkbox", checked: form.offpeakOnly, onChange: (event) => set("offpeakOnly", event.target.checked) }), t("offpeak"))), prompt !== null && /* @__PURE__ */ h2("details", null, /* @__PURE__ */ h2("summary", { className: "pp-muted", style: { cursor: "pointer" } }, t("promptSection"), " \xB7 ", prompt.version, " \xB7 ", t("viewPrompt")), /* @__PURE__ */ h2("pre", null, prompt.prompts.gridUser, "\n\n---\n\n", prompt.prompts.rankUser, "\n\n---\n\n", prompt.prompts.scoreUser)), /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("rerunStages")), /* @__PURE__ */ h2("div", { className: "pp-actions" }, ["preprocess", "grid", "rank", "score"].map((stage) => /* @__PURE__ */ h2(Button, { key: stage, onClick: () => onRunStage?.(stage) }, t("rerun"), " ", stageLabel(t, stage)))), /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("settingsHint")), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), /* @__PURE__ */ h2("div", { className: "pp-modal-foot" }, /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy, onClick: save }, t("save")), saved && /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("saved")))));

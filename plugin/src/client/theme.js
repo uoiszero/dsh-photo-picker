@@ -100,6 +100,7 @@ export const STYLES = `
 .pp-modal-head .pp-close { margin-left: auto; }
 
 .pp-muted { color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.pp-scene-chips { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .pp-chip {
   display: inline-flex; align-items: center; background: var(--dsw-alias-bg-layer-2);
   border-radius: 999px; padding: 2px 9px; font-size: 11px;

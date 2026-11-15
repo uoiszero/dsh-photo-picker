@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { openDb, ensureAssessmentRecipeColumn } from '../src/host/db.js'
+import { openDb, ensureAssessmentRecipeColumn, ensureAssessmentSceneColumns } from '../src/host/db.js'
 
 test('openDb creates the full schema in WAL mode', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'pp-db-'))
@@ -19,6 +19,9 @@ test('openDb creates the full schema in WAL mode', () => {
     assert.ok(tables.includes(table), `missing table ${table}`)
   }
   assert.equal(db.prepare('PRAGMA journal_mode').get().journal_mode, 'wal')
+  const assessmentColumns = db.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
+  assert.ok(assessmentColumns.includes('scenes_json'))
+  assert.ok(assessmentColumns.includes('primary_scene'))
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })
@@ -30,6 +33,19 @@ test('openDb migrates an assessments table without recipe_json', () => {
   ensureAssessmentRecipeColumn(database)
   const columns = database.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
   assert.ok(columns.includes('recipe_json'))
+  database.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('ensureAssessmentSceneColumns migrates old and repeated schemas', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pp-db-scenes-'))
+  const database = new DatabaseSync(path.join(dir, 'old.sqlite'))
+  database.exec('CREATE TABLE assessments (id TEXT PRIMARY KEY)')
+  ensureAssessmentSceneColumns(database)
+  ensureAssessmentSceneColumns(database)
+  const columns = database.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
+  assert.ok(columns.includes('scenes_json'))
+  assert.ok(columns.includes('primary_scene'))
   database.close()
   rmSync(dir, { recursive: true, force: true })
 })

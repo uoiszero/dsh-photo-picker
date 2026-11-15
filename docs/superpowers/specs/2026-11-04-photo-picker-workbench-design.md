@@ -100,7 +100,7 @@
 1. 用户从侧栏打开「照片工作台」，空状态第一屏就是 **选择照片文件夹**，不会默认当前目录。
 2. 用户选本机目录，或网络位置（已挂载卷 / 输入 `smb://...`）。
 3. 工作台校验路径并统计：文件数、格式分布、总大小、预计耗时/费用。
-4. 用户设定：项目名（默认取目录名）、题材模板（人像/风光/活动/混合，默认混合）、预算上限（默认 30 元）、是否只在离峰时段跑。
+4. 用户设定：项目名（默认取目录名）、预算上限（默认 30 元）、是否只在离峰时段跑；题材不再由项目预先指定，单张精评时按画面内容判断。
 5. 建项目成功后，面板显示阶段流水线；用户可以「开始」，也可以先在对话里让 agent 操作。
 
 ### 4.2 自动跑 + 检查点
@@ -163,7 +163,7 @@
 | `GET /photo-picker/api/projects` | 项目列表 |
 | `POST /photo-picker/api/projects` | 建项目（含 source 校验） |
 | `GET /photo-picker/api/projects/:id` | 项目详情 + 阶段状态 + 费用 |
-| `PATCH /photo-picker/api/projects/:id` | 改设置（题材/阈值/预算/并发） |
+| `PATCH /photo-picker/api/projects/:id` | 改设置（阈值/预算/并发；`theme` 仅保留兼容） |
 | `POST /photo-picker/api/projects/:id/actions` | `start` / `pause` / `resume` / `rerun_stage` / `cancel` |
 | `GET /photo-picker/api/projects/:id/photos` | 分页 + 筛选 + 排序（图墙数据） |
 | `GET /photo-picker/api/projects/:id/photos/:pid` | 单张详情（AI 维度、EXIF、建议、理由） |
@@ -254,7 +254,7 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
 | source_path | TEXT | 规范化路径或 URL（不含密码） |
 | mount_point | TEXT NULL | SMB/NFS 挂载点 |
 | source_readonly | INTEGER | 0/1 |
-| theme | TEXT | `portrait` / `landscape` / `event` / `mixed`（默认 mixed） |
+| theme | TEXT | 旧字段，保留兼容；默认 `mixed`，不再作为提示词先验 |
 | model_route | TEXT | 默认 `deepseek-official` |
 | model_id | TEXT | 默认 `deepseek-flash` |
 | budget_cny | REAL | 默认 30 |
@@ -351,6 +351,8 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
 | verdict TEXT NULL | `keep` / `maybe` / `reject` |
 | dimensions_json TEXT NULL | 六维分数 |
 | post_processing_json TEXT NULL | 建议数组 |
+| scenes_json TEXT NULL | 单张精评识别出的场景标签（人像/风光/建筑/街拍/活动/其他） |
+| primary_scene TEXT NULL | 主场景，用于解释评分重点 |
 | reason TEXT NULL | 中文一句话，≤120 字 |
 | raw_json TEXT | 原始返回，便于排查 |
 | tokens_in / tokens_out INTEGER | |
@@ -542,7 +544,8 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
 
 ### 9.4 设置抽屉
 
-- 题材模板、模型（默认 `deepseek-flash`，检测是否支持图片输入，否则禁用并提示）、并发、预算、网格规格、keep/maybe 阈值、分组时间窗与汉明阈值、阶段间暂停、提示词版本（可查看当前模板全文）、离峰开关、断开网络盘动作。
+- 模型（默认 `deepseek-flash`，检测是否支持图片输入，否则禁用并提示）、并发、预算、网格规格、keep/maybe 阈值、分组时间窗与汉明阈值、阶段间暂停、提示词版本（可查看当前模板全文）、离峰开关、断开网络盘动作。
+- 题材不再由项目选择；单张精评在 v5 提示词里逐图判断场景。重跑精评会对旧 v4 结果重新计费，界面需提示。
 - 修改提示词或阈值后，标注“影响后续阶段”，提供“重跑受影响阶段”按钮。
 - 网络源额外显示连接状态、挂载点、重连按钮。
 
@@ -589,7 +592,7 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
 | project | 项目 id 或名称（除 create/list 外必填） |
 | source | create 必填：`{kind:"local"|"smb"|"nfs", path}` 或 `{kind:"smb", url}` |
 | stage | run_stage 必填：`scan` / `preprocess` / `grid` / `rank` / `score` |
-| settings | update_settings 可选：题材、预算、并发、网格规格、阈值、分组阈值、阶段间暂停、离峰 |
+| settings | update_settings 可选：预算、并发、网格规格、阈值、分组阈值、阶段间暂停、离峰（`theme` 仅兼容） |
 
 返回：项目摘要（计数、阶段状态、费用）、校验结果或结构化错误（`NEED_SOURCE`、`PATH_NOT_FOUND`、`MOUNT_TIMEOUT`、`BUDGET_EXCEEDED`）。
 
@@ -812,4 +815,4 @@ exposure_+0.3/white_balance/warm/cool）、一句中文理由 reason（不超过
 | 阶段间暂停 | 关（默认自动继续） |
 | 分组阈值 | 连拍 2s / 汉明 ≤12；场景 60s / 汉明 ≤6 |
 | 网络盘自动卸载 | 关（只提供手动“断开网络盘”） |
-| 题材 | 混合 |
+| 题材 | 按单张画面判断（旧字段兼容） |

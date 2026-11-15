@@ -184,6 +184,8 @@ test('runScoreStage writes verdicts and never overwrites a human decision', asyn
   const llm = fakeLlm([
     {
       text: JSON.stringify({
+        scenes: ['portrait'],
+        primary_scene: 'portrait',
         score: 8.2,
         verdict: 'keep',
         dimensions: { composition: 8 },
@@ -214,9 +216,11 @@ test('runScoreStage writes verdicts and never overwrites a human decision', asyn
   assert.deepEqual({ verdict: decisions.p1.verdict, source: decisions.p1.source }, { verdict: 'keep', source: 'human' })
   assert.deepEqual({ verdict: decisions.p0.verdict, source: decisions.p0.source }, { verdict: 'keep', source: 'ai' })
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM assessments WHERE stage = 'single'").get().n, 2)
-  const row = db.prepare("SELECT recipe_json FROM assessments WHERE stage = 'single' LIMIT 1").get()
+  const row = db.prepare("SELECT recipe_json, scenes_json, primary_scene FROM assessments WHERE stage = 'single' LIMIT 1").get()
   assert.ok(row.recipe_json)
   assert.equal(JSON.parse(row.recipe_json).crop.left, 0.2)
+  assert.equal(row.primary_scene, 'portrait')
+  assert.deepEqual(JSON.parse(row.scenes_json), ['portrait'])
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM photos WHERE state = 'scored'").get().n, 2)
   db.close()
   rmSync(dir, { recursive: true, force: true })
