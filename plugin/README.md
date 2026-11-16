@@ -59,7 +59,7 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 
 ![Export](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-export.png)
 
-Screenshots use synthetic fixture images and simulated scores; no real photos or account data are included. The screenshots predate the 0.4.0 scene/wall pass, so minor visual details may differ from the current build.
+Screenshots use synthetic fixture images and simulated scores; no real photos or account data are included. Screenshots include the current scene labels and virtualized wall.
 
 ## Links
 
