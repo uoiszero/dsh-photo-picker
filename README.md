@@ -61,32 +61,22 @@
 
 ## 界面预览
 
-![照片工作台项目详情](plugin/assets/screenshots/workbench-overview.png)
+![照片工作台项目详情](plugin/assets/screenshots/workbench-overview-2026-11.png)
 
-*项目详情：概览统计、五阶段进度、默认折叠的运行记录，以及按分数排序的复核图墙。*
+*项目详情：当前 UI 的返回/主操作布局、场景筛选、AI 场景标签和虚拟图墙；运行记录默认折叠。*
 
 | 单图复核 | 组对比 |
 | --- | --- |
-| ![单图复核](plugin/assets/screenshots/workbench-single.png) | ![组对比](plugin/assets/screenshots/workbench-group.png) |
-| 六维评分、场景标签、理由与后期建议。 | 连拍/同场景按分数排序，确认本组保留哪一张。 |
+| ![单图复核](plugin/assets/screenshots/workbench-single-2026-11.png) | ![组对比](plugin/assets/screenshots/workbench-group-2026-11.png) |
+| 六维评分、图片叠加场景标签、理由与后期建议。 | 连拍/同场景按分数排序，确认本组保留哪一张。 |
 
-![导出照片](plugin/assets/screenshots/workbench-export.png)
+![导出照片](plugin/assets/screenshots/workbench-export-2026-11.png)
 
-*导出：分桶、硬链接或复制，先 dry-run 预览数量与体积，再执行。*
+*导出：分桶、硬链接或复制、修图副本；先 dry-run 预览数量与体积，再执行。*
 
-### 响应式与主题矩阵
+完整响应式/主题截图见 [界面截图矩阵](docs/assets/screenshots/README.md)。
 
-| Light 1440 | Light 720 |
-| --- | --- |
-| ![Light 1440](docs/assets/screenshots/matrix/overview-1440-light.png) | ![Light 720](docs/assets/screenshots/matrix/overview-720-light.png) |
-
-| Light 1024 | Light 500 |
-| --- | --- |
-| ![Light 1024](docs/assets/screenshots/matrix/overview-1024-light.png) | ![Light 500](docs/assets/screenshots/matrix/overview-500-light.png) |
-
-深色模式 1440 / 1024 / 720 / 500 与完整矩阵见 [界面截图矩阵](docs/assets/screenshots/README.md)。
-
-> 截图使用本地生成的合成测试素材与模拟评分，仅用于展示界面，**不含真实照片、个人路径或账号信息**。当前截图已覆盖 0.4.0 后的场景标签与虚拟图墙。
+> 截图使用本地生成的合成测试素材与模拟评分，仅用于展示界面，**不含真实照片、个人路径或账号信息**。截图已按当前 UI 重新生成，文件名带 `2026-11` 以避免旧缓存。
 
 ## 功能
 
