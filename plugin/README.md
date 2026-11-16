@@ -40,7 +40,7 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 - **No micro-crops**: recipes whose trimmed edges are all below 18% are treated as uncropped; the UI shows retained size and offsets.
 - **Calibration and export**: blind-sample calibration, bucket export, hardlink/copy, `manifest.csv` + `manifest.json`, source-integrity checks.
 - **Unified UI**: shared buttons/forms/tabs/state cards, consistent back/close and primary-action placement, responsive layouts, dark-theme-aware status colors, and a `check:ui` guard against inline visual styles.
-- **Scene-aware review**: per-photo scene tags (portrait / landscape / architecture / street / event / other), scene filters, and a virtualized page-200 review wall that can reach every photo.
+- **Scene-aware review**: per-photo scene tags (portrait / landscape / architecture / street / event / flower / wildlife / sculpture / other), scene filters, and a virtualized page-200 review wall that can reach every photo.
 
 ## Requirements
 

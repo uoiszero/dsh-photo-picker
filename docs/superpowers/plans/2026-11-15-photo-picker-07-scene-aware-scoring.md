@@ -14,7 +14,7 @@
 
 ## 场景
 
-`portrait` 人像、`landscape` 风光、`architecture` 建筑、`street` 街拍、`event` 活动/纪实、`other` 其他。
+`portrait` 人像、`landscape` 风光、`architecture` 建筑、`street` 街拍、`event` 活动/纪实、`flower` 花/植物、`wildlife` 动物、`sculpture` 雕塑/展品、`other` 仅兜底。
 
 - 多标签，1–3 个
 - `primary_scene` 决定评分重点，但六维评分保持完整
@@ -59,6 +59,10 @@
 - 图墙缩略图左下角显示 `scenes` 标签（最多 3 个，` · ` 连接）
 - 复核工具栏增加场景筛选；`scene=portrait` 等参数由 review API 过滤
 - 标签只做 UI 展示，不写入源照片
+
+## v7 真实回归（2026-11-16）
+
+16 张真实照片、10 张进入精评，累计三轮测试费用约 ¥0.12。v7 结果：花→flower、动物→wildlife、博物馆雕塑→sculpture；演出场景出现 event 次级标签；`other` 不再吞掉花/动物/雕塑。剩余问题：演出照片主标签仍是 portrait，灯塔多出 street 次级标签，6 张被网格淘汰的照片没有场景标签。
 
 ## 非目标
 

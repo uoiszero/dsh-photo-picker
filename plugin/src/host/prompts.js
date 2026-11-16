@@ -1,5 +1,5 @@
 /** 提示词版本；改动提示词时同步 bump，assessments 幂等键依赖它。 */
-export const PROMPT_VERSION = 'v5'
+export const PROMPT_VERSION = 'v7'
 
 export const GRID_SYSTEM = '你是一位有经验的摄影编辑，只输出 JSON，不输出任何解释。'
 
@@ -40,16 +40,28 @@ export function scoreUserPrompt() {
     '你是一位有经验的摄影编辑。请先判断这张照片的主要内容，再从六个维度评价它（0–10 分）。',
     '',
     '先输出 scenes（1–3 个场景/题材标签，按画面本身判断）：',
-    'portrait 人像、landscape 风光、architecture 建筑、street 街拍、event 活动/纪实、other 其他。',
+    'portrait 人像是主体；landscape 风光是主体；architecture 建筑/桥梁/城市构筑物是主体；',
+    'street 街拍/街道生活/街头人物互动；event 正在发生的演出、比赛、仪式、活动或人群互动；',
+    'flower 花/植物特写；wildlife 动物/鸟类/水族生物；sculpture 实体雕塑/雕像/文物/展品/器物；',
+    'other 仅当画面确实无法归入以上类别时使用。',
+    '不要用 other 表示花、动物、雕塑或展品；它们分别使用 flower / wildlife / sculpture。',
+    'event 必须体现“正在发生的情境”：舞台表演、演出、比赛、仪式、人群互动；',
+    '如果画面是人物在表演、摆姿势或参与活动，即使人物是主体，也要优先标 event，不要标 sculpture。',
+    'sculpture 只用于真实的雕塑、雕像、文物、展品或器物；不要因为人物摆姿势而标 sculpture。',
+    'street 只用于街道/城市生活/行人/车辆；孤立的建筑、灯塔、海岸不要标 street。',
+    '静态雕塑、展柜、建筑内部不能标为 event。',
     '再输出 primary_scene，选择最贴近画面主体的一个；primary_scene 必须在 scenes 中。',
     '允许一张照片有多个标签，例如活动中的单人瞬间可以是 ["portrait","event"]；',
-    '但不要为了凑标签而强行添加，混合/街拍内容按主要主体判断。',
+    '但不要为了凑标签而强行添加，混合内容按主要主体判断。',
     '',
     '评分时以 primary_scene 相应的标准为主，但仍要兼顾六维完整评分：',
     '- portrait：眼神、表情、皮肤、姿态；背景虚化可接受。',
     '- landscape：构图层次、光线时刻、地平线、清晰度。',
     '- architecture：线条、透视、对称、畸变、细节。',
     '- street / event：瞬间、人物互动、叙事性、主体可辨识度。',
+    '- flower：花朵/植物形态、色彩、细节、背景干净度。',
+    '- wildlife：动物眼神、姿态、毛发/羽翼细节、背景分离度。',
+    '- sculpture：形体、材质、光线、展陈背景与细节。',
     '- other：通用构图与光影。',
     '',
     '六个维度（0–10 分）：',

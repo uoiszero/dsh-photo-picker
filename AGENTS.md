@@ -15,7 +15,7 @@
 
 ```bash
 npm install              # 依赖（sharp/exifr/nanoid/esbuild；类型检查用 tsc）
-npm test                 # 全部 node:test（117 个）
+npm test                 # 全部 node:test（118 个）
 npm run typecheck        # tsc --noEmit（TSX 只转译、esbuild 不做类型检查）
 npm run build:client     # plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # /tmp/pp-fixtures（120 张测试图）
@@ -61,7 +61,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - 项目工作区：`~/Pictures/PhotoPicker/<项目>/`（`db.sqlite`、`thumbs/`、`previews/`、`grids/`、`logs/`）。源目录只读。
 - 照片状态：`ok`、`unreadable`、`filtered_dup/blur/exposure/small`、`grid_selected`、`grid_rejected`、`grid_error`、`scored`、`score_failed`。
 - **判定优先级**：`decisions(source='human')` > `decisions(source='ai')` > `assessments(score/verdict)` > `'maybe'`。任何 AI 写入都不得覆盖 human。
-- **逐张场景**：项目不再用题材先验；单张精评调用同时输出 `scenes` / `primary_scene`（人像/风光/建筑/街拍/活动/其他），存 `assessments.scenes_json` / `primary_scene`。`projects.theme` 仅保留旧库兼容，不参与提示词。
+- **逐张场景**：项目不再用题材先验；单张精评调用同时输出 `scenes` / `primary_scene`（人像/风光/建筑/街拍/活动/花植物/动物/雕塑展品/其他），存 `assessments.scenes_json` / `primary_scene`。`projects.theme` 仅保留旧库兼容，不参与提示词。
 - 阶段：`scan → preprocess → grid → rank → score`；`orchestrator.js` 负责自动串联，`stage_pause=1` 时每阶段结束停止；预算暂停 / 取消（abort）也会停。
 - **启动阶段前必须重读 `projects` 行**（`service.freshProject`），不能用 `ProjectStore` 打开时的快照，否则设置（阈值/预算/stagePause/model）不会生效。
 - 幂等：扫描 upsert；AI 结果按 `(target_kind,target_id,stage,model_id,prompt_version)` 去重；重跑只补缺。

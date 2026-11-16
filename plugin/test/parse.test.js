@@ -76,7 +76,7 @@ test('parseRank validates order and best against the given labels', () => {
 })
 
 test('post processing whitelist, prompt version and scene-aware prompts are current', () => {
-  assert.equal(PROMPT_VERSION, 'v5')
+  assert.equal(PROMPT_VERSION, 'v7')
   assert.ok(POST_PROCESSING_CODES.has('crop_right'))
   assert.ok(isPostProcessingCode('straighten_+1.5'))
   assert.ok(isPostProcessingCode('exposure_-0.3'))
@@ -90,6 +90,9 @@ test('post processing whitelist, prompt version and scene-aware prompts are curr
   assert.match(score, /primary_scene/)
   assert.match(score, /architecture/)
   assert.match(score, /portrait/)
+  assert.match(score, /flower/)
+  assert.match(score, /wildlife/)
+  assert.match(score, /sculpture/)
 })
 
 test('parseScore accepts Chinese keys and flat dimensions', () => {
@@ -138,6 +141,18 @@ test('parseScore tolerates missing or invalid scenes without failing the score',
   }))
   assert.deepEqual(invalid.scenes, ['portrait'])
   assert.equal(invalid.primaryScene, 'portrait')
+})
+
+test('parseScore keeps flowers, wildlife and sculptures out of other', () => {
+  const parsed = parseScore(JSON.stringify({
+    scenes: ['花卉', '动物', '雕塑', '其他'],
+    primary_scene: '雕塑',
+    score: 8,
+    verdict: 'keep',
+    dimensions: {},
+  }))
+  assert.deepEqual(parsed.scenes, ['flower', 'wildlife', 'sculpture'])
+  assert.equal(parsed.primaryScene, 'sculpture')
 })
 
 test('parseScore accepts an optional edit_recipe', () => {
