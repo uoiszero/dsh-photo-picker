@@ -2,9 +2,14 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.3.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+**版本 0.4.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
 
-> 开发分支已加入“逐张场景自适应评分”，npm 0.3.0 尚不包含此变更；发布后再更新版本号。
+### 0.4.0 新增
+
+- 单张精评先判断画面内容（人像/风光/建筑/街拍/活动/其他），再按主场景选择评分重点；不再需要创建项目时选题材。
+- 图墙缩略图和单图预览显示 AI 场景标签，图墙支持按场景筛选。
+- 图墙改为 200 张/页无限滚动，并使用行级虚拟化，只渲染可视区域；大项目可访问全部照片。
+- 单图判定后立即刷新状态标签；修复判定后视图不更新的问题。
 
 ### 0.3.0 新增
 
@@ -319,6 +324,8 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 8：照片墙分页与虚拟化](docs/superpowers/plans/2026-11-15-photo-picker-08-wall-virtualization.md)
 
 ## 版本
+
+0.4.0（逐张场景 + 大图墙）：按照片内容自适应评分、场景标签/筛选、单图状态刷新；图墙分页与行虚拟化。
 
 0.3.0（UI 统筹）：统一按钮/表单/返回关闭/状态展示，补齐窄屏、深色主题、aria 与 `check:ui` 门禁；SMB 入口继续暂停。
 
