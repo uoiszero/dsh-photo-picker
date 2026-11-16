@@ -40,7 +40,8 @@
 - [x] **Phase 7：check:ui 强门禁、文档**
   - `check:ui` 已接入 `verify`、CI checks 和 release workflow
   - 截图矩阵暂缓：现有 `pp-fixtures` 项目的缩略图仍是纯灰测试图，需要先重建合成 fixture/缩略图再统一截图
-- [ ] **Phase 7b：截图矩阵刷新（1440/1024/720/480，light/dark）**
+- [x] **Phase 7b：截图矩阵刷新（1440/1024/720/500，light/dark）**
+  - 主截图已更新，矩阵见 `docs/assets/screenshots/README.md`；480px 目标因 Chrome 桌面最小宽度为 500px
 
 ## 验收门禁
 
