@@ -51,15 +51,15 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 
 ## Screenshots
 
-![Project detail](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-overview.png)
+![Project detail](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-overview-2026-11.png)
 
-![Single photo review](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-single.png)
+![Single photo review](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-single-2026-11.png)
 
-![Group compare](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-group.png)
+![Group compare](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-group-2026-11.png)
 
-![Export](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-export.png)
+![Export](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-export-2026-11.png)
 
-Screenshots use synthetic fixture images and simulated scores; no real photos or account data are included. Screenshots include the current scene labels and virtualized wall.
+Screenshots use synthetic fixture images and simulated scores; no real photos or account data are included. The image filenames include 2026-11 so GitHub/npm caches pick up the current UI.
 
 ## Links
 
