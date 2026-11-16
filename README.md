@@ -72,9 +72,19 @@
 
 ![导出照片](plugin/assets/screenshots/workbench-export.png)
 
-更多响应式/主题截图见 [界面截图矩阵](docs/assets/screenshots/README.md)。
-
 *导出：分桶、硬链接或复制，先 dry-run 预览数量与体积，再执行。*
+
+### 响应式与主题矩阵
+
+| Light 1440 | Light 720 |
+| --- | --- |
+| ![Light 1440](docs/assets/screenshots/matrix/overview-1440-light.png) | ![Light 720](docs/assets/screenshots/matrix/overview-720-light.png) |
+
+| Light 1024 | Light 500 |
+| --- | --- |
+| ![Light 1024](docs/assets/screenshots/matrix/overview-1024-light.png) | ![Light 500](docs/assets/screenshots/matrix/overview-500-light.png) |
+
+深色模式 1440 / 1024 / 720 / 500 与完整矩阵见 [界面截图矩阵](docs/assets/screenshots/README.md)。
 
 > 截图使用本地生成的合成测试素材与模拟评分，仅用于展示界面，**不含真实照片、个人路径或账号信息**。当前截图已覆盖 0.4.0 后的场景标签与虚拟图墙。
 
