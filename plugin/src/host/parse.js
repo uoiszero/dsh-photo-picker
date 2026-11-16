@@ -21,13 +21,16 @@ const DIMENSION_ALIASES = {
   post_potential: ['post_potential', '后期潜力'],
   moment: ['moment', '瞬间与叙事', '瞬间', '叙事'],
 }
-export const SCENE_VALUES = ['portrait', 'landscape', 'architecture', 'street', 'event', 'other']
+export const SCENE_VALUES = ['portrait', 'landscape', 'architecture', 'street', 'event', 'flower', 'wildlife', 'sculpture', 'other']
 const SCENE_ALIASES = new Map([
   ['portrait', 'portrait'], ['人像', 'portrait'], ['人物', 'portrait'],
   ['landscape', 'landscape'], ['风光', 'landscape'], ['风景', 'landscape'],
   ['architecture', 'architecture'], ['建筑', 'architecture'],
   ['street', 'street'], ['街拍', 'street'], ['街头', 'street'],
   ['event', 'event'], ['活动', 'event'], ['纪实', 'event'],
+  ['flower', 'flower'], ['花', 'flower'], ['花卉', 'flower'], ['植物', 'flower'],
+  ['wildlife', 'wildlife'], ['动物', 'wildlife'], ['野生动物', 'wildlife'], ['鸟', 'wildlife'],
+  ['sculpture', 'sculpture'], ['雕塑', 'sculpture'], ['雕像', 'sculpture'], ['展品', 'sculpture'], ['器物', 'sculpture'],
   ['other', 'other'], ['其他', 'other'], ['其它', 'other'],
 ])
 

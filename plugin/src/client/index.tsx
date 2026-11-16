@@ -76,6 +76,9 @@ const SCENE_KEYS: Record<string, string> = {
   architecture: 'sceneArchitecture',
   street: 'sceneStreet',
   event: 'sceneEvent',
+  flower: 'sceneFlower',
+  wildlife: 'sceneWildlife',
+  sculpture: 'sceneSculpture',
   other: 'sceneOther',
 }
 
