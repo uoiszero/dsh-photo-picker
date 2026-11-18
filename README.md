@@ -2,7 +2,15 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.4.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+**版本 0.5.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+
+### 0.5.0 新增
+
+- 场景分类补齐花卉、动物、雕塑/展品；单图可人工修正 1–3 个场景标签并指定主场景，人工标签优先于 AI，可恢复 AI。
+- 项目卡片支持删除项目：只删本地工作区、数据库、缩略图和预览，源照片目录不动。
+- 导出 manifest 增加 `scenes` / `primary_scene` 和 `editSource`，场景标签与人工修图来源可追溯。
+- 修图建议支持内置滑杆微调曝光/对比度/饱和度/锐化/旋转；拖动时实时生成临时预览但不写库，点击保存才写入人工配方，可恢复 AI。
+- README 截图更新为当前 UI，并补充响应式/主题矩阵。
 
 ### 0.4.0 新增
 
@@ -332,6 +340,8 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 10：可微调修图建议](docs/superpowers/plans/2026-11-18-photo-picker-10-editable-recipes.md)
 
 ## 版本
+
+0.5.0（人工修正 + 可微调修图 + 删除项目）：场景标签人工修正、删除项目、manifest 场景/修图来源；修图建议滑杆拖动即时预览、保存才落库。
 
 0.4.0（逐张场景 + 大图墙）：按照片内容自适应评分、场景标签/筛选、单图状态刷新；图墙分页与行虚拟化。
 
