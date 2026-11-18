@@ -11,6 +11,7 @@ import {
   listReviewPhotos,
   projectStats,
   setHumanDecisions,
+  setSceneOverride,
 } from '../src/host/review.js'
 
 function setup() {
@@ -102,6 +103,16 @@ test('scene filters match any label and skip photos without scenes', () => {
     ['a'],
   )
   assert.equal(listReviewPhotos(db, 'p1', { scene: 'bogus' }).total, 3)
+
+  setSceneOverride(db, 'p1', 'c', ['flower'], 'flower')
+  const flower = listReviewPhotos(db, 'p1', { scene: 'flower' }).items
+  assert.deepEqual(flower.map(item => item.id), ['c'])
+  assert.equal(flower[0].sceneSource, 'human')
+  assert.deepEqual(flower[0].scenes, ['flower'])
+  assert.equal(getPhotoDetail(db, 'p1', 'c').primaryScene, 'flower')
+
+  setSceneOverride(db, 'p1', 'c', [], null)
+  assert.equal(listReviewPhotos(db, 'p1', { scene: 'flower' }).total, 0)
 
   db.close()
   rmSync(dir, { recursive: true, force: true })

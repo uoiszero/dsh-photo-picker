@@ -18,7 +18,7 @@ import {
   computeCalibration, lastCalibrationReport, sampleCalibration, saveCalibrationReport,
 } from './calibration.js'
 import {
-  getPhotoDetail, groupDetail, listGroups, listReviewPhotos, projectStats, setHumanDecisions,
+  getPhotoDetail, groupDetail, listGroups, listReviewPhotos, projectStats, setHumanDecisions, setSceneOverride,
 } from './review.js'
 import { preprocessProject } from './preprocess.js'
 import {
@@ -66,6 +66,13 @@ export class PhotoPickerService extends Service {
   async listProjects() {
     const entries = await this.store.list()
     return Promise.all(entries.map(entry => this.getProjectDetail(entry.id)))
+  }
+
+  async deleteProject(id) {
+    if (this.running.has(id)) {
+      throw stageError('project is running; pause/cancel it before deleting', 'PROJECT_RUNNING', 409)
+    }
+    return this.store.remove(id)
   }
 
   async createProject(input) {
@@ -426,6 +433,11 @@ export class PhotoPickerService extends Service {
   async photoDetail(id, photoId) {
     const { db } = await this.store.open(id)
     return getPhotoDetail(db, id, photoId)
+  }
+
+  async setPhotoScenes(id, photoId, { scenes, primaryScene } = {}) {
+    const { db } = await this.store.open(id)
+    return setSceneOverride(db, id, photoId, scenes, primaryScene)
   }
 
   async setDecisions(id, { photoIds, verdict } = {}) {

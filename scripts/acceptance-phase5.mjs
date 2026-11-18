@@ -160,7 +160,7 @@ assert.deepEqual(manifestItem.editRecipe, detail.editRecipe)
 assert.ok(manifestItem.destPath.endsWith('.jpg'))
 
 const csv = readFileSync(path.join(dest, 'manifest.csv'), 'utf8')
-assert.match(csv, /^rel_path,bucket,verdict,ai_score,group_id,reason,edited,edit_engine,dest_path/)
+assert.match(csv, /^rel_path,bucket,verdict,ai_score,group_id,reason,scenes,primary_scene,edited,edit_engine,dest_path/)
 const csvRow = csv.split('\n').find(line => line.startsWith(`${photo.relPath},keep,`))
 assert.ok(csvRow, 'edited photo must be listed in manifest.csv')
 assert.ok(csvRow.includes(',true,sharp-v2,'), csvRow)

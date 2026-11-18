@@ -361,6 +361,8 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
 
 幂等键：`(target_kind, target_id, stage, model_id, prompt_version)`。
 
+新增 `photo_scene_overrides`：photo_id PK、project_id、scenes_json、primary_scene、source（human）、updated_at；人工标签优先于 AI assessment。
+
 ### 7.7 decisions
 
 | 字段 | 说明 |

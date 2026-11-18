@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { ProjectStore } from '../src/host/projects.js'
@@ -60,5 +60,18 @@ test('createProject stores an smb source with its mount point', async () => {
   assert.equal(mount.mount_point, created.mountPoint)
   assert.equal(mount.status, 'connected')
   store.close(created.id)
+  rmSync(base, { recursive: true, force: true })
+})
+
+test('remove deletes the workspace but never the source photos', async () => {
+  const { base, photos, dsh } = fixture()
+  const store = new ProjectStore({ dshHome: dsh, workspaceRoot: path.join(base, 'work') })
+  const created = await store.create({ source: { kind: 'local', path: photos }, name: '可删除项目' })
+  assert.ok(existsSync(created.workspaceDir))
+  const result = await store.remove(created.id)
+  assert.equal(result.deleted, created.id)
+  assert.equal(existsSync(created.workspaceDir), false)
+  assert.equal(existsSync(path.join(photos, 'a.jpg')), true)
+  assert.equal((await store.list()).length, 0)
   rmSync(base, { recursive: true, force: true })
 })

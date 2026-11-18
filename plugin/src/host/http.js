@@ -68,6 +68,9 @@ export function createHttpHandler(service) {
       }
 
       const projectMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)$/)
+      if (projectMatch !== null && req.method === 'DELETE') {
+        return send(res, 200, await service.deleteProject(projectMatch[1]))
+      }
       if (projectMatch !== null && req.method === 'GET') {
         return send(res, 200, await service.getProjectDetail(projectMatch[1]))
       }
@@ -90,6 +93,12 @@ export function createHttpHandler(service) {
           limit: Number(query.get('limit') ?? 60),
           offset: Number(query.get('offset') ?? 0),
         }))
+      }
+
+      const scenesMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)\/scenes$/)
+      if (scenesMatch !== null && req.method === 'PATCH') {
+        const body = await readJson(req)
+        return send(res, 200, await service.setPhotoScenes(scenesMatch[1], scenesMatch[2], body))
       }
 
       const photoMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)$/)

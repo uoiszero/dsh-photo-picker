@@ -18,6 +18,7 @@ const BASE_FROM = `
     ORDER BY latest.created_at DESC, latest.id DESC
     LIMIT 1
   )
+  LEFT JOIN photo_scene_overrides so ON so.photo_id = p.id
   WHERE p.project_id = ? AND p.thumb_path IS NOT NULL
 `
 
@@ -68,6 +69,7 @@ function toReviewPhoto(row, projectId) {
     postProcessing: parseJson(row.post_processing_json) ?? [],
     scenes: parseJson(row.scenes_json) ?? [],
     primaryScene: row.primary_scene ?? null,
+    sceneSource: row.scene_source ?? null,
     editRecipe,
     editSignature: editRecipe === null ? null : recipeSignature(editRecipe),
     thumbUrl: `/photo-picker/media/thumb/${projectId}/${row.id}`,
@@ -92,7 +94,7 @@ function buildWhere(projectId, opts = {}) {
     params.push(opts.verdict)
   }
   if (opts.scene !== undefined && SCENE_VALUES.includes(opts.scene)) {
-    clauses.push('a.scenes_json LIKE ?')
+    clauses.push('COALESCE(so.scenes_json, a.scenes_json) LIKE ?')
     params.push(`%"${opts.scene}"%`)
   }
   if (opts.groupId !== undefined) {
@@ -121,7 +123,9 @@ export function listReviewPhotos(db, projectId, opts = {}) {
     SELECT p.id, p.rel_path, p.state, p.width, p.height, p.taken_at, p.group_id,
            d.verdict AS human_verdict,
            a.score, a.verdict AS ai_verdict, a.reason, a.dimensions_json, a.post_processing_json,
-           a.scenes_json, a.primary_scene,
+           COALESCE(so.scenes_json, a.scenes_json) AS scenes_json,
+           COALESCE(so.primary_scene, a.primary_scene) AS primary_scene,
+           CASE WHEN so.photo_id IS NULL THEN 'ai' ELSE 'human' END AS scene_source,
            ${VERDICT_SQL} AS verdict
     ${BASE_FROM}${where}
     ORDER BY ${order}
@@ -135,7 +139,9 @@ export function getPhotoDetail(db, projectId, photoId) {
     SELECT p.id, p.rel_path, p.state, p.width, p.height, p.taken_at, p.group_id, p.camera, p.lens,
            d.verdict AS human_verdict,
            a.score, a.verdict AS ai_verdict, a.reason, a.dimensions_json, a.post_processing_json,
-           a.scenes_json, a.primary_scene,
+           COALESCE(so.scenes_json, a.scenes_json) AS scenes_json,
+           COALESCE(so.primary_scene, a.primary_scene) AS primary_scene,
+           CASE WHEN so.photo_id IS NULL THEN 'ai' ELSE 'human' END AS scene_source,
            a.recipe_json,
            ${VERDICT_SQL} AS verdict
     ${BASE_FROM} AND p.id = ?
@@ -178,6 +184,33 @@ export function getPhotoDetail(db, projectId, photoId) {
     }
   }
   return photo
+}
+
+export function setSceneOverride(db, projectId, photoId, scenes, primaryScene) {
+  const photo = db.prepare('SELECT id FROM photos WHERE id = ? AND project_id = ?').get(photoId, projectId)
+  if (photo === undefined) {
+    const error = new Error(`unknown photo: ${photoId}`)
+    error.code = 'NOT_FOUND'
+    error.statusCode = 404
+    throw error
+  }
+  const normalized = [...new Set((Array.isArray(scenes) ? scenes : [])
+    .filter(value => typeof value === 'string' && SCENE_VALUES.includes(value)))]
+    .slice(0, 3)
+  if (normalized.length === 0) {
+    db.prepare('DELETE FROM photo_scene_overrides WHERE photo_id = ?').run(photoId)
+    return { scenes: [], primaryScene: null, sceneSource: null }
+  }
+  const primary = normalized.includes(primaryScene) ? primaryScene : normalized[0]
+  db.prepare(`INSERT INTO photo_scene_overrides (photo_id, project_id, scenes_json, primary_scene, source, updated_at)
+    VALUES (?, ?, ?, ?, 'human', ?)
+    ON CONFLICT(photo_id) DO UPDATE SET
+      scenes_json = excluded.scenes_json,
+      primary_scene = excluded.primary_scene,
+      source = 'human',
+      updated_at = excluded.updated_at`)
+    .run(photoId, projectId, JSON.stringify(normalized), primary, Date.now())
+  return { scenes: normalized, primaryScene: primary, sceneSource: 'human' }
 }
 
 export function listGroups(db, projectId, { limit = 100, offset = 0 } = {}) {

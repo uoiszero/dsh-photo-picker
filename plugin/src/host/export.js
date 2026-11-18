@@ -50,6 +50,8 @@ function assertDestOutsideSource(project, dest) {
 function selectPhotos(db, projectId) {
   return db.prepare(`
     SELECT p.id, p.rel_path, p.size_bytes, p.group_id, a.recipe_json,
+           COALESCE(so.scenes_json, a.scenes_json) AS scenes_json,
+           COALESCE(so.primary_scene, a.primary_scene) AS primary_scene,
            d.verdict AS human_verdict,
            a.score, a.verdict AS ai_verdict, a.reason,
            COALESCE(d.verdict, ai_d.verdict, a.verdict, 'maybe') AS verdict
@@ -64,6 +66,7 @@ function selectPhotos(db, projectId) {
       ORDER BY latest.created_at DESC, latest.id DESC
       LIMIT 1
     )
+    LEFT JOIN photo_scene_overrides so ON so.photo_id = p.id
     WHERE p.project_id = ? AND p.thumb_path IS NOT NULL
       AND p.state IN ('ok', 'grid_selected', 'grid_rejected', 'grid_error', 'scored', 'score_failed')
     ORDER BY p.rel_path
@@ -77,6 +80,21 @@ function recipeOf(item) {
   } catch {
     return null
   }
+}
+
+function scenesOf(item) {
+  if (item.scenes_json === null || item.scenes_json === undefined) return []
+  try {
+    const value = JSON.parse(item.scenes_json)
+    return Array.isArray(value) ? value.filter(scene => typeof scene === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function primarySceneOf(item, scenes) {
+  if (typeof item.primary_scene === 'string' && item.primary_scene !== '') return item.primary_scene
+  return scenes[0] ?? null
 }
 
 function selectedForBuckets(rows, buckets) {
@@ -324,12 +342,16 @@ export async function runExport({ db, project, dest, buckets, mode, layout, edit
     throw httpError(`source files changed during export: ${changed.slice(0, 5).join(', ')}`, 'SOURCE_MODIFIED', 500)
   }
 
-  const csvHeader = 'rel_path,bucket,verdict,ai_score,group_id,reason,edited,edit_engine,dest_path\n'
-  const csvRows = manifestItems.map(item => [
-    item.rel_path, item.verdict, item.human_verdict ?? item.ai_verdict ?? item.verdict,
-    item.score ?? '', item.group_id ?? '', item.reason ?? '',
-    item.edited ? 'true' : 'false', item.editEngine ?? '', item.destPath,
-  ].map(csvField).join(','))
+  const csvHeader = 'rel_path,bucket,verdict,ai_score,group_id,reason,scenes,primary_scene,edited,edit_engine,dest_path\n'
+  const csvRows = manifestItems.map(item => {
+    const scenes = scenesOf(item)
+    return [
+      item.rel_path, item.verdict, item.human_verdict ?? item.ai_verdict ?? item.verdict,
+      item.score ?? '', item.group_id ?? '', item.reason ?? '',
+      scenes.join('|'), primarySceneOf(item, scenes) ?? '',
+      item.edited ? 'true' : 'false', item.editEngine ?? '', item.destPath,
+    ].map(csvField).join(',')
+  })
   const manifestPath = path.join(options.dest, 'manifest.csv')
   await writeFile(manifestPath, csvHeader + csvRows.join('\n') + (csvRows.length > 0 ? '\n' : ''), 'utf8')
   await writeFile(path.join(options.dest, 'manifest.json'), JSON.stringify({
@@ -348,6 +370,8 @@ export async function runExport({ db, project, dest, buckets, mode, layout, edit
       score: item.score ?? null,
       groupId: item.group_id ?? null,
       reason: item.reason ?? null,
+      scenes: scenesOf(item),
+      primaryScene: primarySceneOf(item, scenesOf(item)),
       destPath: item.destPath,
       action: item.action,
       edited: item.edited === true,

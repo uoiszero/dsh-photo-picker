@@ -26,6 +26,8 @@ function stub() {
     async checkpoints(id) { return [{ stage: 'grid', status: 'done', id }] },
     async reviewPhotos(id, options) { return { total: 1, options, items: [{ id: 'ph1', verdict: 'keep' }] } },
     async photoDetail(id, photoId) { return { id: photoId, verdict: 'keep' } },
+    async setPhotoScenes(id, photoId, body) { return { id: photoId, scenes: body.scenes, primaryScene: body.primaryScene, sceneSource: 'human' } },
+    async deleteProject(id) { return { deleted: id } },
     async setDecisions(id, body) { return { updated: body.photoIds.map(photoId => ({ photoId, verdict: body.verdict })) } },
     async stats(id) { return { verdicts: { keep: 1 }, id } },
     async group(id, gid) { return { id: gid, members: [] } },
@@ -77,6 +79,18 @@ test('health and project routes answer JSON', async () => {
     })
     assert.equal(created.status, 201)
     assert.deepEqual(await created.json(), { id: 'p2', name: 'new' })
+
+    const scenes = await fetch(`${origin}/photo-picker/api/projects/p1/photos/ph1/scenes`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ scenes: ['flower'], primaryScene: 'flower' }),
+    })
+    assert.deepEqual(await scenes.json(), {
+      id: 'ph1', scenes: ['flower'], primaryScene: 'flower', sceneSource: 'human',
+    })
+
+    const deleted = await fetch(`${origin}/photo-picker/api/projects/p1`, { method: 'DELETE' })
+    assert.deepEqual(await deleted.json(), { deleted: 'p1' })
   })
 })
 

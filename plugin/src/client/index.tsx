@@ -10,7 +10,7 @@ const PANEL_ID = 'photo-picker'
 import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
 import { computeColumns, computeRowHeight, computeVisibleRows, TILE_GAP, TILE_MIN, TILE_MIN_NARROW } from './virtual.js'
-import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, StateCard, Tabs } from './ui'
+import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, Select, StateCard, Tabs } from './ui'
 
 
 // Plan 3 SMB 首版等待 macOS 网络卷权限方案，先隐藏入口；Host/API 代码保留。
@@ -560,6 +560,7 @@ function ReviewSection({ t, projectId, version, onChanged }: {
         onNeedMore={loadMore}
         onOpenGroup={setGroupView}
         onDecide={decide}
+        onScenesUpdated={async () => { await refreshLoaded(); onChanged?.() }}
         onClose={() => setSingle(null)}
       />
     )
@@ -712,7 +713,84 @@ function storeGuide(key: string, value: boolean) {
   }
 }
 
-function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose }: any) {
+function SceneEditor({ t, projectId, photoId, detail, onClose, onSaved }: any) {
+  const [selected, setSelected] = useState<string[]>(Array.isArray(detail.scenes) ? detail.scenes : [])
+  const [primary, setPrimary] = useState<string | null>(detail.primaryScene ?? null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const toggle = (scene: string) => {
+    setSelected(current => {
+      if (current.includes(scene)) {
+        const next = current.filter(value => value !== scene)
+        if (primary === scene) setPrimary(next[0] ?? null)
+        return next
+      }
+      if (current.length >= 3) return current
+      return [...current, scene]
+    })
+  }
+
+  const save = async (clear = false) => {
+    setBusy(true)
+    setError(null)
+    try {
+      const nextScenes = clear ? [] : selected
+      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/scenes`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          scenes: nextScenes,
+          primaryScene: clear || nextScenes.length === 0
+            ? null
+            : (nextScenes.includes(primary ?? '') ? primary : nextScenes[0]),
+        }),
+      })
+      await onSaved()
+      onClose()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <ModalShell title={t('editScenes')} closeLabel={t('close')} onClose={onClose}>
+      <div className="pp-form">
+        <div className="pp-muted">{t('sceneEditHint')}</div>
+        <div className="pp-scene-options">
+          {Object.entries(SCENE_KEYS).map(([scene, key]) => (
+            <label key={scene}>
+              <input
+                type="checkbox"
+                checked={selected.includes(scene)}
+                disabled={busy || (!selected.includes(scene) && selected.length >= 3)}
+                onChange={() => toggle(scene)}
+              />
+              {t(key)}
+            </label>
+          ))}
+        </div>
+        <Field label={t('primaryScene')}>
+          <Select value={primary ?? ''} disabled={busy || selected.length === 0} onChange={event => setPrimary(event.target.value)}>
+            {selected.map(scene => <option key={scene} value={scene}>{sceneLabel(t, scene)}</option>)}
+          </Select>
+        </Field>
+        <div className="pp-muted">{detail.sceneSource === 'human' ? t('sceneSourceHuman') : t('sceneSourceAi')}</div>
+        {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
+        <ActionBar end>
+          {detail.sceneSource === 'human' && (
+            <Button variant="ghost" disabled={busy} onClick={() => save(true)}>{t('resetScenes')}</Button>
+          )}
+          <Button disabled={busy} onClick={onClose}>{t('cancel')}</Button>
+          <Button variant="primary" disabled={busy} onClick={() => save(false)}>{t('saveScenes')}</Button>
+        </ActionBar>
+      </div>
+    </ModalShell>
+  )
+}
+
+function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [showEdited, setShowEdited] = useState(false)
@@ -720,6 +798,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [showGrid, setShowGrid] = useState(() => storedGuide('photoPicker.gridGuide'))
   const [showCross, setShowCross] = useState(() => storedGuide('photoPicker.crossGuide'))
   const [deciding, setDeciding] = useState(false)
+  const [sceneEditorOpen, setSceneEditorOpen] = useState(false)
 
   const needMoreRef = useRef(onNeedMore)
   useEffect(() => { needMoreRef.current = onNeedMore }, [onNeedMore])
@@ -869,6 +948,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
             <Button style={{ flex: 1 }} disabled={deciding} onClick={() => decide('maybe')}>{t('maybe')}</Button>
             <Button variant="danger" style={{ flex: 1 }} disabled={deciding} onClick={() => decide('reject')}>{t('reject')}</Button>
           </div>
+          <Button size="sm" onClick={() => setSceneEditorOpen(true)}>{t('editScenes')}</Button>
           <div className="pp-kbd">{t('keyboardHint')}</div>
           <div className="pp-meters">
             {Object.keys(DIMENSION_LABELS).map(key => {
@@ -923,6 +1003,16 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
           </div>
         </aside>
       </div>
+      {sceneEditorOpen && (
+        <SceneEditor
+          t={t}
+          projectId={projectId}
+          photoId={photoId}
+          detail={detail}
+          onClose={() => setSceneEditorOpen(false)}
+          onSaved={async () => { await loadDetail(); await onScenesUpdated?.() }}
+        />
+      )}
     </section>
   )
 }
@@ -1840,6 +1930,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
   const [projects, setProjects] = useState<any[] | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const reload = async () => {
@@ -1853,6 +1944,20 @@ function Workbench({ t }: { t: (key: string) => string }) {
   }
 
   useEffect(() => { reload() }, [])
+
+  const deleteProject = async (project: any) => {
+    if (!window.confirm(t('deleteProjectConfirm').replace('{name}', project.name))) return
+    setDeleting(project.id)
+    setError(null)
+    try {
+      await api(`/photo-picker/api/projects/${project.id}`, { method: 'DELETE' })
+      await reload()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   const list = projects ?? []
 
@@ -1910,28 +2015,38 @@ function Workbench({ t }: { t: (key: string) => string }) {
         ) : (
           <div className="pp-projects">
             {list.map(project => (
-              <button
-                type="button"
-                className="pp-project"
-                key={project.id}
-                onClick={() => setSelected(project.id)}
-              >
-                <span className="pp-project-top">
-                  <strong className="pp-project-name">{project.name}</strong>
-                  <span className="pp-pill">{statusLabel(t, project.status)}</span>
-                  <span className="pp-chevron">→</span>
-                </span>
-                <span className="pp-project-path" title={project.sourcePath}>{project.sourcePath}</span>
-                <span className="pp-project-meta">
-                  <span className="pp-chip">
-                    {Object.values(project.counts ?? {}).reduce((sum: number, n: any) => sum + Number(n ?? 0), 0)} {t('photos')}
+              <div className="pp-project-wrap" key={project.id}>
+                <button
+                  type="button"
+                  className="pp-project"
+                  onClick={() => setSelected(project.id)}
+                >
+                  <span className="pp-project-top">
+                    <strong className="pp-project-name">{project.name}</strong>
+                    <span className="pp-pill">{statusLabel(t, project.status)}</span>
+                    <span className="pp-chevron">→</span>
                   </span>
-                  {Object.entries(project.counts ?? {}).map(([state, n]) => (
-                    <span className="pp-chip" key={state}>{stateLabel(t, state)} {String(n)}</span>
-                  ))}
-                  <span className="pp-project-spent">{t('spent')} ¥{Number(project.cost?.spentCny ?? 0).toFixed(4)}</span>
-                </span>
-              </button>
+                  <span className="pp-project-path" title={project.sourcePath}>{project.sourcePath}</span>
+                  <span className="pp-project-meta">
+                    <span className="pp-chip">
+                      {Object.values(project.counts ?? {}).reduce((sum: number, n: any) => sum + Number(n ?? 0), 0)} {t('photos')}
+                    </span>
+                    {Object.entries(project.counts ?? {}).map(([state, n]) => (
+                      <span className="pp-chip" key={state}>{stateLabel(t, state)} {String(n)}</span>
+                    ))}
+                    <span className="pp-project-spent">{t('spent')} ¥{Number(project.cost?.spentCny ?? 0).toFixed(4)}</span>
+                  </span>
+                </button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  className="pp-project-delete"
+                  disabled={deleting === project.id}
+                  onClick={() => { void deleteProject(project) }}
+                >
+                  {t('deleteProject')}
+                </Button>
+              </div>
             ))}
           </div>
         )}

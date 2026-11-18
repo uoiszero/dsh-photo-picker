@@ -100,6 +100,8 @@ export const STYLES = `
 .pp-modal-head .pp-close { margin-left: auto; }
 
 .pp-muted { color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.pp-scene-options { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.pp-scene-options label { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
 .pp-scene-chips { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .pp-chip {
   display: inline-flex; align-items: center; background: var(--dsw-alias-bg-layer-2);
@@ -119,6 +121,9 @@ export const STYLES = `
 .pp-panel { padding: 16px; display: grid; gap: 12px; }
 
 .pp-projects { display: grid; gap: 10px; }
+.pp-project-wrap { position: relative; }
+.pp-project-wrap .pp-project { padding-right: 78px; }
+.pp-project-delete { position: absolute; top: 12px; right: 44px; z-index: 1; }
 .pp-project {
   display: grid; gap: 8px; width: 100%; text-align: left; padding: 16px 18px;
   border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px;
@@ -565,7 +570,10 @@ export const STYLES = `
   .pp-toolbar-field { flex: 1; }
   .pp-modal { width: calc(100vw - 24px); padding: 16px; }
   .pp-drawer { width: 100vw; padding: 16px; }
-  .pp-project { padding: 14px; }
+  .pp-project-wrap { position: relative; }
+.pp-project-wrap .pp-project { padding-right: 78px; }
+.pp-project-delete { position: absolute; top: 12px; right: 44px; z-index: 1; }
+.pp-project { padding: 14px; }
   .pp-history-row { grid-template-columns: 1fr auto; }
 }
 @media (max-width: 480px) {
