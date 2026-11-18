@@ -165,10 +165,8 @@ var zh = {
   editNoRecipe: "\u8FD9\u5F20\u7167\u7247\u6CA1\u6709\u7ED3\u6784\u5316\u4FEE\u56FE\u5EFA\u8BAE\uFF1B\u53EF\u4EE5\u624B\u52A8\u8C03\u6574\u6216\u91CD\u8DD1\u5355\u5F20\u7CBE\u8BC4\u3002",
   editRecipeAi: "AI \u5EFA\u8BAE",
   editRecipeHuman: "\u6211\u7684\u8C03\u6574",
-  editRecipeTune: "\u5FAE\u8C03",
   editRecipeReset: "\u6062\u590D AI \u5EFA\u8BAE",
-  editRecipeSavePreview: "\u4FDD\u5B58\u5E76\u9884\u89C8",
-  editRecipeTuneHint: "\u4FDD\u5B58\u540E\u4F1A\u91CD\u65B0\u751F\u6210\u4FEE\u56FE\u9884\u89C8\uFF1B\u88C1\u526A\u6CBF\u7528 AI \u5EFA\u8BAE\u3002",
+  editRecipeSave: "\u4FDD\u5B58",
   editRecipeCropReadonly: "\u88C1\u526A\uFF08\u53EA\u8BFB\uFF09",
   editBefore: "\u539F\u56FE",
   editAfter: "\u4FEE\u56FE",
@@ -417,10 +415,8 @@ var en = {
   editNoRecipe: "No structured edit recipe for this photo; tune it manually or re-run single scoring.",
   editRecipeAi: "AI suggestion",
   editRecipeHuman: "My edit",
-  editRecipeTune: "Tune",
   editRecipeReset: "Restore AI",
-  editRecipeSavePreview: "Save & preview",
-  editRecipeTuneHint: "Saving regenerates the preview; crop stays from the AI suggestion.",
+  editRecipeSave: "Save",
   editRecipeCropReadonly: "Crop (read-only)",
   editBefore: "Before",
   editAfter: "After",
@@ -1093,7 +1089,8 @@ var STYLES = `
 .pp-recipe-card-head .pp-section-title { margin: 0; }
 .pp-recipe-card-head .pp-button { margin-left: auto; }
 .pp-recipe-source { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pp-recipe-editor-grid { display: grid; gap: 14px; }
+.pp-recipe-editor-grid { display: grid; gap: 14px; margin-top: 8px; }
+.pp-recipe-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; }
 .pp-recipe-control { display: grid; gap: 4px; }
 .pp-recipe-control-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-recipe-value { font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary); }
@@ -1993,45 +1990,6 @@ function defaultRecipe() {
     sharpen: 0
   };
 }
-function RecipeEditor({ t, projectId, photoId, detail, onClose, onSaved }) {
-  const [recipe, setRecipe] = (0, import_react2.useState)(() => ({ ...defaultRecipe(), ...detail.editRecipe ?? {} }));
-  const [busy, setBusy] = (0, import_react2.useState)(false);
-  const [error, setError] = (0, import_react2.useState)(null);
-  const crop = recipe.crop ?? defaultRecipe().crop;
-  const setField = (key, value) => setRecipe((current) => ({ ...current, [key]: value }));
-  const save = async (clear = false) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/recipe`, {
-        method: "PATCH",
-        body: JSON.stringify({ recipe: clear ? null : recipe })
-      });
-      await onSaved();
-      onClose();
-    } catch (cause) {
-      setError(String(cause));
-    } finally {
-      setBusy(false);
-    }
-  };
-  return /* @__PURE__ */ h2(ModalShell, { title: t("editRecipe"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-recipe-source" }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi")), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("editRecipeTuneHint"))), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.map((control) => {
-    const value = Number(recipe[control.key] ?? 0);
-    const display = `${control.signed && value > 0 ? "+" : ""}${value.toFixed(control.digits)}${control.unit}`;
-    return /* @__PURE__ */ h2("label", { className: "pp-recipe-control", key: control.key }, /* @__PURE__ */ h2("span", { className: "pp-recipe-control-head" }, /* @__PURE__ */ h2("span", null, t(control.label)), /* @__PURE__ */ h2("span", { className: "pp-recipe-value" }, display)), /* @__PURE__ */ h2(
-      "input",
-      {
-        className: "pp-range",
-        type: "range",
-        min: control.min,
-        max: control.max,
-        step: control.step,
-        value,
-        onChange: (event) => setField(control.key, Number(event.target.value))
-      }
-    ));
-  })), /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", crop.width === 1 && crop.height === 1 ? t("editCropNone") : `${Math.round(crop.width * 100)}% \xD7 ${Math.round(crop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(crop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(crop.top * 100)}%`), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), /* @__PURE__ */ h2(ActionBar, { end: true }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: busy, onClick: () => save(true) }, t("editRecipeReset")), /* @__PURE__ */ h2(Button, { disabled: busy, onClick: onClose }, t("cancel")), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy, onClick: () => save(false) }, t("editRecipeSavePreview")))));
-}
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }) {
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
@@ -2041,7 +1999,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [showCross, setShowCross] = (0, import_react2.useState)(() => storedGuide("photoPicker.crossGuide"));
   const [deciding, setDeciding] = (0, import_react2.useState)(false);
   const [sceneEditorOpen, setSceneEditorOpen] = (0, import_react2.useState)(false);
-  const [recipeEditorOpen, setRecipeEditorOpen] = (0, import_react2.useState)(false);
+  const [draftRecipe, setDraftRecipe] = (0, import_react2.useState)(() => defaultRecipe());
+  const [recipeBusy, setRecipeBusy] = (0, import_react2.useState)(false);
+  const [recipeError, setRecipeError] = (0, import_react2.useState)(null);
   const needMoreRef = (0, import_react2.useRef)(onNeedMore);
   (0, import_react2.useEffect)(() => {
     needMoreRef.current = onNeedMore;
@@ -2057,6 +2017,10 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setEditedFailed(false);
     loadDetail().catch((cause) => setError(String(cause)));
   }, [photoId]);
+  (0, import_react2.useEffect)(() => {
+    setDraftRecipe(detail?.editRecipe ? { ...defaultRecipe(), ...detail.editRecipe } : defaultRecipe());
+    setRecipeError(null);
+  }, [detail?.editSignature, photoId]);
   const decide = async (verdict) => {
     if (deciding) return;
     setDeciding(true);
@@ -2067,6 +2031,45 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       setError(String(cause));
     } finally {
       setDeciding(false);
+    }
+  };
+  const setRecipeField = (key, value) => {
+    setDraftRecipe((current) => ({ ...current, [key]: value }));
+  };
+  const saveRecipe = async () => {
+    if (recipeBusy) return;
+    setRecipeBusy(true);
+    setRecipeError(null);
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/recipe`, {
+        method: "PATCH",
+        body: JSON.stringify({ recipe: draftRecipe })
+      });
+      await loadDetail();
+      setShowEdited(true);
+      await onScenesUpdated?.();
+    } catch (cause) {
+      setRecipeError(String(cause));
+    } finally {
+      setRecipeBusy(false);
+    }
+  };
+  const resetRecipe = async () => {
+    if (recipeBusy) return;
+    setRecipeBusy(true);
+    setRecipeError(null);
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/recipe`, {
+        method: "PATCH",
+        body: JSON.stringify({ recipe: null })
+      });
+      await loadDetail();
+      setShowEdited(true);
+      await onScenesUpdated?.();
+    } catch (cause) {
+      setRecipeError(String(cause));
+    } finally {
+      setRecipeBusy(false);
     }
   };
   const index = items.findIndex((item) => item.id === photoId);
@@ -2098,6 +2101,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   if (detail === null) return /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") });
   const dimensions = detail.dimensions ?? {};
   const recipe = detail.editRecipe ?? null;
+  const recipeDirty = RECIPE_CONTROLS.some((control) => Number(draftRecipe?.[control.key] ?? 0) !== Number(recipe?.[control.key] ?? 0));
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? "none"}`;
   const canCompare = recipe !== null && !editedFailed;
   const showingEdited = showEdited && canCompare;
@@ -2150,7 +2154,35 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   ))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h2("div", { key, className: "pp-meter" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h2("div", { className: "pp-meter-track" }, /* @__PURE__ */ h2("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h2("span", null, value === null || value === void 0 ? "\u2014" : value));
-  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-recipe-card-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi")), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setRecipeEditorOpen(true) }, t("editRecipeTune"))), recipe !== null ? /* @__PURE__ */ h2("div", { className: "pp-chips" }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editCrop"), ": ", recipe.crop.width === 1 && recipe.crop.height === 1 ? t("editCropNone") : `${t("editCropKeep")} ${Math.round(recipe.crop.width * 100)}% \xD7 ${Math.round(recipe.crop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(recipe.crop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(recipe.crop.top * 100)}%`), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editRotate"), " ", recipe.rotate, "\xB0"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editExposure"), " ", recipe.exposureEv > 0 ? "+" : "", recipe.exposureEv, " EV"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editContrast"), " ", recipe.contrast), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editSaturation"), " ", recipe.saturation), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editSharpen"), " ", recipe.sharpen)) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe"))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))), sceneEditorOpen && /* @__PURE__ */ h2(
+  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-recipe-card-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi"))), recipe === null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe")), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.map((control) => {
+    const value = Number(draftRecipe?.[control.key] ?? 0);
+    const display = `${control.signed && value > 0 ? "+" : ""}${value.toFixed(control.digits)}${control.unit}`;
+    return /* @__PURE__ */ h2("label", { className: "pp-recipe-control", key: control.key }, /* @__PURE__ */ h2("span", { className: "pp-recipe-control-head" }, /* @__PURE__ */ h2("span", null, t(control.label)), /* @__PURE__ */ h2("span", { className: "pp-recipe-value" }, display)), /* @__PURE__ */ h2(
+      "input",
+      {
+        className: "pp-range",
+        type: "range",
+        min: control.min,
+        max: control.max,
+        step: control.step,
+        value,
+        onChange: (event) => setRecipeField(control.key, Number(event.target.value))
+      }
+    ));
+  })), /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", draftRecipe.crop.width === 1 && draftRecipe.crop.height === 1 ? t("editCropNone") : `${Math.round(draftRecipe.crop.width * 100)}% \xD7 ${Math.round(draftRecipe.crop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(draftRecipe.crop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(draftRecipe.crop.top * 100)}%`), recipeError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: recipeError }), /* @__PURE__ */ h2("div", { className: "pp-recipe-actions" }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: recipeBusy, onClick: () => {
+    void resetRecipe();
+  } }, t("editRecipeReset")), /* @__PURE__ */ h2(
+    Button,
+    {
+      variant: "primary",
+      size: "sm",
+      disabled: recipeBusy || !recipeDirty,
+      onClick: () => {
+        void saveRecipe();
+      }
+    },
+    t("editRecipeSave")
+  ))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))), sceneEditorOpen && /* @__PURE__ */ h2(
     SceneEditor,
     {
       t,
@@ -2160,20 +2192,6 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       onClose: () => setSceneEditorOpen(false),
       onSaved: async () => {
         await loadDetail();
-        await onScenesUpdated?.();
-      }
-    }
-  ), recipeEditorOpen && /* @__PURE__ */ h2(
-    RecipeEditor,
-    {
-      t,
-      projectId,
-      photoId,
-      detail,
-      onClose: () => setRecipeEditorOpen(false),
-      onSaved: async () => {
-        await loadDetail();
-        setShowEdited(true);
         await onScenesUpdated?.();
       }
     }

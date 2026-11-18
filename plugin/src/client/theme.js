@@ -507,7 +507,8 @@ export const STYLES = `
 .pp-recipe-card-head .pp-section-title { margin: 0; }
 .pp-recipe-card-head .pp-button { margin-left: auto; }
 .pp-recipe-source { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pp-recipe-editor-grid { display: grid; gap: 14px; }
+.pp-recipe-editor-grid { display: grid; gap: 14px; margin-top: 8px; }
+.pp-recipe-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; }
 .pp-recipe-control { display: grid; gap: 4px; }
 .pp-recipe-control-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-recipe-value { font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary); }

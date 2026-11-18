@@ -810,79 +810,6 @@ function defaultRecipe() {
   }
 }
 
-function RecipeEditor({ t, projectId, photoId, detail, onClose, onSaved }: any) {
-  const [recipe, setRecipe] = useState<any>(() => ({ ...defaultRecipe(), ...(detail.editRecipe ?? {}) }))
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const crop = recipe.crop ?? defaultRecipe().crop
-
-  const setField = (key: string, value: number) => setRecipe((current: any) => ({ ...current, [key]: value }))
-
-  const save = async (clear = false) => {
-    setBusy(true)
-    setError(null)
-    try {
-      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/recipe`, {
-        method: 'PATCH',
-        body: JSON.stringify({ recipe: clear ? null : recipe }),
-      })
-      await onSaved()
-      onClose()
-    } catch (cause) {
-      setError(String(cause))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <ModalShell title={t('editRecipe')} closeLabel={t('close')} onClose={onClose}>
-      <div className="pp-form">
-        <div className="pp-recipe-source">
-          <span className="pp-chip">{detail.editSource === 'human' ? t('editRecipeHuman') : t('editRecipeAi')}</span>
-          <span className="pp-muted">{t('editRecipeTuneHint')}</span>
-        </div>
-        <div className="pp-recipe-editor-grid">
-          {RECIPE_CONTROLS.map(control => {
-            const value = Number(recipe[control.key] ?? 0)
-            const display = `${control.signed && value > 0 ? '+' : ''}${value.toFixed(control.digits)}${control.unit}`
-            return (
-              <label className="pp-recipe-control" key={control.key}>
-                <span className="pp-recipe-control-head">
-                  <span>{t(control.label)}</span>
-                  <span className="pp-recipe-value">{display}</span>
-                </span>
-                <input
-                  className="pp-range"
-                  type="range"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  value={value}
-                  onChange={event => setField(control.key, Number(event.target.value))}
-                />
-              </label>
-            )
-          })}
-        </div>
-        <div className="pp-muted">
-          {t('editRecipeCropReadonly')}：{crop.width === 1 && crop.height === 1
-            ? t('editCropNone')
-            : `${Math.round(crop.width * 100)}% × ${Math.round(crop.height * 100)}% · ${t('editCropLeft')} ${Math.round(crop.left * 100)}% · ${t('editCropTop')} ${Math.round(crop.top * 100)}%`}
-        </div>
-        {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
-        <ActionBar end>
-          {detail.editSource === 'human' && (
-            <Button variant="ghost" disabled={busy} onClick={() => save(true)}>{t('editRecipeReset')}</Button>
-          )}
-          <Button disabled={busy} onClick={onClose}>{t('cancel')}</Button>
-          <Button variant="primary" disabled={busy} onClick={() => save(false)}>{t('editRecipeSavePreview')}</Button>
-        </ActionBar>
-      </div>
-    </ModalShell>
-  )
-}
-
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -892,7 +819,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [showCross, setShowCross] = useState(() => storedGuide('photoPicker.crossGuide'))
   const [deciding, setDeciding] = useState(false)
   const [sceneEditorOpen, setSceneEditorOpen] = useState(false)
-  const [recipeEditorOpen, setRecipeEditorOpen] = useState(false)
+  const [draftRecipe, setDraftRecipe] = useState<any>(() => defaultRecipe())
+  const [recipeBusy, setRecipeBusy] = useState(false)
+  const [recipeError, setRecipeError] = useState<string | null>(null)
 
   const needMoreRef = useRef(onNeedMore)
   useEffect(() => { needMoreRef.current = onNeedMore }, [onNeedMore])
@@ -910,6 +839,11 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     loadDetail().catch(cause => setError(String(cause)))
   }, [photoId])
 
+  useEffect(() => {
+    setDraftRecipe(detail?.editRecipe ? { ...defaultRecipe(), ...detail.editRecipe } : defaultRecipe())
+    setRecipeError(null)
+  }, [detail?.editSignature, photoId])
+
   const decide = async (verdict: string) => {
     if (deciding) return
     setDeciding(true)
@@ -920,6 +854,48 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       setError(String(cause))
     } finally {
       setDeciding(false)
+    }
+  }
+
+  const setRecipeField = (key: string, value: number) => {
+    setDraftRecipe((current: any) => ({ ...current, [key]: value }))
+  }
+
+  const saveRecipe = async () => {
+    if (recipeBusy) return
+    setRecipeBusy(true)
+    setRecipeError(null)
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/recipe`, {
+        method: 'PATCH',
+        body: JSON.stringify({ recipe: draftRecipe }),
+      })
+      await loadDetail()
+      setShowEdited(true)
+      await onScenesUpdated?.()
+    } catch (cause) {
+      setRecipeError(String(cause))
+    } finally {
+      setRecipeBusy(false)
+    }
+  }
+
+  const resetRecipe = async () => {
+    if (recipeBusy) return
+    setRecipeBusy(true)
+    setRecipeError(null)
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/recipe`, {
+        method: 'PATCH',
+        body: JSON.stringify({ recipe: null }),
+      })
+      await loadDetail()
+      setShowEdited(true)
+      await onScenesUpdated?.()
+    } catch (cause) {
+      setRecipeError(String(cause))
+    } finally {
+      setRecipeBusy(false)
     }
   }
 
@@ -955,6 +931,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
 
   const dimensions = detail.dimensions ?? {}
   const recipe = detail.editRecipe ?? null
+  const recipeDirty = RECIPE_CONTROLS.some(control => (
+    Number(draftRecipe?.[control.key] ?? 0) !== Number(recipe?.[control.key] ?? 0)
+  ))
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? 'none'}`
   const canCompare = recipe !== null && !editedFailed
   const showingEdited = showEdited && canCompare
@@ -1078,24 +1057,50 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
               {recipe !== null && (
                 <span className="pp-chip">{detail.editSource === 'human' ? t('editRecipeHuman') : t('editRecipeAi')}</span>
               )}
-              <Button size="sm" onClick={() => setRecipeEditorOpen(true)}>{t('editRecipeTune')}</Button>
             </div>
-            {recipe !== null ? (
-              <div className="pp-chips">
-                <span className="pp-chip">
-                  {t('editCrop')}: {recipe.crop.width === 1 && recipe.crop.height === 1
-                    ? t('editCropNone')
-                    : `${t('editCropKeep')} ${Math.round(recipe.crop.width * 100)}% × ${Math.round(recipe.crop.height * 100)}% · ${t('editCropLeft')} ${Math.round(recipe.crop.left * 100)}% · ${t('editCropTop')} ${Math.round(recipe.crop.top * 100)}%`}
-                </span>
-                <span className="pp-chip">{t('editRotate')} {recipe.rotate}°</span>
-                <span className="pp-chip">{t('editExposure')} {recipe.exposureEv > 0 ? '+' : ''}{recipe.exposureEv} EV</span>
-                <span className="pp-chip">{t('editContrast')} {recipe.contrast}</span>
-                <span className="pp-chip">{t('editSaturation')} {recipe.saturation}</span>
-                <span className="pp-chip">{t('editSharpen')} {recipe.sharpen}</span>
-              </div>
-            ) : (
-              <div className="pp-muted">{t('editNoRecipe')}</div>
-            )}
+            {recipe === null && <div className="pp-muted">{t('editNoRecipe')}</div>}
+            <div className="pp-recipe-editor-grid">
+              {RECIPE_CONTROLS.map(control => {
+                const value = Number(draftRecipe?.[control.key] ?? 0)
+                const display = `${control.signed && value > 0 ? '+' : ''}${value.toFixed(control.digits)}${control.unit}`
+                return (
+                  <label className="pp-recipe-control" key={control.key}>
+                    <span className="pp-recipe-control-head">
+                      <span>{t(control.label)}</span>
+                      <span className="pp-recipe-value">{display}</span>
+                    </span>
+                    <input
+                      className="pp-range"
+                      type="range"
+                      min={control.min}
+                      max={control.max}
+                      step={control.step}
+                      value={value}
+                      onChange={event => setRecipeField(control.key, Number(event.target.value))}
+                    />
+                  </label>
+                )
+              })}
+            </div>
+            <div className="pp-muted">
+              {t('editRecipeCropReadonly')}：{draftRecipe.crop.width === 1 && draftRecipe.crop.height === 1
+                ? t('editCropNone')
+                : `${Math.round(draftRecipe.crop.width * 100)}% × ${Math.round(draftRecipe.crop.height * 100)}% · ${t('editCropLeft')} ${Math.round(draftRecipe.crop.left * 100)}% · ${t('editCropTop')} ${Math.round(draftRecipe.crop.top * 100)}%`}
+            </div>
+            {recipeError !== null && <StateCard kind="error" title={t('errorTitle')} message={recipeError} />}
+            <div className="pp-recipe-actions">
+              {detail.editSource === 'human' && (
+                <Button variant="ghost" disabled={recipeBusy} onClick={() => { void resetRecipe() }}>{t('editRecipeReset')}</Button>
+              )}
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={recipeBusy || !recipeDirty}
+                onClick={() => { void saveRecipe() }}
+              >
+                {t('editRecipeSave')}
+              </Button>
+            </div>
           </div>
           <div className="pp-muted">
             {detail.width} × {detail.height}
@@ -1111,16 +1116,6 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
           detail={detail}
           onClose={() => setSceneEditorOpen(false)}
           onSaved={async () => { await loadDetail(); await onScenesUpdated?.() }}
-        />
-      )}
-      {recipeEditorOpen && (
-        <RecipeEditor
-          t={t}
-          projectId={projectId}
-          photoId={photoId}
-          detail={detail}
-          onClose={() => setRecipeEditorOpen(false)}
-          onSaved={async () => { await loadDetail(); setShowEdited(true); await onScenesUpdated?.() }}
         />
       )}
     </section>
