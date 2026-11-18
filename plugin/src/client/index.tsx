@@ -2037,15 +2037,18 @@ function Workbench({ t }: { t: (key: string) => string }) {
                     <span className="pp-project-spent">{t('spent')} ¥{Number(project.cost?.spentCny ?? 0).toFixed(4)}</span>
                   </span>
                 </button>
-                <Button
-                  size="sm"
-                  variant="danger"
+                <button
+                  type="button"
                   className="pp-project-delete"
+                  aria-label={t('deleteProject')}
+                  title={t('deleteProject')}
                   disabled={deleting === project.id}
                   onClick={() => { void deleteProject(project) }}
                 >
-                  {t('deleteProject')}
-                </Button>
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M3 4.5h10M6 4.5V3h4v1.5M4.5 4.5l.6 8.2a1 1 0 0 0 1 .8h3.8a1 1 0 0 0 1-.8l.6-8.2M6.5 7v4M9.5 7v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
               </div>
             ))}
           </div>
