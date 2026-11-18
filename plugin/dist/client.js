@@ -1990,6 +1990,10 @@ function defaultRecipe() {
     sharpen: 0
   };
 }
+function isIdentityDraft(recipe) {
+  const crop = recipe?.crop ?? { left: 0, top: 0, width: 1, height: 1 };
+  return Math.abs(crop.left) < 1e-6 && Math.abs(crop.top) < 1e-6 && Math.abs(crop.width - 1) < 1e-6 && Math.abs(crop.height - 1) < 1e-6 && Math.abs(recipe?.rotate ?? 0) < 1e-6 && Math.abs(recipe?.exposureEv ?? 0) < 1e-6 && Math.abs(recipe?.contrast ?? 0) < 1e-6 && Math.abs(recipe?.saturation ?? 0) < 1e-6 && Math.abs(recipe?.sharpen ?? 0) < 1e-6;
+}
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }) {
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
@@ -2000,8 +2004,12 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [deciding, setDeciding] = (0, import_react2.useState)(false);
   const [sceneEditorOpen, setSceneEditorOpen] = (0, import_react2.useState)(false);
   const [draftRecipe, setDraftRecipe] = (0, import_react2.useState)(() => defaultRecipe());
+  const [draftPreviewUrl, setDraftPreviewUrl] = (0, import_react2.useState)(null);
   const [recipeBusy, setRecipeBusy] = (0, import_react2.useState)(false);
   const [recipeError, setRecipeError] = (0, import_react2.useState)(null);
+  const draftPreviewUrlRef = (0, import_react2.useRef)(null);
+  const draftIsIdentity = isIdentityDraft(draftRecipe);
+  const draftDirty = detail === null ? false : RECIPE_CONTROLS.some((control) => Number(draftRecipe?.[control.key] ?? 0) !== Number(detail?.editRecipe?.[control.key] ?? 0));
   const needMoreRef = (0, import_react2.useRef)(onNeedMore);
   (0, import_react2.useEffect)(() => {
     needMoreRef.current = onNeedMore;
@@ -2034,6 +2042,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     }
   };
   const setRecipeField = (key, value) => {
+    setShowEdited(true);
     setDraftRecipe((current) => ({ ...current, [key]: value }));
   };
   const saveRecipe = async () => {
@@ -2097,19 +2106,78 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [photoId, index, items, detail, deciding]);
+  (0, import_react2.useEffect)(() => {
+    return () => {
+      if (draftPreviewUrlRef.current !== null) {
+        URL.revokeObjectURL(draftPreviewUrlRef.current);
+        draftPreviewUrlRef.current = null;
+      }
+    };
+  }, [photoId]);
+  (0, import_react2.useEffect)(() => {
+    if (!detail || !draftDirty) {
+      if (draftPreviewUrlRef.current !== null) {
+        URL.revokeObjectURL(draftPreviewUrlRef.current);
+        draftPreviewUrlRef.current = null;
+        setDraftPreviewUrl(null);
+      }
+      return;
+    }
+    if (draftIsIdentity) {
+      if (draftPreviewUrlRef.current !== null) {
+        URL.revokeObjectURL(draftPreviewUrlRef.current);
+        draftPreviewUrlRef.current = null;
+        setDraftPreviewUrl(null);
+      }
+      setShowEdited(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/photo-picker/api/projects/${projectId}/photos/${photoId}/edit-preview`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ recipe: draftRecipe }),
+          signal: controller.signal
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => void 0);
+          throw new Error(body?.error?.message ?? response.statusText);
+        }
+        const blob = await response.blob();
+        if (controller.signal.aborted) return;
+        const url = URL.createObjectURL(blob);
+        if (draftPreviewUrlRef.current !== null) URL.revokeObjectURL(draftPreviewUrlRef.current);
+        draftPreviewUrlRef.current = url;
+        setDraftPreviewUrl(url);
+        setShowEdited(true);
+        setRecipeError(null);
+      } catch (cause) {
+        if (!controller.signal.aborted && cause?.name !== "AbortError") {
+          setRecipeError(String(cause));
+        }
+      }
+    }, 220);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [draftRecipe, draftDirty, draftIsIdentity, detail?.editSignature, photoId]);
   if (error !== null) return /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error });
   if (detail === null) return /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") });
   const dimensions = detail.dimensions ?? {};
   const recipe = detail.editRecipe ?? null;
-  const recipeDirty = RECIPE_CONTROLS.some((control) => Number(draftRecipe?.[control.key] ?? 0) !== Number(recipe?.[control.key] ?? 0));
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? "none"}`;
-  const canCompare = recipe !== null && !editedFailed;
+  const draftPreviewing = draftPreviewUrl !== null && draftDirty && !draftIsIdentity;
+  const canCompare = (recipe !== null || draftPreviewing) && !editedFailed;
   const showingEdited = showEdited && canCompare;
+  const imageSrc = showingEdited && draftPreviewing ? draftPreviewUrl : showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`;
   const sceneText = Array.isArray(detail.scenes) ? detail.scenes.map((scene) => sceneLabel(t, scene)).join(" \xB7 ") : "";
   return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), detail.group !== void 0 && /* @__PURE__ */ h2(Button, { onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h2("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h2("div", { className: "pp-single-body" }, /* @__PURE__ */ h2("div", { className: "pp-stage" }, /* @__PURE__ */ h2("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h2(
     "img",
     {
-      src: showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`,
+      src: imageSrc,
       alt: detail.relPath,
       onError: () => {
         if (showingEdited) setEditedFailed(true);
@@ -2176,7 +2244,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     {
       variant: "primary",
       size: "sm",
-      disabled: recipeBusy || !recipeDirty,
+      disabled: recipeBusy || !draftDirty,
       onClick: () => {
         void saveRecipe();
       }

@@ -810,6 +810,19 @@ function defaultRecipe() {
   }
 }
 
+function isIdentityDraft(recipe: any): boolean {
+  const crop = recipe?.crop ?? { left: 0, top: 0, width: 1, height: 1 }
+  return Math.abs(crop.left) < 1e-6
+    && Math.abs(crop.top) < 1e-6
+    && Math.abs(crop.width - 1) < 1e-6
+    && Math.abs(crop.height - 1) < 1e-6
+    && Math.abs(recipe?.rotate ?? 0) < 1e-6
+    && Math.abs(recipe?.exposureEv ?? 0) < 1e-6
+    && Math.abs(recipe?.contrast ?? 0) < 1e-6
+    && Math.abs(recipe?.saturation ?? 0) < 1e-6
+    && Math.abs(recipe?.sharpen ?? 0) < 1e-6
+}
+
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -820,8 +833,14 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [deciding, setDeciding] = useState(false)
   const [sceneEditorOpen, setSceneEditorOpen] = useState(false)
   const [draftRecipe, setDraftRecipe] = useState<any>(() => defaultRecipe())
+  const [draftPreviewUrl, setDraftPreviewUrl] = useState<string | null>(null)
   const [recipeBusy, setRecipeBusy] = useState(false)
   const [recipeError, setRecipeError] = useState<string | null>(null)
+  const draftPreviewUrlRef = useRef<string | null>(null)
+  const draftIsIdentity = isIdentityDraft(draftRecipe)
+  const draftDirty = detail === null ? false : RECIPE_CONTROLS.some(control => (
+    Number(draftRecipe?.[control.key] ?? 0) !== Number(detail?.editRecipe?.[control.key] ?? 0)
+  ))
 
   const needMoreRef = useRef(onNeedMore)
   useEffect(() => { needMoreRef.current = onNeedMore }, [onNeedMore])
@@ -858,6 +877,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   }
 
   const setRecipeField = (key: string, value: number) => {
+    setShowEdited(true)
     setDraftRecipe((current: any) => ({ ...current, [key]: value }))
   }
 
@@ -926,17 +946,78 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     return () => window.removeEventListener('keydown', onKey)
   }, [photoId, index, items, detail, deciding])
 
+  useEffect(() => {
+    return () => {
+      if (draftPreviewUrlRef.current !== null) {
+        URL.revokeObjectURL(draftPreviewUrlRef.current)
+        draftPreviewUrlRef.current = null
+      }
+    }
+  }, [photoId])
+
+  useEffect(() => {
+    if (!detail || !draftDirty) {
+      if (draftPreviewUrlRef.current !== null) {
+        URL.revokeObjectURL(draftPreviewUrlRef.current)
+        draftPreviewUrlRef.current = null
+        setDraftPreviewUrl(null)
+      }
+      return
+    }
+    if (draftIsIdentity) {
+      if (draftPreviewUrlRef.current !== null) {
+        URL.revokeObjectURL(draftPreviewUrlRef.current)
+        draftPreviewUrlRef.current = null
+        setDraftPreviewUrl(null)
+      }
+      setShowEdited(false)
+      return
+    }
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/photo-picker/api/projects/${projectId}/photos/${photoId}/edit-preview`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ recipe: draftRecipe }),
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          const body = await response.json().catch(() => undefined)
+          throw new Error(body?.error?.message ?? response.statusText)
+        }
+        const blob = await response.blob()
+        if (controller.signal.aborted) return
+        const url = URL.createObjectURL(blob)
+        if (draftPreviewUrlRef.current !== null) URL.revokeObjectURL(draftPreviewUrlRef.current)
+        draftPreviewUrlRef.current = url
+        setDraftPreviewUrl(url)
+        setShowEdited(true)
+        setRecipeError(null)
+      } catch (cause) {
+        if (!controller.signal.aborted && (cause as any)?.name !== 'AbortError') {
+          setRecipeError(String(cause))
+        }
+      }
+    }, 220)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [draftRecipe, draftDirty, draftIsIdentity, detail?.editSignature, photoId])
+
   if (error !== null) return <StateCard kind="error" title={t('errorTitle')} message={error} />
   if (detail === null) return <StateCard kind="loading" title={t('loading')} />
 
   const dimensions = detail.dimensions ?? {}
   const recipe = detail.editRecipe ?? null
-  const recipeDirty = RECIPE_CONTROLS.some(control => (
-    Number(draftRecipe?.[control.key] ?? 0) !== Number(recipe?.[control.key] ?? 0)
-  ))
   const editedUrl = `/photo-picker/media/edit/${projectId}/${photoId}?v=${version}&e=${detail.editSignature ?? 'none'}`
-  const canCompare = recipe !== null && !editedFailed
+  const draftPreviewing = draftPreviewUrl !== null && draftDirty && !draftIsIdentity
+  const canCompare = (recipe !== null || draftPreviewing) && !editedFailed
   const showingEdited = showEdited && canCompare
+  const imageSrc = showingEdited && draftPreviewing
+    ? draftPreviewUrl
+    : showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`
   const sceneText = Array.isArray(detail.scenes)
     ? detail.scenes.map((scene: string) => sceneLabel(t, scene)).join(' · ')
     : ''
@@ -957,7 +1038,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
         <div className="pp-stage">
           <div className="pp-stage-frame">
             <img
-              src={showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`}
+              src={imageSrc}
               alt={detail.relPath}
               onError={() => { if (showingEdited) setEditedFailed(true) }}
             />
@@ -1095,7 +1176,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
               <Button
                 variant="primary"
                 size="sm"
-                disabled={recipeBusy || !recipeDirty}
+                disabled={recipeBusy || !draftDirty}
                 onClick={() => { void saveRecipe() }}
               >
                 {t('editRecipeSave')}

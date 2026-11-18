@@ -17,7 +17,7 @@ async function readableInput(sourcePath) {
   }
 }
 
-export async function renderEditedBuffer({ sourcePath, recipe }) {
+export async function renderEditedBuffer({ sourcePath, recipe, maxWidth = null }) {
   if (recipe === null || recipe === undefined) {
     const error = new Error('edit recipe is required')
     error.code = 'BAD_RECIPE'
@@ -59,6 +59,9 @@ export async function renderEditedBuffer({ sourcePath, recipe }) {
   }
   if (recipe.sharpen > 0.01) {
     output = output.sharpen({ sigma: 0.5 + recipe.sharpen })
+  }
+  if (maxWidth !== null && maxWidth > 0) {
+    output = output.resize({ width: maxWidth, withoutEnlargement: true })
   }
   return output.jpeg({ quality: 92 }).toBuffer()
 }

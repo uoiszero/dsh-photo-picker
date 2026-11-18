@@ -6,7 +6,7 @@ import path from 'node:path'
 import { createHttpHandler } from './http.js'
 import { dshHome } from './paths.js'
 import { isPeakHour } from './cost.js'
-import { renderEditedFile } from './edit.js'
+import { renderEditedBuffer, renderEditedFile } from './edit.js'
 import { previewExport, runExport } from './export.js'
 import { renderPreview } from './images.js'
 import { fromPortablePath, platform } from './platform.js'
@@ -541,6 +541,19 @@ export class PhotoPickerService extends Service {
     } catch {
       return undefined
     }
+  }
+
+  /** 草稿配方渲染为临时 JPEG（不写数据库、不落缓存），供拖动滑杆时预览。 */
+  async renderRecipePreview(id, photoId, recipeInput) {
+    const { db, project } = await this.store.open(id)
+    const row = db.prepare('SELECT rel_path FROM photos WHERE id = ? AND project_id = ?').get(photoId, id)
+    if (row === undefined) {
+      throw stageError(`unknown photo: ${photoId}`, 'NOT_FOUND', 404)
+    }
+    const recipe = normalizeRecipe(recipeInput)
+    if (recipe === null) throw stageError('draft recipe is empty', 'BAD_RECIPE', 400)
+    const sourcePath = fromPortablePath(project.sourcePath, row.rel_path)
+    return renderEditedBuffer({ sourcePath, recipe, maxWidth: 1200 })
   }
 
   /** 最新 single assessment 的配方渲染成 JPEG 缓存；无配方或坏配方返回 undefined。 */

@@ -95,6 +95,15 @@ export function createHttpHandler(service) {
         }))
       }
 
+      const editPreviewMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)\/edit-preview$/)
+      if (editPreviewMatch !== null && req.method === 'POST') {
+        const body = await readJson(req)
+        const buffer = await service.renderRecipePreview(editPreviewMatch[1], editPreviewMatch[2], body.recipe)
+        res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'no-store' })
+        res.end(buffer)
+        return
+      }
+
       const recipeMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)\/recipe$/)
       if (recipeMatch !== null && req.method === 'PATCH') {
         const body = await readJson(req)
