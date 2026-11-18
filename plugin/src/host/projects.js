@@ -1,8 +1,9 @@
-import { access, mkdir, stat } from 'node:fs/promises'
+import { access, mkdir, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { nanoid } from 'nanoid'
 import { closeDb, openDb } from './db.js'
 import { defaultWorkspaceRoot, slugify } from './paths.js'
+import { isSameOrInside } from './platform.js'
 import { readRegistry, writeRegistry } from './registry.js'
 
 export function toProject(row) {
@@ -159,5 +160,22 @@ export class ProjectStore {
     if (cached === undefined) return
     closeDb(cached.db)
     this.handles.delete(id)
+  }
+
+  /** 删除项目工作区与注册表条目；永远不触碰源照片目录。 */
+  async remove(id) {
+    const registry = readRegistry(this.registryFile())
+    const entry = registry.projects.find(project => project.id === id)
+    if (entry === undefined) throw new Error(`unknown project: ${id}`)
+    const workspace = path.resolve(entry.workspaceDir)
+    const root = path.resolve(this.workspaceRoot)
+    if (workspace === root || !isSameOrInside(root, workspace)) {
+      throw new Error(`refusing to delete workspace outside ${root}: ${workspace}`)
+    }
+    this.close(id)
+    await rm(workspace, { recursive: true, force: true })
+    registry.projects = registry.projects.filter(project => project.id !== id)
+    writeRegistry(registry, this.registryFile())
+    return { deleted: id, workspace }
   }
 }

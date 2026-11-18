@@ -67,6 +67,9 @@ test('previewExport summarizes buckets, bytes and conflicts', async () => {
 test('runExport hardlinks buckets, writes manifests and never writes the source', async () => {
   const { base, source, dest, db } = await setup()
   const project = db.prepare("SELECT * FROM projects WHERE id = 'p1'").get()
+  db.prepare(`INSERT INTO photo_scene_overrides (photo_id, project_id, scenes_json, primary_scene, source, updated_at)
+              VALUES ('a', 'p1', ?, 'architecture', 'human', ?)`)
+    .run(JSON.stringify(['architecture', 'street']), Date.now())
   const before = statSync(path.join(source, 'day1', 'a.jpg'))
   const result = await runExport({ db, project, dest })
   assert.deepEqual(result.counts, { keep: 2, maybe: 1 })
@@ -82,10 +85,12 @@ test('runExport hardlinks buckets, writes manifests and never writes the source'
 
   const csv = readFileSync(path.join(dest, 'manifest.csv'), 'utf8').trim().split('\n')
   assert.equal(csv.length, 4)
-  assert.match(csv[0], /^rel_path,bucket,verdict,ai_score,group_id,reason,edited,edit_engine,dest_path$/)
+  assert.match(csv[0], /^rel_path,bucket,verdict,ai_score,group_id,reason,scenes,primary_scene,edited,edit_engine,dest_path$/)
   const json = JSON.parse(readFileSync(path.join(dest, 'manifest.json'), 'utf8'))
   assert.equal(json.items.length, 3)
   assert.equal(json.counts.keep, 2)
+  assert.deepEqual(json.items.find(item => item.relPath === 'day1/a.jpg').scenes, ['architecture', 'street'])
+  assert.equal(json.items.find(item => item.relPath === 'day1/a.jpg').primaryScene, 'architecture')
 
   const rerun = await runExport({ db, project, dest })
   assert.equal(rerun.skipped, 3)

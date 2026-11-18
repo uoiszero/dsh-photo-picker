@@ -89,6 +89,15 @@ var zh = {
   sceneWildlife: "\u52A8\u7269",
   sceneSculpture: "\u96D5\u5851/\u5C55\u54C1",
   sceneOther: "\u5176\u4ED6",
+  editScenes: "\u7F16\u8F91\u573A\u666F",
+  deleteProject: "\u5220\u9664",
+  deleteProjectConfirm: "\u786E\u5B9A\u5220\u9664\u9879\u76EE\u201C{name}\u201D\u5417\uFF1F\u5C06\u5220\u9664\u672C\u5730\u5DE5\u4F5C\u533A\u3001\u6570\u636E\u5E93\u548C\u7F29\u7565\u56FE\uFF0C\u6E90\u7167\u7247\u4E0D\u4F1A\u88AB\u5220\u9664\u3002",
+  primaryScene: "\u4E3B\u573A\u666F",
+  sceneEditHint: "\u52FE\u9009 1\u20133 \u4E2A\u573A\u666F\uFF0C\u4E3B\u573A\u666F\u51B3\u5B9A\u8BC4\u5206\u91CD\u70B9\uFF1B\u4E0D\u52FE\u9009\u4EFB\u4F55\u573A\u666F\u4F1A\u6062\u590D AI \u6807\u7B7E\u3002",
+  sceneSourceHuman: "\u5F53\u524D\u4F7F\u7528\u4EBA\u5DE5\u573A\u666F\u6807\u7B7E",
+  sceneSourceAi: "\u5F53\u524D\u4F7F\u7528 AI \u573A\u666F\u6807\u7B7E",
+  resetScenes: "\u6062\u590D AI \u6807\u7B7E",
+  cancel: "\u53D6\u6D88",
   statusCreated: "\u65B0\u5EFA",
   statusScanned: "\u5DF2\u626B\u63CF",
   statusPreprocessed: "\u5DF2\u9884\u5904\u7406",
@@ -219,6 +228,7 @@ var zh = {
   promptSection: "\u63D0\u793A\u8BCD",
   viewPrompt: "\u67E5\u770B\u63D0\u793A\u8BCD\u5168\u6587",
   save: "\u4FDD\u5B58\u8BBE\u7F6E",
+  saveScenes: "\u4FDD\u5B58",
   saved: "\u5DF2\u4FDD\u5B58",
   settingsHint: "\u9608\u503C\u3001\u5206\u7EC4\u53C2\u6570\u4E0E\u63D0\u793A\u8BCD\u6539\u52A8\u5F71\u54CD\u540E\u7EED\u9636\u6BB5\uFF1B\u5206\u7EC4\u53C2\u6570\u9700\u8981\u91CD\u8DD1\u9884\u5904\u7406\u624D\u751F\u6548\u3002",
   sceneRescoreHint: "\u6CE8\u610F\uFF1A\u91CD\u8DD1\u5355\u5F20\u7CBE\u8BC4\u4F1A\u7528 v7 \u63D0\u793A\u8BCD\u91CD\u65B0\u8BC4\u5206\u5DF2\u8BC4\u8FC7\u7684\u7167\u7247\uFF0C\u5E76\u4EA7\u751F\u8D39\u7528\u3002",
@@ -324,6 +334,15 @@ var en = {
   sceneWildlife: "Wildlife",
   sceneSculpture: "Sculpture",
   sceneOther: "Other",
+  editScenes: "Edit scenes",
+  deleteProject: "Delete",
+  deleteProjectConfirm: "Delete project \u201C{name}\u201D? This removes its local workspace, database and thumbnails; source photos are untouched.",
+  primaryScene: "Primary scene",
+  sceneEditHint: "Select 1\u20133 scenes; the primary scene drives scoring. Clearing all restores AI tags.",
+  sceneSourceHuman: "Using manual scene tags",
+  sceneSourceAi: "Using AI scene tags",
+  resetScenes: "Restore AI tags",
+  cancel: "Cancel",
   statusCreated: "New",
   statusScanned: "Scanned",
   statusPreprocessed: "Preprocessed",
@@ -454,6 +473,7 @@ var en = {
   promptSection: "Prompts",
   viewPrompt: "View full prompts",
   save: "Save settings",
+  saveScenes: "Save",
   saved: "Saved",
   settingsHint: "Thresholds, grouping and prompt changes affect later stages; grouping needs a preprocess re-run.",
   sceneRescoreHint: "Note: rerunning single-photo scoring will rescore already-scored photos with the v7 prompt and incur cost.",
@@ -652,6 +672,8 @@ var STYLES = `
 .pp-modal-head .pp-close { margin-left: auto; }
 
 .pp-muted { color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.pp-scene-options { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.pp-scene-options label { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
 .pp-scene-chips { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .pp-chip {
   display: inline-flex; align-items: center; background: var(--dsw-alias-bg-layer-2);
@@ -671,6 +693,9 @@ var STYLES = `
 .pp-panel { padding: 16px; display: grid; gap: 12px; }
 
 .pp-projects { display: grid; gap: 10px; }
+.pp-project-wrap { position: relative; }
+.pp-project-wrap .pp-project { padding-right: 78px; }
+.pp-project-delete { position: absolute; top: 12px; right: 44px; z-index: 1; }
 .pp-project {
   display: grid; gap: 8px; width: 100%; text-align: left; padding: 16px 18px;
   border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px;
@@ -1117,7 +1142,10 @@ var STYLES = `
   .pp-toolbar-field { flex: 1; }
   .pp-modal { width: calc(100vw - 24px); padding: 16px; }
   .pp-drawer { width: 100vw; padding: 16px; }
-  .pp-project { padding: 14px; }
+  .pp-project-wrap { position: relative; }
+.pp-project-wrap .pp-project { padding-right: 78px; }
+.pp-project-delete { position: absolute; top: 12px; right: 44px; z-index: 1; }
+.pp-project { padding: 14px; }
   .pp-history-row { grid-template-columns: 1fr auto; }
 }
 @media (max-width: 480px) {
@@ -1244,6 +1272,10 @@ function Field({ label, help, children, className = "", as = "label" }) {
 }
 function Input(props) {
   return /* @__PURE__ */ h("input", { className: "pp-input", ...props });
+}
+function Select(props) {
+  const { compact = false, className = "", ...rest } = props;
+  return /* @__PURE__ */ h("select", { className: `pp-select${compact ? " pp-select-sm" : ""} ${className}`.trim(), ...rest });
 }
 function StateCard({ kind, title, message, action }) {
   return /* @__PURE__ */ h("div", { className: `pp-state pp-state-${kind}`, role: kind === "error" ? "alert" : void 0 }, /* @__PURE__ */ h("span", { className: "pp-state-icon", "aria-hidden": "true" }, kind === "loading" ? /* @__PURE__ */ h("span", { className: "pp-spinner" }) : kind === "error" ? "!" : "\u2014"), /* @__PURE__ */ h("span", { className: "pp-state-copy" }, /* @__PURE__ */ h("strong", null, title), message !== void 0 && message !== null && message !== "" && /* @__PURE__ */ h("span", null, message)), action);
@@ -1749,6 +1781,10 @@ function ReviewSection({ t, projectId, version, onChanged }) {
         onNeedMore: loadMore,
         onOpenGroup: setGroupView,
         onDecide: decide,
+        onScenesUpdated: async () => {
+          await refreshLoaded();
+          onChanged?.();
+        },
         onClose: () => setSingle(null)
       }
     );
@@ -1840,7 +1876,53 @@ function storeGuide(key, value) {
   } catch {
   }
 }
-function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose }) {
+function SceneEditor({ t, projectId, photoId, detail, onClose, onSaved }) {
+  const [selected, setSelected] = (0, import_react2.useState)(Array.isArray(detail.scenes) ? detail.scenes : []);
+  const [primary, setPrimary] = (0, import_react2.useState)(detail.primaryScene ?? null);
+  const [busy, setBusy] = (0, import_react2.useState)(false);
+  const [error, setError] = (0, import_react2.useState)(null);
+  const toggle = (scene) => {
+    setSelected((current) => {
+      if (current.includes(scene)) {
+        const next = current.filter((value) => value !== scene);
+        if (primary === scene) setPrimary(next[0] ?? null);
+        return next;
+      }
+      if (current.length >= 3) return current;
+      return [...current, scene];
+    });
+  };
+  const save = async (clear = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const nextScenes = clear ? [] : selected;
+      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/scenes`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          scenes: nextScenes,
+          primaryScene: clear || nextScenes.length === 0 ? null : nextScenes.includes(primary ?? "") ? primary : nextScenes[0]
+        })
+      });
+      await onSaved();
+      onClose();
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return /* @__PURE__ */ h2(ModalShell, { title: t("editScenes"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("sceneEditHint")), /* @__PURE__ */ h2("div", { className: "pp-scene-options" }, Object.entries(SCENE_KEYS).map(([scene, key]) => /* @__PURE__ */ h2("label", { key: scene }, /* @__PURE__ */ h2(
+    "input",
+    {
+      type: "checkbox",
+      checked: selected.includes(scene),
+      disabled: busy || !selected.includes(scene) && selected.length >= 3,
+      onChange: () => toggle(scene)
+    }
+  ), t(key)))), /* @__PURE__ */ h2(Field, { label: t("primaryScene") }, /* @__PURE__ */ h2(Select, { value: primary ?? "", disabled: busy || selected.length === 0, onChange: (event) => setPrimary(event.target.value) }, selected.map((scene) => /* @__PURE__ */ h2("option", { key: scene, value: scene }, sceneLabel(t, scene))))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.sceneSource === "human" ? t("sceneSourceHuman") : t("sceneSourceAi")), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), /* @__PURE__ */ h2(ActionBar, { end: true }, detail.sceneSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: busy, onClick: () => save(true) }, t("resetScenes")), /* @__PURE__ */ h2(Button, { disabled: busy, onClick: onClose }, t("cancel")), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy, onClick: () => save(false) }, t("saveScenes")))));
+}
+function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }) {
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
   const [showEdited, setShowEdited] = (0, import_react2.useState)(false);
@@ -1848,6 +1930,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [showGrid, setShowGrid] = (0, import_react2.useState)(() => storedGuide("photoPicker.gridGuide"));
   const [showCross, setShowCross] = (0, import_react2.useState)(() => storedGuide("photoPicker.crossGuide"));
   const [deciding, setDeciding] = (0, import_react2.useState)(false);
+  const [sceneEditorOpen, setSceneEditorOpen] = (0, import_react2.useState)(false);
   const needMoreRef = (0, import_react2.useRef)(onNeedMore);
   (0, import_react2.useEffect)(() => {
     needMoreRef.current = onNeedMore;
@@ -1953,10 +2036,23 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       onClick: () => setShowEdited((value) => !value)
     },
     showingEdited ? t("editAfter") : t("editBefore")
-  ))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
+  ))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h2("div", { key, className: "pp-meter" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h2("div", { className: "pp-meter-track" }, /* @__PURE__ */ h2("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h2("span", null, value === null || value === void 0 ? "\u2014" : value));
-  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("editRecipe")), recipe !== null ? /* @__PURE__ */ h2("div", { className: "pp-chips" }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editCrop"), ": ", recipe.crop.width === 1 && recipe.crop.height === 1 ? t("editCropNone") : `${t("editCropKeep")} ${Math.round(recipe.crop.width * 100)}% \xD7 ${Math.round(recipe.crop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(recipe.crop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(recipe.crop.top * 100)}%`), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editRotate"), " ", recipe.rotate, "\xB0"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editExposure"), " ", recipe.exposureEv > 0 ? "+" : "", recipe.exposureEv, " EV"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editContrast"), " ", recipe.contrast), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editSaturation"), " ", recipe.saturation), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editSharpen"), " ", recipe.sharpen)) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe"))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))));
+  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("editRecipe")), recipe !== null ? /* @__PURE__ */ h2("div", { className: "pp-chips" }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editCrop"), ": ", recipe.crop.width === 1 && recipe.crop.height === 1 ? t("editCropNone") : `${t("editCropKeep")} ${Math.round(recipe.crop.width * 100)}% \xD7 ${Math.round(recipe.crop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(recipe.crop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(recipe.crop.top * 100)}%`), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editRotate"), " ", recipe.rotate, "\xB0"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editExposure"), " ", recipe.exposureEv > 0 ? "+" : "", recipe.exposureEv, " EV"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editContrast"), " ", recipe.contrast), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editSaturation"), " ", recipe.saturation), /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("editSharpen"), " ", recipe.sharpen)) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe"))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))), sceneEditorOpen && /* @__PURE__ */ h2(
+    SceneEditor,
+    {
+      t,
+      projectId,
+      photoId,
+      detail,
+      onClose: () => setSceneEditorOpen(false),
+      onSaved: async () => {
+        await loadDetail();
+        await onScenesUpdated?.();
+      }
+    }
+  ));
 }
 function ExportDialog({ t, projectId, onClose }) {
   const [dest, setDest] = (0, import_react2.useState)("");
@@ -2438,6 +2534,7 @@ function Workbench({ t }) {
   const [projects, setProjects] = (0, import_react2.useState)(null);
   const [selected, setSelected] = (0, import_react2.useState)(null);
   const [creating, setCreating] = (0, import_react2.useState)(false);
+  const [deleting, setDeleting] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
   const reload = async () => {
     try {
@@ -2451,6 +2548,19 @@ function Workbench({ t }) {
   (0, import_react2.useEffect)(() => {
     reload();
   }, []);
+  const deleteProject = async (project) => {
+    if (!window.confirm(t("deleteProjectConfirm").replace("{name}", project.name))) return;
+    setDeleting(project.id);
+    setError(null);
+    try {
+      await api(`/photo-picker/api/projects/${project.id}`, { method: "DELETE" });
+      await reload();
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setDeleting(null);
+    }
+  };
   const list = projects ?? [];
   return /* @__PURE__ */ h2("div", { className: "pp-page" }, /* @__PURE__ */ h2("div", { className: "pp-shell" }, /* @__PURE__ */ h2("header", { className: "pp-header" }, /* @__PURE__ */ h2("div", { className: "pp-title-wrap" }, /* @__PURE__ */ h2("span", { className: "pp-mark", "aria-hidden": "true" }, /* @__PURE__ */ h2("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none" }, /* @__PURE__ */ h2("circle", { cx: "12", cy: "12", r: "8.4", stroke: "currentColor", strokeWidth: "1.6" }), /* @__PURE__ */ h2("path", { d: "M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }), /* @__PURE__ */ h2("circle", { cx: "12", cy: "12", r: "2.6", stroke: "currentColor", strokeWidth: "1.4" }))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("h1", { className: "pp-title" }, t("title")), /* @__PURE__ */ h2("p", { className: "pp-subtitle" }, t("subtitle")))), /* @__PURE__ */ h2("div", { className: "pp-header-actions" }, /* @__PURE__ */ h2(
     "button",
@@ -2483,18 +2593,29 @@ function Workbench({ t }) {
       message: t("subtitle"),
       action: /* @__PURE__ */ h2(Button, { variant: "primary", onClick: () => setCreating(true) }, t("newProject"))
     }
-  ) : /* @__PURE__ */ h2("div", { className: "pp-projects" }, list.map((project) => /* @__PURE__ */ h2(
+  ) : /* @__PURE__ */ h2("div", { className: "pp-projects" }, list.map((project) => /* @__PURE__ */ h2("div", { className: "pp-project-wrap", key: project.id }, /* @__PURE__ */ h2(
     "button",
     {
       type: "button",
       className: "pp-project",
-      key: project.id,
       onClick: () => setSelected(project.id)
     },
     /* @__PURE__ */ h2("span", { className: "pp-project-top" }, /* @__PURE__ */ h2("strong", { className: "pp-project-name" }, project.name), /* @__PURE__ */ h2("span", { className: "pp-pill" }, statusLabel(t, project.status)), /* @__PURE__ */ h2("span", { className: "pp-chevron" }, "\u2192")),
     /* @__PURE__ */ h2("span", { className: "pp-project-path", title: project.sourcePath }, project.sourcePath),
     /* @__PURE__ */ h2("span", { className: "pp-project-meta" }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, Object.values(project.counts ?? {}).reduce((sum, n) => sum + Number(n ?? 0), 0), " ", t("photos")), Object.entries(project.counts ?? {}).map(([state, n]) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: state }, stateLabel(t, state), " ", String(n))), /* @__PURE__ */ h2("span", { className: "pp-project-spent" }, t("spent"), " \xA5", Number(project.cost?.spentCny ?? 0).toFixed(4)))
-  )))));
+  ), /* @__PURE__ */ h2(
+    Button,
+    {
+      size: "sm",
+      variant: "danger",
+      className: "pp-project-delete",
+      disabled: deleting === project.id,
+      onClick: () => {
+        void deleteProject(project);
+      }
+    },
+    t("deleteProject")
+  ))))));
 }
 function PhotoPickerIcon({ size }) {
   const edge = size ?? 16;
