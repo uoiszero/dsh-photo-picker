@@ -790,6 +790,99 @@ function SceneEditor({ t, projectId, photoId, detail, onClose, onSaved }: any) {
   )
 }
 
+const RECIPE_CONTROLS = [
+  { key: 'exposureEv', label: 'editExposure', min: -2, max: 2, step: 0.05, digits: 2, signed: true, unit: 'EV' },
+  { key: 'contrast', label: 'editContrast', min: -1, max: 1, step: 0.01, digits: 2, signed: true, unit: '' },
+  { key: 'saturation', label: 'editSaturation', min: -1, max: 1, step: 0.01, digits: 2, signed: true, unit: '' },
+  { key: 'sharpen', label: 'editSharpen', min: 0, max: 2, step: 0.01, digits: 2, signed: false, unit: '' },
+  { key: 'rotate', label: 'editRotate', min: -5, max: 5, step: 0.1, digits: 1, signed: true, unit: '°' },
+]
+
+function defaultRecipe() {
+  return {
+    version: 1,
+    crop: { left: 0, top: 0, width: 1, height: 1 },
+    rotate: 0,
+    exposureEv: 0,
+    contrast: 0,
+    saturation: 0,
+    sharpen: 0,
+  }
+}
+
+function RecipeEditor({ t, projectId, photoId, detail, onClose, onSaved }: any) {
+  const [recipe, setRecipe] = useState<any>(() => ({ ...defaultRecipe(), ...(detail.editRecipe ?? {}) }))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const crop = recipe.crop ?? defaultRecipe().crop
+
+  const setField = (key: string, value: number) => setRecipe((current: any) => ({ ...current, [key]: value }))
+
+  const save = async (clear = false) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/recipe`, {
+        method: 'PATCH',
+        body: JSON.stringify({ recipe: clear ? null : recipe }),
+      })
+      await onSaved()
+      onClose()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <ModalShell title={t('editRecipe')} closeLabel={t('close')} onClose={onClose}>
+      <div className="pp-form">
+        <div className="pp-recipe-source">
+          <span className="pp-chip">{detail.editSource === 'human' ? t('editRecipeHuman') : t('editRecipeAi')}</span>
+          <span className="pp-muted">{t('editRecipeTuneHint')}</span>
+        </div>
+        <div className="pp-recipe-editor-grid">
+          {RECIPE_CONTROLS.map(control => {
+            const value = Number(recipe[control.key] ?? 0)
+            const display = `${control.signed && value > 0 ? '+' : ''}${value.toFixed(control.digits)}${control.unit}`
+            return (
+              <label className="pp-recipe-control" key={control.key}>
+                <span className="pp-recipe-control-head">
+                  <span>{t(control.label)}</span>
+                  <span className="pp-recipe-value">{display}</span>
+                </span>
+                <input
+                  className="pp-range"
+                  type="range"
+                  min={control.min}
+                  max={control.max}
+                  step={control.step}
+                  value={value}
+                  onChange={event => setField(control.key, Number(event.target.value))}
+                />
+              </label>
+            )
+          })}
+        </div>
+        <div className="pp-muted">
+          {t('editRecipeCropReadonly')}：{crop.width === 1 && crop.height === 1
+            ? t('editCropNone')
+            : `${Math.round(crop.width * 100)}% × ${Math.round(crop.height * 100)}% · ${t('editCropLeft')} ${Math.round(crop.left * 100)}% · ${t('editCropTop')} ${Math.round(crop.top * 100)}%`}
+        </div>
+        {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
+        <ActionBar end>
+          {detail.editSource === 'human' && (
+            <Button variant="ghost" disabled={busy} onClick={() => save(true)}>{t('editRecipeReset')}</Button>
+          )}
+          <Button disabled={busy} onClick={onClose}>{t('cancel')}</Button>
+          <Button variant="primary" disabled={busy} onClick={() => save(false)}>{t('editRecipeSavePreview')}</Button>
+        </ActionBar>
+      </div>
+    </ModalShell>
+  )
+}
+
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -799,6 +892,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [showCross, setShowCross] = useState(() => storedGuide('photoPicker.crossGuide'))
   const [deciding, setDeciding] = useState(false)
   const [sceneEditorOpen, setSceneEditorOpen] = useState(false)
+  const [recipeEditorOpen, setRecipeEditorOpen] = useState(false)
 
   const needMoreRef = useRef(onNeedMore)
   useEffect(() => { needMoreRef.current = onNeedMore }, [onNeedMore])
@@ -979,7 +1073,13 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
             </div>
           )}
           <div>
-            <div className="pp-section-title" style={{ marginBottom: 6 }}>{t('editRecipe')}</div>
+            <div className="pp-recipe-card-head">
+              <div className="pp-section-title">{t('editRecipe')}</div>
+              {recipe !== null && (
+                <span className="pp-chip">{detail.editSource === 'human' ? t('editRecipeHuman') : t('editRecipeAi')}</span>
+              )}
+              <Button size="sm" onClick={() => setRecipeEditorOpen(true)}>{t('editRecipeTune')}</Button>
+            </div>
             {recipe !== null ? (
               <div className="pp-chips">
                 <span className="pp-chip">
@@ -1011,6 +1111,16 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
           detail={detail}
           onClose={() => setSceneEditorOpen(false)}
           onSaved={async () => { await loadDetail(); await onScenesUpdated?.() }}
+        />
+      )}
+      {recipeEditorOpen && (
+        <RecipeEditor
+          t={t}
+          projectId={projectId}
+          photoId={photoId}
+          detail={detail}
+          onClose={() => setRecipeEditorOpen(false)}
+          onSaved={async () => { await loadDetail(); setShowEdited(true); await onScenesUpdated?.() }}
         />
       )}
     </section>

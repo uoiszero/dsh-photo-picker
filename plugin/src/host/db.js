@@ -131,6 +131,14 @@ CREATE TABLE IF NOT EXISTS photo_scene_overrides (
   updated_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS photo_recipe_overrides (
+  photo_id TEXT PRIMARY KEY REFERENCES photos(id) ON DELETE CASCADE,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  recipe_json TEXT NOT NULL,
+  source TEXT NOT NULL DEFAULT 'human',
+  updated_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS decisions (
   photo_id TEXT PRIMARY KEY REFERENCES photos(id) ON DELETE CASCADE,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

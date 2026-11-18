@@ -12,6 +12,7 @@ import {
   projectStats,
   setHumanDecisions,
   setSceneOverride,
+  setRecipeOverride,
 } from '../src/host/review.js'
 
 function setup() {
@@ -271,6 +272,38 @@ test('group queries use the latest single assessment for every member', () => {
   assert.equal(detail.group.rank, 1) // 最新分：g1 9 > g2 5
   assert.equal(detail.group.members.find(member => member.id === 'g1').score, 9)
   assert.equal(getPhotoDetail(db, 'p1', 'g2').group.rank, 2)
+  db.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('recipe overrides take precedence over AI recipes and can be reset', () => {
+  const { db, dir, addPhoto, addAssessment } = setup()
+  addPhoto.run('r1', 'r1.jpg', 100, 1, null, 'thumbs/r1.webp', 'scored', 1)
+  addAssessment.run('ra', 'r1', 8, 'keep', '{}', '[]', '好', 1, {
+    version: 1,
+    crop: { left: 0.2, top: 0, width: 0.6, height: 1 },
+    exposureEv: 0.2,
+  })
+  const ai = getPhotoDetail(db, 'p1', 'r1')
+  assert.equal(ai.editSource, 'ai')
+  assert.equal(ai.editRecipe.crop.left, 0.2)
+
+  setRecipeOverride(db, 'p1', 'r1', {
+    version: 1,
+    crop: { left: 0.1, top: 0, width: 0.5, height: 1 },
+    contrast: 0.15,
+  })
+  const manual = getPhotoDetail(db, 'p1', 'r1')
+  assert.equal(manual.editSource, 'human')
+  assert.equal(manual.editRecipe.crop.left, 0.1)
+  assert.equal(manual.editRecipe.contrast, 0.15)
+
+  setRecipeOverride(db, 'p1', 'r1', null)
+  const restored = getPhotoDetail(db, 'p1', 'r1')
+  assert.equal(restored.editSource, 'ai')
+  assert.equal(restored.editRecipe.crop.left, 0.2)
+  assert.throws(() => setRecipeOverride(db, 'p1', 'r1', { version: 99 }), error => error.code === 'BAD_RECIPE')
+  assert.throws(() => setRecipeOverride(db, 'p1', 'missing', { version: 1 }), error => error.code === 'NOT_FOUND')
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })

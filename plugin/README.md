@@ -36,10 +36,10 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 - **Budget and stability**: live USD/CNY usage, budget pause, concurrency/retry/backoff, off-peak mode, resumable stages.
 - **Project management**: delete a project and its local workspace without touching source photos.
 - **Review workbench**: filterable wall with AI scene tags and scene filters, 1600px single view, group compare, bulk decisions, undo.
-- **Portable edit recipes**: the scoring model can suggest crop/straighten/exposure/contrast/saturation/sharpen. The plugin renders them with the bundled sharp engine, previews original vs. edited from the image badge, shows rule-of-thirds/crosshair guides, and exports JPEG copies while keeping sources untouched.
+- **Portable edit recipes**: the scoring model can suggest crop/straighten/exposure/contrast/saturation/sharpen. Tune exposure/contrast/saturation/sharpen/rotate in the single view, save a per-photo human recipe, or restore the AI recipe. The plugin renders previews with the bundled sharp engine and exports JPEG copies while keeping sources untouched. Crop stays from the AI suggestion.
 - **No black corners**: straightening auto-crops the largest inscribed rectangle.
 - **No micro-crops**: recipes whose trimmed edges are all below 18% are treated as uncropped; the UI shows retained size and offsets.
-- **Calibration and export**: blind-sample calibration, bucket export, hardlink/copy, `manifest.csv` + `manifest.json` with scene columns, source-integrity checks.
+- **Calibration and export**: blind-sample calibration, bucket export, hardlink/copy, `manifest.csv` + `manifest.json` with scene columns and `editSource`, source-integrity checks.
 - **Unified UI**: shared buttons/forms/tabs/state cards, consistent back/close and primary-action placement, responsive layouts, dark-theme-aware status colors, and a `check:ui` guard against inline visual styles.
 - **Scene-aware review**: per-photo scene tags (portrait / landscape / architecture / street / event / flower / wildlife / sculpture / other), manual tag correction, scene filters, and a virtualized page-200 review wall that can reach every photo.
 

@@ -28,6 +28,7 @@ function stub() {
     async photoDetail(id, photoId) { return { id: photoId, verdict: 'keep' } },
     async setPhotoScenes(id, photoId, body) { return { id: photoId, scenes: body.scenes, primaryScene: body.primaryScene, sceneSource: 'human' } },
     async deleteProject(id) { return { deleted: id } },
+    async setPhotoRecipe(id, photoId, body) { return { id: photoId, editRecipe: body.recipe, editSource: body.recipe === null ? 'ai' : 'human' } },
     async setDecisions(id, body) { return { updated: body.photoIds.map(photoId => ({ photoId, verdict: body.verdict })) } },
     async stats(id) { return { verdicts: { keep: 1 }, id } },
     async group(id, gid) { return { id: gid, members: [] } },
@@ -87,6 +88,15 @@ test('health and project routes answer JSON', async () => {
     })
     assert.deepEqual(await scenes.json(), {
       id: 'ph1', scenes: ['flower'], primaryScene: 'flower', sceneSource: 'human',
+    })
+
+    const recipe = await fetch(`${origin}/photo-picker/api/projects/p1/photos/ph1/recipe`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ recipe: { version: 1, exposureEv: 0.2 } }),
+    })
+    assert.deepEqual(await recipe.json(), {
+      id: 'ph1', editRecipe: { version: 1, exposureEv: 0.2 }, editSource: 'human',
     })
 
     const deleted = await fetch(`${origin}/photo-picker/api/projects/p1`, { method: 'DELETE' })

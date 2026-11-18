@@ -95,6 +95,12 @@ export function createHttpHandler(service) {
         }))
       }
 
+      const recipeMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)\/recipe$/)
+      if (recipeMatch !== null && req.method === 'PATCH') {
+        const body = await readJson(req)
+        return send(res, 200, await service.setPhotoRecipe(recipeMatch[1], recipeMatch[2], body))
+      }
+
       const scenesMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)\/scenes$/)
       if (scenesMatch !== null && req.method === 'PATCH') {
         const body = await readJson(req)

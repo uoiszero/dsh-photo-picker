@@ -86,9 +86,9 @@
 - **AI 精评**：组内排序（>6 张分块）→ 单张六维评分 → 阈值收敛；单张精评先判断人像/风光/建筑/街拍/活动/花植物/动物/雕塑展品等场景，再按主场景选择评分重点。坏 JSON 自动重试，人工判定永远覆盖 AI。
 - **预算与稳定性**：按 usage 实时计费、预算触顶暂停、并发/重试/退避、离峰开关、自动跑串联阶段、阶段间暂停、断点续跑。
 - **复核**：图墙筛选/排序/按场景筛选/多选改判/撤销最近 20 步；单图可手动编辑 1–3 个场景标签并指定主场景，人工标签优先；图墙按 200 张/页无限滚动并只渲染可视行；图墙缩略图显示 AI 场景标签；单图 1600px 预览、维度条、理由、后期建议、场景 chips；组对比 6 张/页；`J/K/P/M/X/Space` 快捷键。
-- **修图配方**：单张精评可输出与软件无关的结构化配方（裁剪/旋转/曝光/对比/饱和度/锐化），用内置 sharp 引擎生成编辑预览；单图页点击右上角「原图/修图」标签切换，支持九宫格/十字线辅助线；旋转自动去黑角，8–12% 微裁会被过滤。导出时可选择“应用修图建议”，输出 JPEG 编辑副本并写进 manifest，源文件保持只读。
+- **修图配方**：单张精评可输出与软件无关的结构化配方（裁剪/旋转/曝光/对比/饱和度/锐化），用内置 sharp 引擎生成编辑预览；单图页点击右上角「原图/修图」标签切换，支持九宫格/十字线辅助线；「修图建议」可微调曝光/对比/饱和/锐化/旋转并保存为人工配方，可恢复 AI；裁剪沿用 AI 建议。导出时可选择“应用修图建议”，输出 JPEG 编辑副本并写进 manifest，源文件保持只读。
 - **校准**：按拍摄时间分层抽 80 张盲评，输出 keep 精确率/召回率/F1、三分类一致率、阈值曲线，可一键应用建议阈值。
-- **导出**：keep / maybe / reject 分桶，硬链接（跨盘自动回退复制）或复制，保留目录结构或平铺，`manifest.csv` + `manifest.json`（含 `scenes` / `primary_scene`），导出前后抽样校验源文件未被修改。勾选“应用修图建议”时按配方重新渲染 JPEG（强制复制，不做硬链接）。
+- **导出**：keep / maybe / reject 分桶，硬链接（跨盘自动回退复制）或复制，保留目录结构或平铺，`manifest.csv` + `manifest.json`（含 `scenes` / `primary_scene`；JSON 还有 `editSource`），导出前后抽样校验源文件未被修改。勾选“应用修图建议”时按配方重新渲染 JPEG（强制复制，不做硬链接）。
 - **设置**：模型（图片输入能力检测）、并发、预算、网格规格、阈值、分组参数、阶段间暂停、离峰开关、提示词全文、重跑指定阶段。
 
 ## 环境要求
@@ -205,7 +205,7 @@ Harness Web UI
 
 - **单一事实来源**：所有状态在项目 SQLite（`~/Pictures/PhotoPicker/<项目>/db.sqlite`）；Client 与 agent 工具读写同一服务。
 - **判定优先级**：人类决策 > AI 决策 > 单张评分 > 默认 `maybe`。
-- **数据表**：`projects / photos / groups / grids / stage_runs / assessments / photo_scene_overrides / decisions / exports / errors / mounts / calibration_reports`。
+- **数据表**：`projects / photos / groups / grids / stage_runs / assessments / photo_scene_overrides / photo_recipe_overrides / decisions / exports / errors / mounts / calibration_reports`。
 - **幂等**：扫描按 `(project_id, rel_path)` upsert；AI 结果按 `(target_kind, target_id, stage, model_id, prompt_version)` 去重；重跑只补缺、不重复计费。
 
 ### 主要 HTTP API（loopback，仅本机）
@@ -218,6 +218,7 @@ Harness Web UI
 | `GET /photo-picker/api/projects/:id/photos` | 图墙（筛选/排序/分页） |
 | `GET /photo-picker/api/projects/:id/photos/:pid` | 单张详情（含组内排名） |
 | `PATCH /photo-picker/api/projects/:id/photos/:pid/scenes` | 人工修正场景标签 / 主场景 |
+| `PATCH /photo-picker/api/projects/:id/photos/:pid/recipe` | 保存 / 恢复人工修图配方 |
 | `POST /photo-picker/api/projects/:id/decisions` | 人工改判（`auto` 可撤销到自动判定） |
 | `GET /photo-picker/api/projects/:id/groups[/:gid]` | 组列表 / 组详情 |
 | `GET /photo-picker/api/projects/:id/stats` | 判定计数 + 分数直方图 |
@@ -246,7 +247,7 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 119 个单元/集成测试（node:test）
+npm test                 # 120 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
@@ -298,7 +299,7 @@ docs/superpowers/           # 设计 spec 与执行计划
 ## 后续计划
 
 1. **更精确的修图建议（可移植配方）**
-   已实现：模型在单张精评里输出裁剪/校正/曝光/对比/饱和度/锐化的结构化配方，插件用内置 sharp 引擎生成预览与 JPEG 副本；没有 Photoshop 也能用。v1 只做全局调整，RawTherapee/GIMP 适配器与局部修图后续再加。详见 [Plan 5](docs/superpowers/plans/2026-11-13-photo-picker-05-edit-recipes.md)。
+   已实现：模型在单张精评里输出裁剪/校正/曝光/对比/饱和度/锐化的结构化配方，插件用内置 sharp 引擎生成预览与 JPEG 副本；单图页可微调并保存人工配方，也可恢复 AI。v1 只做全局调整，裁剪仍沿用 AI 建议；RawTherapee/GIMP 适配器与局部修图后续再加。详见 [Plan 5](docs/superpowers/plans/2026-11-13-photo-picker-05-edit-recipes.md) 与 [Plan 10](docs/superpowers/plans/2026-11-18-photo-picker-10-editable-recipes.md)。
 
 2. **人物识别分组**
    按人物聚合同一场活动/婚礼里的照片，方便逐人筛选与交付。计划在本地做人脸检测与特征聚类（照片不出本机，可选开启），并把人物分组接进现有的图墙、组对比与导出流程。
@@ -310,7 +311,7 @@ docs/superpowers/           # 设计 spec 与执行计划
 - 图墙按 200 张/页无限滚动，并只渲染可视行；超大项目仍建议用筛选收敛。
 - 组对比每页 6 张，超过需要翻页。
 - 校准复用已经评分的照片，不会为了校准重新跑一遍 L1–L3。
-- 修图配方 v1 只做全局调整（裁剪/旋转/曝光/对比/饱和度/锐化），不做局部蒙版、污点修复或 RAW 显影。
+- 修图配方 v1 只做全局调整（裁剪/旋转/曝光/对比/饱和度/锐化）；人工微调覆盖全局参数，裁剪仍沿用 AI 建议。不做拖拽裁剪、局部蒙版、污点修复或 RAW 显影。
 - HEIC/RAW 的编辑副本走平台解码回退，最长边为 1200px，不保留原始分辨率；需要更大余量时先用其他工具转成 JPEG 再导入。
 - 插件面向单用户本机，没有多人协作/权限体系。
 
@@ -327,6 +328,7 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 7：逐张场景自适应评分](docs/superpowers/plans/2026-11-15-photo-picker-07-scene-aware-scoring.md)
   - [Plan 8：照片墙分页与虚拟化](docs/superpowers/plans/2026-11-15-photo-picker-08-wall-virtualization.md)
   - [Plan 9：场景标签人工修正与删除项目](docs/superpowers/plans/2026-11-18-photo-picker-09-scene-overrides-export-delete.md)
+  - [Plan 10：可微调修图建议](docs/superpowers/plans/2026-11-18-photo-picker-10-editable-recipes.md)
 
 ## 版本
 

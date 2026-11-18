@@ -10,7 +10,7 @@ import { LocalSource } from '../plugin/src/host/source.js'
 import { scanProject } from '../plugin/src/host/scan.js'
 import { preprocessProject } from '../plugin/src/host/preprocess.js'
 import { runGridStage, runRankStage, runScoreStage } from '../plugin/src/host/pipeline.js'
-import { getPhotoDetail, listReviewPhotos } from '../plugin/src/host/review.js'
+import { getPhotoDetail, listReviewPhotos, setRecipeOverride } from '../plugin/src/host/review.js'
 import { renderEditedFile } from '../plugin/src/host/edit.js'
 import { runExport } from '../plugin/src/host/export.js'
 
@@ -109,6 +109,16 @@ assert.ok(detail.editRecipe, 'scored photo must expose editRecipe')
 assert.equal(detail.editRecipe.crop.left, 0.2)
 assert.equal(detail.editRecipe.crop.width, 0.6)
 assert.equal(detail.editRecipe.exposureEv, 0.2)
+assert.equal(detail.editSource, 'ai')
+
+// 人工微调必须优先于 AI 配方，并进入预览/导出。
+const manualRecipe = { ...detail.editRecipe, exposureEv: 0.6, contrast: 0.1 }
+setRecipeOverride(db, project.id, photo.id, manualRecipe)
+const manualDetail = getPhotoDetail(db, project.id, photo.id)
+console.log('manual detail', { source: manualDetail.editSource, exposureEv: manualDetail.editRecipe.exposureEv })
+assert.equal(manualDetail.editSource, 'human')
+assert.equal(manualDetail.editRecipe.exposureEv, 0.6)
+const effectiveRecipe = manualDetail.editRecipe
 
 // 渲染编辑预览：源文件 sha256 不能变。
 const sourcePathForPhoto = path.join(project.sourcePath, photo.relPath)
@@ -117,7 +127,7 @@ const before = sha256(sourcePathForPhoto)
 
 const edited = await renderEditedFile({
   sourcePath: sourcePathForPhoto,
-  recipe: detail.editRecipe,
+  recipe: effectiveRecipe,
   cachePath: path.join(project.workspaceDir, 'edits', `${photo.id}-accept.jpg`),
 })
 console.log('edited', edited)
@@ -125,7 +135,7 @@ assert.equal(edited.cached, false)
 assert.ok(existsSync(edited.path))
 const meta = await sharp(edited.path).metadata()
 assert.equal(meta.format, 'jpeg')
-assert.equal(meta.width, Math.round(detail.width * detail.editRecipe.crop.width))
+assert.equal(meta.width, Math.round(detail.width * effectiveRecipe.crop.width))
 assert.equal(sha256(sourcePathForPhoto), before, 'rendering must not modify the source')
 
 // 导出编辑副本：强制 copy，输出 .jpg，manifest 记录配方。
@@ -156,7 +166,8 @@ const manifestItem = manifest.items.find(item => item.relPath === photo.relPath)
 assert.ok(manifestItem, 'exported photo must be listed in the manifest')
 assert.equal(manifestItem.edited, true)
 assert.equal(manifestItem.editEngine, 'sharp-v2')
-assert.deepEqual(manifestItem.editRecipe, detail.editRecipe)
+assert.deepEqual(manifestItem.editRecipe, effectiveRecipe)
+assert.equal(manifestItem.editSource, 'human')
 assert.ok(manifestItem.destPath.endsWith('.jpg'))
 
 const csv = readFileSync(path.join(dest, 'manifest.csv'), 'utf8')

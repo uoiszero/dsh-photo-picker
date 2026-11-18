@@ -18,7 +18,7 @@ import {
   computeCalibration, lastCalibrationReport, sampleCalibration, saveCalibrationReport,
 } from './calibration.js'
 import {
-  getPhotoDetail, groupDetail, listGroups, listReviewPhotos, projectStats, setHumanDecisions, setSceneOverride,
+  getPhotoDetail, groupDetail, listGroups, listReviewPhotos, projectStats, setHumanDecisions, setSceneOverride, setRecipeOverride,
 } from './review.js'
 import { preprocessProject } from './preprocess.js'
 import {
@@ -440,6 +440,15 @@ export class PhotoPickerService extends Service {
     return setSceneOverride(db, id, photoId, scenes, primaryScene)
   }
 
+  async setPhotoRecipe(id, photoId, body = {}) {
+    if (!Object.prototype.hasOwnProperty.call(body, 'recipe')) {
+      throw stageError('recipe is required (pass null to restore AI)', 'BAD_RECIPE', 400)
+    }
+    const { db } = await this.store.open(id)
+    setRecipeOverride(db, id, photoId, body.recipe)
+    return getPhotoDetail(db, id, photoId)
+  }
+
   async setDecisions(id, { photoIds, verdict } = {}) {
     const { db } = await this.store.open(id)
     return setHumanDecisions(db, id, photoIds, verdict)
@@ -538,10 +547,11 @@ export class PhotoPickerService extends Service {
   async editedFile(id, photoId) {
     const { db, project } = await this.store.open(id)
     const row = db.prepare(`
-      SELECT p.rel_path, a.recipe_json
+      SELECT p.rel_path, COALESCE(ro.recipe_json, a.recipe_json) AS recipe_json
       FROM photos p
       LEFT JOIN assessments a ON a.target_id = p.id
         AND a.target_kind = 'photo' AND a.stage = 'single'
+      LEFT JOIN photo_recipe_overrides ro ON ro.photo_id = p.id
       WHERE p.id = ? AND p.project_id = ?
       ORDER BY a.created_at DESC LIMIT 1
     `).get(photoId, id)
