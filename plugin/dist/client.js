@@ -694,8 +694,21 @@ var STYLES = `
 
 .pp-projects { display: grid; gap: 10px; }
 .pp-project-wrap { position: relative; }
-.pp-project-wrap .pp-project { padding-right: 78px; }
-.pp-project-delete { position: absolute; top: 12px; right: 44px; z-index: 1; }
+.pp-project-wrap .pp-project { padding-right: 64px; }
+.pp-project-delete {
+  position: absolute; top: 10px; right: 42px; z-index: 1;
+  width: 28px; height: 28px; display: grid; place-items: center;
+  padding: 0; border-radius: 8px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--dsw-alias-label-secondary); cursor: pointer;
+  opacity: 0; transition: opacity .15s ease, background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.pp-project-wrap:hover .pp-project-delete, .pp-project-delete:focus-visible { opacity: 1; }
+.pp-project-delete:hover {
+  color: var(--dsw-alias-state-danger-primary, #cc4b3f);
+  background: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 9%, var(--dsw-alias-bg-layer-1));
+  border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 24%, var(--dsw-alias-border-l1));
+}
 .pp-project {
   display: grid; gap: 8px; width: 100%; text-align: left; padding: 16px 18px;
   border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px;
@@ -924,7 +937,7 @@ var STYLES = `
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.2 6.3 4.8 8.8 9.8 3.4' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-size: 12px 12px; background-position: center; background-repeat: no-repeat;
 }
-@media (hover: none) { .pp-check { opacity: 1; } }
+@media (hover: none) { .pp-check { opacity: 1; } .pp-project-delete { opacity: 1; } }
 .pp-batch {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
   z-index: 45; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -1143,8 +1156,21 @@ var STYLES = `
   .pp-modal { width: calc(100vw - 24px); padding: 16px; }
   .pp-drawer { width: 100vw; padding: 16px; }
   .pp-project-wrap { position: relative; }
-.pp-project-wrap .pp-project { padding-right: 78px; }
-.pp-project-delete { position: absolute; top: 12px; right: 44px; z-index: 1; }
+.pp-project-wrap .pp-project { padding-right: 64px; }
+.pp-project-delete {
+  position: absolute; top: 10px; right: 42px; z-index: 1;
+  width: 28px; height: 28px; display: grid; place-items: center;
+  padding: 0; border-radius: 8px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--dsw-alias-label-secondary); cursor: pointer;
+  opacity: 0; transition: opacity .15s ease, background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.pp-project-wrap:hover .pp-project-delete, .pp-project-delete:focus-visible { opacity: 1; }
+.pp-project-delete:hover {
+  color: var(--dsw-alias-state-danger-primary, #cc4b3f);
+  background: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 9%, var(--dsw-alias-bg-layer-1));
+  border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 24%, var(--dsw-alias-border-l1));
+}
 .pp-project { padding: 14px; }
   .pp-history-row { grid-template-columns: 1fr auto; }
 }
@@ -2604,17 +2630,18 @@ function Workbench({ t }) {
     /* @__PURE__ */ h2("span", { className: "pp-project-path", title: project.sourcePath }, project.sourcePath),
     /* @__PURE__ */ h2("span", { className: "pp-project-meta" }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, Object.values(project.counts ?? {}).reduce((sum, n) => sum + Number(n ?? 0), 0), " ", t("photos")), Object.entries(project.counts ?? {}).map(([state, n]) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: state }, stateLabel(t, state), " ", String(n))), /* @__PURE__ */ h2("span", { className: "pp-project-spent" }, t("spent"), " \xA5", Number(project.cost?.spentCny ?? 0).toFixed(4)))
   ), /* @__PURE__ */ h2(
-    Button,
+    "button",
     {
-      size: "sm",
-      variant: "danger",
+      type: "button",
       className: "pp-project-delete",
+      "aria-label": t("deleteProject"),
+      title: t("deleteProject"),
       disabled: deleting === project.id,
       onClick: () => {
         void deleteProject(project);
       }
     },
-    t("deleteProject")
+    /* @__PURE__ */ h2("svg", { width: "15", height: "15", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "M3 4.5h10M6 4.5V3h4v1.5M4.5 4.5l.6 8.2a1 1 0 0 0 1 .8h3.8a1 1 0 0 0 1-.8l.6-8.2M6.5 7v4M9.5 7v4", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round" }))
   ))))));
 }
 function PhotoPickerIcon({ size }) {
