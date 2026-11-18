@@ -528,7 +528,7 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
 
 **B 单图过片**
 - 大图（1600px，可缩放平移）；右侧：AI 分数、六维条形、后期建议 chips、EXIF、理由；底部胶片条显示相邻照片。
-- 有 `edit_recipe` 时显示“修图建议”卡片：裁剪/旋转/曝光/对比/饱和度/锐化参数、AI/人工来源 badge、「微调」与「恢复 AI」；滑杆直接放在修图建议下方；拖动只改本地草稿，点击保存后写人工覆盖，预览由 `/photo-picker/media/edit/...` 按有效配方渲染并缓存。无配方时仍可手动微调，不阻塞复核。
+- 有 `edit_recipe` 时显示“修图建议”卡片：裁剪/旋转/曝光/对比/饱和度/锐化参数、AI/人工来源 badge、「微调」与「恢复 AI」；滑杆直接放在修图建议下方；拖动只改本地草稿并通过 `edit-preview` 生成临时 JPEG（不写库、不落缓存），点击保存后写人工覆盖；保存后的预览仍由 `/photo-picker/media/edit/...` 按有效配方渲染并缓存。无配方时仍可手动微调，不阻塞复核。
 - 操作：`J/K` 前后、`P/X/M` 判定、`Space` 回图墙；显示“第 n / 总候选”。
 - 后期建议代码本地化显示（`crop_right` → “向右裁剪”等）。
 
@@ -644,7 +644,7 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
 - **默认硬链接**：同盘 `fs.link`；跨盘（`EXDEV`）自动回退复制并校验字节数；失败逐条记录。
 - **目录结构**：默认保留相对源目录结构；平铺模式重名加 `__<sha8>`。
 - **分桶**：`keep/`、`maybe/`；`reject/` 仅在勾选时导出。
-- **编辑副本**：`edit: 'recipe'`（默认 `none`）按 `assessments.recipe_json` 用内置 sharp 引擎从源图重新渲染，输出 JPEG（扩展名 `.jpg`，强制复制、绝不硬链接）；无配方的照片仍按原文件复制。HEIC/RAW 走平台解码回退，v1 编辑副本最长边为 1200px，不保留原始分辨率；渲染/导出前后校验源文件 sha256 不变。
+- **编辑副本**：`edit: 'recipe'`（默认 `none`）按有效配方（人工覆盖 > `assessments.recipe_json`）用内置 sharp 引擎从源图重新渲染，输出 JPEG（扩展名 `.jpg`，强制复制、绝不硬链接）；无配方的照片仍按原文件复制。HEIC/RAW 走平台解码回退，v1 编辑副本最长边为 1200px，不保留原始分辨率；渲染/导出前后校验源文件 sha256 不变。
 - **manifest**：`manifest.csv`（rel_path,bucket,verdict,ai_score,group_id,reason,edited,edit_engine,dest_path）+ `manifest.json`（结构化全量，逐项含 `edited`、`editEngine`、`editRecipe`）。
 - **源零写入**：导出前抽样 20 个文件记录 size+mtime+sha256，导出后校验不变；任何源写入视为 bug。
 - **幂等**：重复导出到同一目标时，已存在且大小一致的文件跳过；不一致时给出冲突清单，不静默覆盖。

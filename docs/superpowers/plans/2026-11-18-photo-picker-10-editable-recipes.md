@@ -14,9 +14,9 @@
 - 单图页「修图建议」卡片：
   - `AI 建议` / `我的调整` badge
   - 滑杆直接放在「修图建议」下方，无弹窗
-  - 曝光、对比度、饱和度、锐化、旋转滑杆；拖动改草稿，点击保存才写库
+  - 曝光、对比度、饱和度、锐化、旋转滑杆；拖动改草稿并请求临时预览，点击保存才写库
   - 裁剪只读（沿用 AI 建议）
-  - 保存并预览 / 取消 / 恢复 AI 建议
+  - 保存 / 恢复 AI 建议
 - API：
   `PATCH /photo-picker/api/projects/:id/photos/:pid/recipe`
   - 合法 recipe 保存人工覆盖
@@ -24,7 +24,7 @@
   - 缺 body / 非法版本 / 未知照片返回结构化错误
 - 预览 `/media/edit/...` 和导出都使用有效配方
 - manifest.json item 新增 `editSource`（human / ai / null）
-- 保存成功后自动切到「修图」预览
+- 保存成功后自动切到「修图」预览；拖动时也实时更新临时预览
 
 ## 测试
 
@@ -33,7 +33,7 @@
 - HTTP PATCH recipe
 - export manifest `editSource`
 - UI 冒烟：合成项目内微调曝光、保存、恢复 AI
-- `npm test` 120/120
+- `npm test` 121/121
 
 ## 非目标
 

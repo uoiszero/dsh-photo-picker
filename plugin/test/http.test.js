@@ -50,6 +50,7 @@ function stub() {
     async chooseFolder() { return '~/Pictures' },
     async thumbFile() { return undefined },
     async editedFile() { return undefined },
+    async renderRecipePreview() { return Buffer.from([0xff, 0xd8, 0xff, 0xd9]) },
   }
 }
 
@@ -275,6 +276,15 @@ test('edit preview route streams JPEG and returns structured 404', async () => {
       const missing = await fetch(`${origin}/photo-picker/media/edit/p1/m2`)
       assert.equal(missing.status, 404)
       assert.equal((await missing.json()).error.code, 'NOT_FOUND')
+
+      const draft = await fetch(`${origin}/photo-picker/api/projects/p1/photos/m1/edit-preview`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ recipe: { version: 1, exposureEv: 0.2 } }),
+      })
+      assert.equal(draft.status, 200)
+      assert.equal(draft.headers.get('content-type'), 'image/jpeg')
+      assert.deepEqual(Buffer.from(await draft.arrayBuffer()), Buffer.from([0xff, 0xd8, 0xff, 0xd9]))
     }, service)
   } finally {
     rmSync(dir, { recursive: true, force: true })

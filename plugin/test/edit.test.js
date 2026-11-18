@@ -54,3 +54,16 @@ test('renderEditedBuffer removes black corners after rotation', async () => {
   }
   rmSync(dir, { recursive: true, force: true })
 })
+
+
+test('renderEditedBuffer can bound a draft preview width', async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pp-edit-'))
+  const source = path.join(dir, 'source.jpg')
+  await sharp({ create: { width: 1600, height: 1000, channels: 3, background: '#445566' } }).jpeg().toFile(source)
+  const recipe = normalizeRecipe({ exposureEv: 0.2 })
+  const output = await renderEditedBuffer({ sourcePath: source, recipe, maxWidth: 480 })
+  const meta = await sharp(output).metadata()
+  assert.equal(meta.width, 480)
+  assert.equal(meta.height, 300)
+  rmSync(dir, { recursive: true, force: true })
+})
