@@ -463,7 +463,7 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
   }
   ```
 - 校验：`score` 数值 0–10；`verdict` ∈ keep/maybe/reject；`dimensions` 六键齐全（缺失补 `null` 并记警告）；`reason` 提示词要求 ≤60 字，入库超过 120 字截断；`post_processing` 仅接受白名单代码（未知代码保留在 raw，不展示）。
-- 修图配方（提示词 v4）：可选输出 `edit_recipe`（`version`、`crop{left,top,width,height}`、`rotate`、`exposureEv`、`contrast`、`saturation`、`sharpen`）。`recipe.js` 负责校验与 clamp：裁剪坐标按**旋转并自动去掉黑角后的画布**归一化；提示词要求先逐边判断，只有存在明确边缘干扰时才裁，否则保持全画幅；所有被裁边都 <18% 的微裁在本地按未裁切处理（旋转后先取最大内接矩形），缺省/恒等/非法版本一律视为“无配方”，评分本身仍然成功。合法配方写入 `assessments.recipe_json`，单图详情返回 `editRecipe`；旧项目要重跑单张精评才会生成配方，并产生新的模型调用费用。
+- 修图配方（提示词 v4）：可选输出 `edit_recipe`（`version`、`crop{left,top,width,height}`、`rotate`、`exposureEv`、`contrast`、`saturation`、`sharpen`）。`recipe.js` 负责校验与 clamp：裁剪坐标按**旋转并自动去掉黑角后的画布**归一化；提示词要求先逐边判断，只有存在明确边缘干扰时才裁，否则保持全画幅；所有被裁边都 <18% 的微裁在本地按未裁切处理（旋转后先取最大内接矩形），缺省/恒等/非法版本一律视为“无配方”，评分本身仍然成功。合法配方写入 `assessments.recipe_json`，单图详情返回 `editRecipe`/`editSource`；人工微调写入 `photo_recipe_overrides`，优先于 AI；旧项目要重跑单张精评才会生成 AI 配方，并产生新的模型调用费用。
 - 解析失败 → 重试 1 次（追加“只返回合法 JSON”）；再失败记 `errors`，该照片默认 `maybe`。
 
 **3c 收敛**
@@ -528,7 +528,7 @@ SQLite（WAL 模式），库文件位于项目工作区。所有时间戳为 Uni
 
 **B 单图过片**
 - 大图（1600px，可缩放平移）；右侧：AI 分数、六维条形、后期建议 chips、EXIF、理由；底部胶片条显示相邻照片。
-- 有 `edit_recipe` 时显示“修图建议”卡片：裁剪/旋转/曝光/对比/饱和度/锐化参数与“查看修图效果”（由 `/photo-picker/media/edit/...` 按配方渲染并缓存预览）；无配方时显示“无结构化修图建议”，不阻塞复核。
+- 有 `edit_recipe` 时显示“修图建议”卡片：裁剪/旋转/曝光/对比/饱和度/锐化参数、AI/人工来源 badge、「微调」与「恢复 AI」；RecipeEditor 滑杆保存人工覆盖，预览由 `/photo-picker/media/edit/...` 按有效配方渲染并缓存。无配方时仍可手动微调，不阻塞复核。
 - 操作：`J/K` 前后、`P/X/M` 判定、`Space` 回图墙；显示“第 n / 总候选”。
 - 后期建议代码本地化显示（`crop_right` → “向右裁剪”等）。
 

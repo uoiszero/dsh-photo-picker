@@ -503,6 +503,15 @@ export const STYLES = `
   box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
 }
 .pp-form { display: grid; gap: 12px; }
+.pp-recipe-card-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.pp-recipe-card-head .pp-section-title { margin: 0; }
+.pp-recipe-card-head .pp-button { margin-left: auto; }
+.pp-recipe-source { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pp-recipe-editor-grid { display: grid; gap: 14px; }
+.pp-recipe-control { display: grid; gap: 4px; }
+.pp-recipe-control-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.pp-recipe-value { font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary); }
+.pp-range { width: 100%; height: 22px; margin: 0; accent-color: var(--dsw-alias-brand-primary); cursor: pointer; }
 .pp-dir-list { max-height: 220px; overflow: auto; padding: 4px; }
 .pp-dir-row { display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; color: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .pp-dir-row:hover { background: var(--dsw-alias-bg-layer-2); }

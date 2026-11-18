@@ -49,7 +49,10 @@ function assertDestOutsideSource(project, dest) {
 
 function selectPhotos(db, projectId) {
   return db.prepare(`
-    SELECT p.id, p.rel_path, p.size_bytes, p.group_id, a.recipe_json,
+    SELECT p.id, p.rel_path, p.size_bytes, p.group_id,
+           COALESCE(ro.recipe_json, a.recipe_json) AS recipe_json,
+           CASE WHEN ro.photo_id IS NOT NULL THEN 'human'
+                WHEN a.recipe_json IS NOT NULL THEN 'ai' ELSE NULL END AS edit_source,
            COALESCE(so.scenes_json, a.scenes_json) AS scenes_json,
            COALESCE(so.primary_scene, a.primary_scene) AS primary_scene,
            d.verdict AS human_verdict,
@@ -67,6 +70,7 @@ function selectPhotos(db, projectId) {
       LIMIT 1
     )
     LEFT JOIN photo_scene_overrides so ON so.photo_id = p.id
+    LEFT JOIN photo_recipe_overrides ro ON ro.photo_id = p.id
     WHERE p.project_id = ? AND p.thumb_path IS NOT NULL
       AND p.state IN ('ok', 'grid_selected', 'grid_rejected', 'grid_error', 'scored', 'score_failed')
     ORDER BY p.rel_path
@@ -372,6 +376,7 @@ export async function runExport({ db, project, dest, buckets, mode, layout, edit
       reason: item.reason ?? null,
       scenes: scenesOf(item),
       primaryScene: primarySceneOf(item, scenesOf(item)),
+      editSource: recipeOf(item) === null ? null : (item.edit_source ?? null),
       destPath: item.destPath,
       action: item.action,
       edited: item.edited === true,

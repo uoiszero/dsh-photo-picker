@@ -70,6 +70,9 @@ test('runExport hardlinks buckets, writes manifests and never writes the source'
   db.prepare(`INSERT INTO photo_scene_overrides (photo_id, project_id, scenes_json, primary_scene, source, updated_at)
               VALUES ('a', 'p1', ?, 'architecture', 'human', ?)`)
     .run(JSON.stringify(['architecture', 'street']), Date.now())
+  db.prepare(`INSERT INTO photo_recipe_overrides (photo_id, project_id, recipe_json, source, updated_at)
+              VALUES ('a', 'p1', ?, 'human', ?)`)
+    .run(JSON.stringify({ version: 1, exposureEv: 0.3 }), Date.now())
   const before = statSync(path.join(source, 'day1', 'a.jpg'))
   const result = await runExport({ db, project, dest })
   assert.deepEqual(result.counts, { keep: 2, maybe: 1 })
@@ -91,6 +94,7 @@ test('runExport hardlinks buckets, writes manifests and never writes the source'
   assert.equal(json.counts.keep, 2)
   assert.deepEqual(json.items.find(item => item.relPath === 'day1/a.jpg').scenes, ['architecture', 'street'])
   assert.equal(json.items.find(item => item.relPath === 'day1/a.jpg').primaryScene, 'architecture')
+  assert.equal(json.items.find(item => item.relPath === 'day1/a.jpg').editSource, 'human')
 
   const rerun = await runExport({ db, project, dest })
   assert.equal(rerun.skipped, 3)

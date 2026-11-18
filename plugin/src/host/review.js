@@ -19,6 +19,7 @@ const BASE_FROM = `
     LIMIT 1
   )
   LEFT JOIN photo_scene_overrides so ON so.photo_id = p.id
+  LEFT JOIN photo_recipe_overrides ro ON ro.photo_id = p.id
   WHERE p.project_id = ? AND p.thumb_path IS NOT NULL
 `
 
@@ -70,6 +71,7 @@ function toReviewPhoto(row, projectId) {
     scenes: parseJson(row.scenes_json) ?? [],
     primaryScene: row.primary_scene ?? null,
     sceneSource: row.scene_source ?? null,
+    editSource: row.edit_source ?? null,
     editRecipe,
     editSignature: editRecipe === null ? null : recipeSignature(editRecipe),
     thumbUrl: `/photo-picker/media/thumb/${projectId}/${row.id}`,
@@ -142,7 +144,9 @@ export function getPhotoDetail(db, projectId, photoId) {
            COALESCE(so.scenes_json, a.scenes_json) AS scenes_json,
            COALESCE(so.primary_scene, a.primary_scene) AS primary_scene,
            CASE WHEN so.photo_id IS NULL THEN 'ai' ELSE 'human' END AS scene_source,
-           a.recipe_json,
+           COALESCE(ro.recipe_json, a.recipe_json) AS recipe_json,
+           CASE WHEN ro.photo_id IS NOT NULL THEN 'human'
+                WHEN a.recipe_json IS NOT NULL THEN 'ai' ELSE NULL END AS edit_source,
            ${VERDICT_SQL} AS verdict
     ${BASE_FROM} AND p.id = ?
   `).get(projectId, photoId)
@@ -184,6 +188,40 @@ export function getPhotoDetail(db, projectId, photoId) {
     }
   }
   return photo
+}
+
+export function setRecipeOverride(db, projectId, photoId, input) {
+  const photo = db.prepare('SELECT id FROM photos WHERE id = ? AND project_id = ?').get(photoId, projectId)
+  if (photo === undefined) {
+    const error = new Error(`unknown photo: ${photoId}`)
+    error.code = 'NOT_FOUND'
+    error.statusCode = 404
+    throw error
+  }
+  if (input !== null && (typeof input !== 'object' || Array.isArray(input))) {
+    const error = new Error('recipe must be an object or null')
+    error.code = 'BAD_RECIPE'
+    error.statusCode = 400
+    throw error
+  }
+  if (input !== null && input.version !== undefined && input.version !== 1) {
+    const error = new Error(`unsupported recipe version: ${input.version}`)
+    error.code = 'BAD_RECIPE'
+    error.statusCode = 400
+    throw error
+  }
+  const recipe = normalizeRecipe(input)
+  if (recipe === null) {
+    db.prepare('DELETE FROM photo_recipe_overrides WHERE photo_id = ?').run(photoId)
+    return
+  }
+  db.prepare(`INSERT INTO photo_recipe_overrides (photo_id, project_id, recipe_json, source, updated_at)
+    VALUES (?, ?, ?, 'human', ?)
+    ON CONFLICT(photo_id) DO UPDATE SET
+      recipe_json = excluded.recipe_json,
+      source = 'human',
+      updated_at = excluded.updated_at`)
+    .run(photoId, projectId, JSON.stringify(recipe), Date.now())
 }
 
 export function setSceneOverride(db, projectId, photoId, scenes, primaryScene) {
