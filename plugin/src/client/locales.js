@@ -119,6 +119,23 @@ const zh = {
   dimensionPostPotential: '后期潜力',
   dimensionMoment: '瞬间',
   postProcessing: '后期建议',
+  postCropLeft: '裁左边',
+  postCropRight: '裁右边',
+  postCropTop: '裁上边',
+  postCropBottom: '裁下边',
+  postCrop: '裁剪',
+  postExposure: '曝光',
+  postContrast: '对比度',
+  postSaturation: '饱和度',
+  postSharpen: '锐化',
+  postRotate: '旋转',
+  postStraighten: '校正水平',
+  postWhiteBalance: '白平衡',
+  postWarm: '偏暖',
+  postCool: '偏冷',
+  postShadowLift: '提亮阴影',
+  postHighlightRecover: '恢复高光',
+  postDenoise: '降噪',
   editRecipe: '修图建议',
   editNoRecipe: '这张照片没有结构化修图建议；可以手动调整或重跑单张精评。',
   editRecipeAi: 'AI 建议',
@@ -370,6 +387,23 @@ const en = {
   dimensionPostPotential: 'Post',
   dimensionMoment: 'Moment',
   postProcessing: 'Suggestions',
+  postCropLeft: 'Crop left',
+  postCropRight: 'Crop right',
+  postCropTop: 'Crop top',
+  postCropBottom: 'Crop bottom',
+  postCrop: 'Crop',
+  postExposure: 'Exposure',
+  postContrast: 'Contrast',
+  postSaturation: 'Saturation',
+  postSharpen: 'Sharpen',
+  postRotate: 'Rotate',
+  postStraighten: 'Straighten',
+  postWhiteBalance: 'White balance',
+  postWarm: 'Warmer',
+  postCool: 'Cooler',
+  postShadowLift: 'Lift shadows',
+  postHighlightRecover: 'Recover highlights',
+  postDenoise: 'Denoise',
   editRecipe: 'Edit recipe',
   editNoRecipe: 'No structured edit recipe for this photo; tune it manually or re-run single scoring.',
   editRecipeAi: 'AI suggestion',
@@ -545,6 +579,40 @@ export function getLanguagePreference() {
 export function subscribeLanguage(listener) {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
+}
+
+/** 后期建议的 UI 标签映射；未知代码保持原样，避免把内部枚举漏到界面上。 */
+export const POST_OP_KEYS = {
+  crop_left: 'postCropLeft',
+  crop_right: 'postCropRight',
+  crop_top: 'postCropTop',
+  crop_bottom: 'postCropBottom',
+  crop: 'postCrop',
+  exposure: 'postExposure',
+  contrast: 'postContrast',
+  saturation: 'postSaturation',
+  sharpen: 'postSharpen',
+  rotate: 'postRotate',
+  straighten: 'postStraighten',
+  white_balance: 'postWhiteBalance',
+  warm: 'postWarm',
+  cool: 'postCool',
+  shadow_lift: 'postShadowLift',
+  highlight_recover: 'postHighlightRecover',
+  denoise: 'postDenoise',
+}
+
+export function postProcessingLabel(t, code) {
+  // white_balance 这类带下划线的操作名要先整体匹配，再退回“操作_数值”的拆法。
+  const direct = POST_OP_KEYS[code]
+  if (direct !== undefined) return t(direct)
+  const cut = code.lastIndexOf('_')
+  if (cut <= 0) return code
+  const operation = code.slice(0, cut)
+  const value = code.slice(cut + 1)
+  const key = POST_OP_KEYS[operation]
+  if (key === undefined || value === '') return code
+  return `${t(key)} ${value}`
 }
 
 export function translate(language, key) {
