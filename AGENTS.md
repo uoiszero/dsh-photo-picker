@@ -116,3 +116,30 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - npm 发布只从 `plugin/` 目录：`npm run publish:npm`（根仓库 `package.json` 是 private 工作区，不要发布根目录）。
 - 仓库默认分支 `main`；推送到 GitHub 前确认 remote 与可见性，不要在公开仓库里放个人照片/路径清单。
 - 设计文档与计划随代码一起维护；实现偏离 spec 时在对应 plan 里写「实现状态/偏差」。
+
+### 插件市场（awesome-dsh-plugin）
+
+发布 GitHub Release 后，还要同步插件市场条目；不要只在 README 里记录版本。
+
+- 市场仓库：<https://github.com/awesome-dsh-plugin/awesome-dsh-plugin>
+- 投稿规范（固定版本）：<https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/28c08a968dba78f674201dde91b47ec4df009715/contributing.md>
+- 本插件条目：`data/plugins/uoiszero__dsh-photo-picker--plugin.yml`
+- 本插件是 monorepo 子包：`url` 指向 `https://github.com/uoiszero/dsh-photo-picker/tree/main/plugin`，名称是 `uoiszero/dsh-photo-picker#dsh-photo-picker`。
+
+流程：
+
+1. 先确认 GitHub Release 和 npm `latest` 都已更新。
+2. 同步 fork `uoiszero/awesome-dsh-plugin` 到 upstream `main`，只在 fork 上开分支。
+3. **只改自己的** `data/plugins/uoiszero__dsh-photo-picker--plugin.yml`；需要更新时改 `description.en` / `description.zh`、分类或图标。不要手改生成的 README，也不要改别人的条目。
+4. 一个 PR 最多 3 条市场条目；只提本插件这一条。向 upstream `main` 开 PR，等待 CI 与维护者合并。
+5. 合并后市场站点自动重建，不需要再改别的文件。
+
+市场元数据的要点：
+
+- **`version` 不写进 YAML**：市场从 npm/GitHub 自动发现版本；不要写 `version` 或手写 `npm:` 字段。
+- 没有 npm 时可在 YAML 写 `tarball:`，指向 GitHub Release 的 `https` `.tgz`；本插件已发 npm，不需要。
+- 截图由 `plugin/screenshots.json` 和 README 自动采集，不要把绝对截图 URL 写进 YAML。
+- `dsh.bundle`（`plugin/package.json`）是收录硬条件；`dsh.client` 单独声明不算可安装。
+- 市场 CI 还会检查仓库满 1 天、`dsh-plugin` topic、awesome-lint、README 与 `data/plugins/*.yml` 一致。
+- 描述必须只写实际功能，不加营销词；改描述时确保 `en` / `zh` 都准确。
+- 如果只是新版本发布、描述未变，通常不需要改 YAML；市场下次构建会从 npm/GitHub 读取新版本。
