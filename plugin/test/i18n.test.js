@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
-  detectLanguage, en, getLanguagePreference, translate, zh,
+  detectLanguage, en, getLanguagePreference, postProcessingLabel, translate, zh,
 } from '../src/client/locales.js'
 
 test('detectLanguage follows browser languages and picks the first supported one', () => {
@@ -58,4 +58,17 @@ test('enum label keys cover technical values shown in the panel', () => {
     assert.ok(typeof zh[key] === 'string' && zh[key].length > 0, `zh missing ${key}`)
     assert.ok(typeof en[key] === 'string' && en[key].length > 0, `en missing ${key}`)
   }
+})
+
+test('post-processing codes are localized with numeric parameters preserved', () => {
+  const tzh = key => translate('zh', key)
+  const ten = key => translate('en', key)
+  assert.equal(postProcessingLabel(tzh, 'crop_left'), '裁左边')
+  assert.equal(postProcessingLabel(tzh, 'white_balance'), '白平衡')
+  assert.equal(postProcessingLabel(tzh, 'straighten_+1.5'), '校正水平 +1.5')
+  assert.equal(postProcessingLabel(tzh, 'exposure_+0.3'), '曝光 +0.3')
+  assert.equal(postProcessingLabel(tzh, 'shadow_lift'), '提亮阴影')
+  assert.equal(postProcessingLabel(ten, 'highlight_recover'), 'Recover highlights')
+  assert.equal(postProcessingLabel(ten, 'denoise'), 'Denoise')
+  assert.equal(postProcessingLabel(ten, 'unknown_code'), 'unknown_code')
 })

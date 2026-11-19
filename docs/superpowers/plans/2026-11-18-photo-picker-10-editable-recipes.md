@@ -33,7 +33,7 @@
 - HTTP PATCH recipe
 - export manifest `editSource`
 - UI 冒烟：合成项目内微调曝光、保存、恢复 AI
-- `npm test` 121/121
+- `npm test` 122/122
 
 ## 非目标
 

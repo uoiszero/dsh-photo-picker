@@ -161,6 +161,23 @@ var zh = {
   dimensionPostPotential: "\u540E\u671F\u6F5C\u529B",
   dimensionMoment: "\u77AC\u95F4",
   postProcessing: "\u540E\u671F\u5EFA\u8BAE",
+  postCropLeft: "\u88C1\u5DE6\u8FB9",
+  postCropRight: "\u88C1\u53F3\u8FB9",
+  postCropTop: "\u88C1\u4E0A\u8FB9",
+  postCropBottom: "\u88C1\u4E0B\u8FB9",
+  postCrop: "\u88C1\u526A",
+  postExposure: "\u66DD\u5149",
+  postContrast: "\u5BF9\u6BD4\u5EA6",
+  postSaturation: "\u9971\u548C\u5EA6",
+  postSharpen: "\u9510\u5316",
+  postRotate: "\u65CB\u8F6C",
+  postStraighten: "\u6821\u6B63\u6C34\u5E73",
+  postWhiteBalance: "\u767D\u5E73\u8861",
+  postWarm: "\u504F\u6696",
+  postCool: "\u504F\u51B7",
+  postShadowLift: "\u63D0\u4EAE\u9634\u5F71",
+  postHighlightRecover: "\u6062\u590D\u9AD8\u5149",
+  postDenoise: "\u964D\u566A",
   editRecipe: "\u4FEE\u56FE\u5EFA\u8BAE",
   editNoRecipe: "\u8FD9\u5F20\u7167\u7247\u6CA1\u6709\u7ED3\u6784\u5316\u4FEE\u56FE\u5EFA\u8BAE\uFF1B\u53EF\u4EE5\u624B\u52A8\u8C03\u6574\u6216\u91CD\u8DD1\u5355\u5F20\u7CBE\u8BC4\u3002",
   editRecipeAi: "AI \u5EFA\u8BAE",
@@ -411,6 +428,23 @@ var en = {
   dimensionPostPotential: "Post",
   dimensionMoment: "Moment",
   postProcessing: "Suggestions",
+  postCropLeft: "Crop left",
+  postCropRight: "Crop right",
+  postCropTop: "Crop top",
+  postCropBottom: "Crop bottom",
+  postCrop: "Crop",
+  postExposure: "Exposure",
+  postContrast: "Contrast",
+  postSaturation: "Saturation",
+  postSharpen: "Sharpen",
+  postRotate: "Rotate",
+  postStraighten: "Straighten",
+  postWhiteBalance: "White balance",
+  postWarm: "Warmer",
+  postCool: "Cooler",
+  postShadowLift: "Lift shadows",
+  postHighlightRecover: "Recover highlights",
+  postDenoise: "Denoise",
   editRecipe: "Edit recipe",
   editNoRecipe: "No structured edit recipe for this photo; tune it manually or re-run single scoring.",
   editRecipeAi: "AI suggestion",
@@ -574,6 +608,36 @@ function subscribeLanguage(listener) {
   return () => {
     listeners.delete(listener);
   };
+}
+var POST_OP_KEYS = {
+  crop_left: "postCropLeft",
+  crop_right: "postCropRight",
+  crop_top: "postCropTop",
+  crop_bottom: "postCropBottom",
+  crop: "postCrop",
+  exposure: "postExposure",
+  contrast: "postContrast",
+  saturation: "postSaturation",
+  sharpen: "postSharpen",
+  rotate: "postRotate",
+  straighten: "postStraighten",
+  white_balance: "postWhiteBalance",
+  warm: "postWarm",
+  cool: "postCool",
+  shadow_lift: "postShadowLift",
+  highlight_recover: "postHighlightRecover",
+  denoise: "postDenoise"
+};
+function postProcessingLabel(t, code) {
+  const direct = POST_OP_KEYS[code];
+  if (direct !== void 0) return t(direct);
+  const cut = code.lastIndexOf("_");
+  if (cut <= 0) return code;
+  const operation = code.slice(0, cut);
+  const value = code.slice(cut + 1);
+  const key = POST_OP_KEYS[operation];
+  if (key === void 0 || value === "") return code;
+  return `${t(key)} ${value}`;
 }
 function translate(language, key) {
   const dictionary = language === "zh" ? zh : en;
@@ -2222,7 +2286,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   ))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h2("div", { key, className: "pp-meter" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h2("div", { className: "pp-meter-track" }, /* @__PURE__ */ h2("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h2("span", null, value === null || value === void 0 ? "\u2014" : value));
-  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, code)))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-recipe-card-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi"))), recipe === null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe")), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.map((control) => {
+  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, postProcessingLabel(t, code))))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-recipe-card-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi"))), recipe === null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe")), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.map((control) => {
     const value = Number(draftRecipe?.[control.key] ?? 0);
     const display = `${control.signed && value > 0 ? "+" : ""}${value.toFixed(control.digits)}${control.unit}`;
     return /* @__PURE__ */ h2("label", { className: "pp-recipe-control", key: control.key }, /* @__PURE__ */ h2("span", { className: "pp-recipe-control-head" }, /* @__PURE__ */ h2("span", null, t(control.label)), /* @__PURE__ */ h2("span", { className: "pp-recipe-value" }, display)), /* @__PURE__ */ h2(

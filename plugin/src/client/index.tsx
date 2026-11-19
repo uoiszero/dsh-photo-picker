@@ -7,7 +7,7 @@ const Fragment = React.Fragment
 const NS = 'photoPicker'
 const PANEL_ID = 'photo-picker'
 
-import { getLanguage, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
+import { getLanguage, postProcessingLabel, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
 import { computeColumns, computeRowHeight, computeVisibleRows, TILE_GAP, TILE_MIN, TILE_MIN_NARROW } from './virtual.js'
 import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, Select, StateCard, Tabs } from './ui'
@@ -1128,7 +1128,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
             <div>
               <div className="pp-section-title" style={{ marginBottom: 6 }}>{t('postProcessing')}</div>
               <div className="pp-chips">
-                {detail.postProcessing.map((code: string) => <span key={code} className="pp-chip">{code}</span>)}
+                {detail.postProcessing.map((code: string) => <span key={code} className="pp-chip">{postProcessingLabel(t, code)}</span>)}
               </div>
             </div>
           )}
