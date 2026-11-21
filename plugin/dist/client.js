@@ -166,6 +166,8 @@ var zh = {
   exportPreview: "\u9884\u89C8\u6C47\u603B",
   exportRun: "\u6267\u884C\u5BFC\u51FA",
   exportResult: "\u5DF2\u5BFC\u51FA",
+  exportInProgress: "\u6B63\u5728\u5BFC\u51FA\u2026",
+  exportDoneToast: "\u5BFC\u51FA\u5B8C\u6210\uFF1A{count} \u5F20",
   exportConflict: "\u51B2\u7A81",
   exportSkipped: "\u5DF2\u5B58\u5728",
   exportSameVolume: "\u540C\u76D8\uFF0C\u53EF\u7528\u786C\u94FE\u63A5",
@@ -478,6 +480,8 @@ var en = {
   exportPreview: "Preview",
   exportRun: "Export",
   exportResult: "Exported",
+  exportInProgress: "Exporting\u2026",
+  exportDoneToast: "Export complete: {count} photos",
   exportConflict: "Conflicts",
   exportSkipped: "Existing",
   exportSameVolume: "Same volume, hardlinks available",
@@ -1522,6 +1526,11 @@ var STYLES = `
 .pp-run-ai-row { display: grid; gap: 3px; }
 .pp-run-meta { display: flex; gap: 10px; flex-wrap: wrap; padding: 0 0 4px 2px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
 
+.pp-export-progress { display: grid; gap: 5px; padding: 8px 0 2px; }
+.pp-export-progress-head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-export-progress .pp-progress-track { height: 7px; }
+.pp-export-progress .pp-progress-fill { transition: width .12s linear; }
+
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;
@@ -1894,6 +1903,43 @@ function summarizeStats(t, stats) {
   }
   if (typeof stats.durationMs === "number") parts.push(`${Math.round(stats.durationMs / 1e3)}${t("secondsShort")}`);
   return parts.join(" \xB7 ");
+}
+function estimateExportMs(preview) {
+  const total = Number(preview?.total ?? 0);
+  if (!Number.isFinite(total) || total <= 0) return null;
+  const bytes = Math.max(0, Number(preview?.totalBytes ?? 0));
+  const edited = Math.max(0, Number(preview?.editedCount ?? 0));
+  const estimated = 900 + total * 35 + bytes / (12 * 1024 * 1024) * 1e3 + edited * 250;
+  return Math.min(9e4, Math.max(1200, estimated));
+}
+function useVirtualExportProgress(active, preview) {
+  const [progress, setProgress] = (0, import_react2.useState)(0);
+  (0, import_react2.useEffect)(() => {
+    if (!active) {
+      setProgress(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const estimated = estimateExportMs(preview);
+    const update = () => {
+      const elapsed = Date.now() - startedAt;
+      if (estimated !== null) {
+        setProgress(Math.min(0.96, elapsed / estimated * 0.96));
+        return;
+      }
+      const slowStart = 1800;
+      const next = elapsed <= slowStart ? elapsed / slowStart * (1 / 3) : 1 / 3 + (0.96 - 1 / 3) * (1 - Math.exp(-(elapsed - slowStart) / 12e3));
+      setProgress(Math.min(0.96, next));
+    };
+    update();
+    const timer = setInterval(update, 100);
+    return () => clearInterval(timer);
+  }, [active, preview]);
+  return progress;
+}
+function ExportProgress({ t, progress }) {
+  const percent = Math.max(0, Math.min(99, Math.round(progress * 100)));
+  return /* @__PURE__ */ h2("div", { className: "pp-export-progress" }, /* @__PURE__ */ h2("div", { className: "pp-export-progress-head" }, /* @__PURE__ */ h2("span", null, t("exportInProgress")), /* @__PURE__ */ h2("span", null, percent, "%")), /* @__PURE__ */ h2("div", { className: "pp-progress-track", role: "progressbar", "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": percent }, /* @__PURE__ */ h2("div", { className: "pp-progress-fill", style: { width: `${percent}%` } })));
 }
 function CreateForm({ t, onCreated, onCancel }) {
   const [sourceKind, setSourceKind] = (0, import_react2.useState)("local");
@@ -2987,7 +3033,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     }
   ));
 }
-function ExportDialog({ t, projectId, onClose }) {
+function ExportDialog({ t, projectId, onClose, onDone }) {
   const [dest, setDest] = (0, import_react2.useState)("");
   const [buckets, setBuckets] = (0, import_react2.useState)(["keep", "maybe"]);
   const [mode, setMode] = (0, import_react2.useState)("hardlink");
@@ -2995,8 +3041,10 @@ function ExportDialog({ t, projectId, onClose }) {
   const [preview, setPreview] = (0, import_react2.useState)(null);
   const [result, setResult] = (0, import_react2.useState)(null);
   const [busy, setBusy] = (0, import_react2.useState)(false);
+  const [running, setRunning] = (0, import_react2.useState)(false);
   const [choosing, setChoosing] = (0, import_react2.useState)(false);
   const [error, setError] = (0, import_react2.useState)(null);
+  const progress = useVirtualExportProgress(running, preview);
   const toggleBucket = (bucket) => setBuckets((current) => current.includes(bucket) ? current.filter((item) => item !== bucket) : [...current, bucket]);
   const toggleEdits = (checked) => {
     setApplyEdits(checked);
@@ -3016,6 +3064,7 @@ function ExportDialog({ t, projectId, onClose }) {
   };
   const execute = async (action) => {
     setBusy(true);
+    if (action === "run") setRunning(true);
     setError(null);
     try {
       const data = await api(`/photo-picker/api/projects/${projectId}/export/${action}`, {
@@ -3026,11 +3075,13 @@ function ExportDialog({ t, projectId, onClose }) {
       else {
         setResult(data);
         setPreview(null);
+        onDone?.(data);
       }
     } catch (cause) {
       setError(String(cause));
     } finally {
       setBusy(false);
+      setRunning(false);
     }
   };
   return /* @__PURE__ */ h2(ModalShell, { title: t("exportTitle"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("exportDest")), /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h2(
@@ -3052,7 +3103,7 @@ function ExportDialog({ t, projectId, onClose }) {
     },
     /* @__PURE__ */ h2("option", { value: "hardlink" }, t("exportHardlink")),
     /* @__PURE__ */ h2("option", { value: "copy" }, t("exportCopy"))
-  )), /* @__PURE__ */ h2("div", { className: "pp-checks" }, /* @__PURE__ */ h2("label", null, /* @__PURE__ */ h2("input", { type: "checkbox", checked: applyEdits, onChange: (event) => toggleEdits(event.target.checked) }), t("editExport"))), applyEdits && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("editExportHint"))), /* @__PURE__ */ h2("div", { className: "pp-actions" }, /* @__PURE__ */ h2(Button, { disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h2("span", { style: { flex: 1 } }), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, /* @__PURE__ */ h2("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h2("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume")), preview.editedCount > 0 && /* @__PURE__ */ h2("div", { style: { marginTop: 4 } }, t("editExport"), ": ", preview.editedCount)), result !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, /* @__PURE__ */ h2("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h2("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h2("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h2(
+  )), /* @__PURE__ */ h2("div", { className: "pp-checks" }, /* @__PURE__ */ h2("label", null, /* @__PURE__ */ h2("input", { type: "checkbox", checked: applyEdits, onChange: (event) => toggleEdits(event.target.checked) }), t("editExport"))), applyEdits && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("editExportHint"))), running && /* @__PURE__ */ h2(ExportProgress, { t, progress }), /* @__PURE__ */ h2("div", { className: "pp-actions" }, /* @__PURE__ */ h2(Button, { disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h2("span", { style: { flex: 1 } }), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, /* @__PURE__ */ h2("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h2("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume")), preview.editedCount > 0 && /* @__PURE__ */ h2("div", { style: { marginTop: 4 } }, t("editExport"), ": ", preview.editedCount)), result !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, /* @__PURE__ */ h2("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h2("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h2("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h2(
     Button,
     {
       onClick: () => api("/photo-picker/api/fs/reveal", {
@@ -3367,6 +3418,7 @@ function ProjectDetail({ t, id, onBack }) {
   const [runTab, setRunTab] = (0, import_react2.useState)("checkpoints");
   const [noticeDismissed, setNoticeDismissed] = (0, import_react2.useState)(false);
   const [exporting, setExporting] = (0, import_react2.useState)(false);
+  const [exportNotice, setExportNotice] = (0, import_react2.useState)(null);
   const [settingsOpen, setSettingsOpen] = (0, import_react2.useState)(false);
   const [focusMode, setFocusMode] = (0, import_react2.useState)(false);
   const [error, setError] = (0, import_react2.useState)(null);
@@ -3493,7 +3545,18 @@ function ProjectDetail({ t, id, onBack }) {
   )))), /* @__PURE__ */ h2("span", { style: { flex: 1 } }), /* @__PURE__ */ h2(Button, { onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h2(Button, { onClick: () => setSettingsOpen(true) }, t("settings"))), /* @__PURE__ */ h2("div", { className: "pp-steps" }, stages.map((stage) => {
     const status = stage === activeStage ? "running" : stageStatus[stage] ?? "pending";
     return /* @__PURE__ */ h2("span", { className: "pp-step", key: stage, title: runStatusLabel(t, status) }, /* @__PURE__ */ h2("span", { className: "pp-dot", "data-status": status }), /* @__PURE__ */ h2("strong", null, stageLabel(t, stage)), /* @__PURE__ */ h2("span", null, runStatusLabel(t, status)));
-  })), detail.running !== null && /* @__PURE__ */ h2("div", { className: "pp-progress" }, /* @__PURE__ */ h2("div", { className: "pp-muted" }, activeStage !== void 0 && activeStage !== null ? stageLabel(t, activeStage) : t("running"), " ", progress?.done ?? 0, "/", progress?.total ?? "?", progress?.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : ""), /* @__PURE__ */ h2("div", { className: "pp-progress-track" }, /* @__PURE__ */ h2("div", { className: "pp-progress-fill", style: { width: `${percent}%` } }))), pipelineEvent !== null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).map((stage) => stageLabel(t, stage)).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), aiDisabled && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("aiDisabled")))), exporting && /* @__PURE__ */ h2(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && /* @__PURE__ */ h2(
+  })), detail.running !== null && /* @__PURE__ */ h2("div", { className: "pp-progress" }, /* @__PURE__ */ h2("div", { className: "pp-muted" }, activeStage !== void 0 && activeStage !== null ? stageLabel(t, activeStage) : t("running"), " ", progress?.done ?? 0, "/", progress?.total ?? "?", progress?.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : ""), /* @__PURE__ */ h2("div", { className: "pp-progress-track" }, /* @__PURE__ */ h2("div", { className: "pp-progress-fill", style: { width: `${percent}%` } }))), pipelineEvent !== null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).map((stage) => stageLabel(t, stage)).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), aiDisabled && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("aiDisabled")))), exporting && /* @__PURE__ */ h2(
+    ExportDialog,
+    {
+      t,
+      projectId: id,
+      onClose: () => setExporting(false),
+      onDone: (result) => {
+        setExporting(false);
+        setExportNotice(t("exportDoneToast").replace("{count}", String(result.total ?? 0)));
+      }
+    }
+  ), settingsOpen && /* @__PURE__ */ h2(
     SettingsDrawer,
     {
       t,
@@ -3512,9 +3575,9 @@ function ProjectDetail({ t, id, onBack }) {
     }
   )))))) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("runHistoryEmpty")) : aiRuns.length > 0 ? /* @__PURE__ */ h2(Fragment2, null, aiRuns.map((run2) => /* @__PURE__ */ h2("div", { className: "pp-run-ai-row", key: run2.id }, /* @__PURE__ */ h2("div", { className: "pp-history-row" }, /* @__PURE__ */ h2("strong", null, stageLabel(t, run2.stage)), /* @__PURE__ */ h2("span", { className: "pp-pill" }, runStatusLabel(t, run2.status)), /* @__PURE__ */ h2("span", { className: "pp-muted" }, run2.modelId ?? t("aiRunsLegacy")), /* @__PURE__ */ h2("span", { className: "pp-muted" }, run2.startedAt ? new Date(run2.startedAt).toLocaleString() : "\u2014"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, "\xA5", Number(run2.costCny ?? 0).toFixed(4))), /* @__PURE__ */ h2("div", { className: "pp-run-meta" }, /* @__PURE__ */ h2("span", null, t("aiRunTokens"), " ", run2.tokensIn ?? 0, " / ", run2.tokensOut ?? 0), /* @__PURE__ */ h2("span", null, t("aiRunCalls"), " ", run2.callCount ?? 0), /* @__PURE__ */ h2("span", null, t("aiRunDuration"), " ", run2.durationMs === null || run2.durationMs === void 0 ? "\u2014" : `${Math.round(run2.durationMs / 1e3)}${t("secondsShort")}`), run2.errorCode !== null && run2.errorCode !== void 0 && /* @__PURE__ */ h2("span", null, run2.errorCode), /* @__PURE__ */ h2("span", null, summarizeStats(t, run2.stats))))), aiRuns.length < aiRunsTotal && /* @__PURE__ */ h2(Button, { size: "sm", disabled: aiRunsLoading, onClick: () => {
     void loadMoreAiRuns();
-  } }, aiRunsLoading ? t("loading") : t("loadMore"))) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("aiRunsEmpty")))), /* @__PURE__ */ h2(ReviewSection, { t, projectId: id, version, onChanged: refresh, onFocusChange: setFocusMode }), /* @__PURE__ */ h2(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setNoticeDismissed(true) }, t("close"))));
+  } }, aiRunsLoading ? t("loading") : t("loadMore"))) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("aiRunsEmpty")))), /* @__PURE__ */ h2(ReviewSection, { t, projectId: id, version, onChanged: refresh, onFocusChange: setFocusMode }), /* @__PURE__ */ h2(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setNoticeDismissed(true) }, t("close"))), exportNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": "done", "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, exportNotice), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setExportNotice(null) }, t("close"))));
 }
-function GlobalExportDialog({ t, filters, selectedItems, onClose }) {
+function GlobalExportDialog({ t, filters, selectedItems, onClose, onDone }) {
   const [dest, setDest] = (0, import_react2.useState)("");
   const [buckets, setBuckets] = (0, import_react2.useState)(["keep", "maybe"]);
   const [layout, setLayout] = (0, import_react2.useState)("project");
@@ -3523,8 +3586,10 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }) {
   const [preview, setPreview] = (0, import_react2.useState)(null);
   const [result, setResult] = (0, import_react2.useState)(null);
   const [busy, setBusy] = (0, import_react2.useState)(false);
+  const [running, setRunning] = (0, import_react2.useState)(false);
   const [choosing, setChoosing] = (0, import_react2.useState)(false);
   const [error, setError] = (0, import_react2.useState)(null);
+  const progress = useVirtualExportProgress(running, preview);
   const selected = Array.isArray(selectedItems) ? selectedItems : [];
   const choose = async () => {
     if (choosing) return;
@@ -3561,6 +3626,7 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }) {
   const execute = async (action) => {
     if (busy) return;
     setBusy(true);
+    if (action === "run") setRunning(true);
     setError(null);
     try {
       const data = await request(action);
@@ -3568,11 +3634,13 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }) {
       else {
         setResult(data);
         setPreview(null);
+        onDone?.(data);
       }
     } catch (cause) {
       setError(String(cause));
     } finally {
       setBusy(false);
+      setRunning(false);
     }
   };
   const counts = preview?.counts ?? result?.counts ?? {};
@@ -3597,7 +3665,7 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }) {
   ), verdictLabel(t, bucket)))), /* @__PURE__ */ h2("div", { className: "pp-export-options" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("exportLayout")), /* @__PURE__ */ h2("select", { className: "pp-select", value: layout, onChange: (event) => setLayout(event.target.value) }, /* @__PURE__ */ h2("option", { value: "project" }, t("exportLayoutProject")), /* @__PURE__ */ h2("option", { value: "flat" }, t("exportLayoutFlat")))), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("exportMode")), /* @__PURE__ */ h2("select", { className: "pp-select", value: mode, onChange: (event) => setMode(event.target.value) }, /* @__PURE__ */ h2("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h2("option", { value: "copy" }, t("exportCopy"))))), /* @__PURE__ */ h2("div", { className: "pp-row pp-export-edit" }, /* @__PURE__ */ h2("label", { className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: applyEdits, onChange: (event) => {
     setApplyEdits(event.target.checked);
     setPreview(null);
-  } }), t("applyEdits"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), preview !== null && /* @__PURE__ */ h2("div", { className: "pp-export-summary" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { flexWrap: "wrap" } }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("exportPreview"), " ", preview.total ?? 0), Object.entries(counts).map(([bucket, count]) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: bucket }, verdictLabel(t, bucket), " ", String(count))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportSkipped"), " ", preview.skippedExisting ?? 0), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportConflict"), " ", preview.conflictCount ?? 0), preview.editedCount > 0 && /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("applyEdits"), " ", preview.editedCount)), Object.keys(preview.byProject ?? {}).length > 0 && /* @__PURE__ */ h2("div", { className: "pp-export-projects" }, Object.values(preview.byProject ?? {}).map((entry) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: entry.projectId }, entry.projectName, " ", entry.total)))), result !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("exportResult"), " ", result.total ?? 0, " \xB7 ", t("manifest"), " ", result.manifestPath), /* @__PURE__ */ h2("div", { className: "pp-actions" }, /* @__PURE__ */ h2(Button, { disabled: busy || dest.trim() === "", onClick: () => {
+  } }), t("applyEdits"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), preview !== null && /* @__PURE__ */ h2("div", { className: "pp-export-summary" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { flexWrap: "wrap" } }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("exportPreview"), " ", preview.total ?? 0), Object.entries(counts).map(([bucket, count]) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: bucket }, verdictLabel(t, bucket), " ", String(count))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportSkipped"), " ", preview.skippedExisting ?? 0), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportConflict"), " ", preview.conflictCount ?? 0), preview.editedCount > 0 && /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("applyEdits"), " ", preview.editedCount)), Object.keys(preview.byProject ?? {}).length > 0 && /* @__PURE__ */ h2("div", { className: "pp-export-projects" }, Object.values(preview.byProject ?? {}).map((entry) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: entry.projectId }, entry.projectName, " ", entry.total)))), result !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("exportResult"), " ", result.total ?? 0, " \xB7 ", t("manifest"), " ", result.manifestPath), running && /* @__PURE__ */ h2(ExportProgress, { t, progress }), /* @__PURE__ */ h2("div", { className: "pp-actions" }, /* @__PURE__ */ h2(Button, { disabled: busy || dest.trim() === "", onClick: () => {
     void execute("preview");
   } }, busy ? t("loading") : t("exportPreview")), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || dest.trim() === "", onClick: () => {
     void execute("run");
@@ -3617,6 +3685,7 @@ function GlobalPhotoWall({ t, projects }) {
   const [selected, setSelected] = (0, import_react2.useState)([]);
   const [active, setActive] = (0, import_react2.useState)(null);
   const [exporting, setExporting] = (0, import_react2.useState)(false);
+  const [exportNotice, setExportNotice] = (0, import_react2.useState)(null);
   const requestRef = (0, import_react2.useRef)(0);
   const filterKey = JSON.stringify({ projectIds, scenes, verdicts, sort });
   const fetchPage = async (offset) => {
@@ -3730,9 +3799,13 @@ function GlobalPhotoWall({ t, projects }) {
       t,
       filters: { projectIds, scenes, verdicts },
       selectedItems,
-      onClose: () => setExporting(false)
+      onClose: () => setExporting(false),
+      onDone: (result) => {
+        setExporting(false);
+        setExportNotice(t("exportDoneToast").replace("{count}", String(result.total ?? 0)));
+      }
     }
-  ));
+  ), exportNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": "done", "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, exportNotice), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setExportNotice(null) }, t("close"))));
 }
 function Workbench({ t }) {
   (0, import_react2.useSyncExternalStore)(subscribeLanguage, getLanguage);

@@ -786,6 +786,11 @@ export const STYLES = `
 .pp-run-ai-row { display: grid; gap: 3px; }
 .pp-run-meta { display: flex; gap: 10px; flex-wrap: wrap; padding: 0 0 4px 2px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
 
+.pp-export-progress { display: grid; gap: 5px; padding: 8px 0 2px; }
+.pp-export-progress-head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-export-progress .pp-progress-track { height: 7px; }
+.pp-export-progress .pp-progress-fill { transition: width .12s linear; }
+
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;
