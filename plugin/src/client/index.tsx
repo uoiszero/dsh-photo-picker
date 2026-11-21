@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 // esbuild 用 jsxFactory: 'h' 编译 JSX；Fragment 用于多根节点。
 const h = React.createElement
@@ -3087,6 +3087,48 @@ function Workbench({ t }: { t: (key: string) => string }) {
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const pageRef = useRef<HTMLDivElement | null>(null)
+  const projectListScrollRef = useRef(0)
+  const restoreProjectListScrollRef = useRef(false)
+
+  const rememberProjectListScroll = () => {
+    if (view !== 'projects' || selected !== null || creating) return
+    projectListScrollRef.current = pageRef.current?.scrollTop ?? 0
+  }
+
+  const openProject = (id: string) => {
+    rememberProjectListScroll()
+    setSelected(id)
+  }
+
+  const backToProjects = () => {
+    restoreProjectListScrollRef.current = true
+    setSelected(null)
+  }
+
+  const switchToProjects = () => {
+    rememberProjectListScroll()
+    restoreProjectListScrollRef.current = true
+    setView('projects')
+    setSelected(null)
+    setCreating(false)
+  }
+
+  const switchToGlobal = () => {
+    rememberProjectListScroll()
+    setView('global')
+    setSelected(null)
+    setCreating(false)
+  }
+
+  useLayoutEffect(() => {
+    if (!restoreProjectListScrollRef.current) return
+    if (selected !== null || view !== 'projects' || creating) return
+    const page = pageRef.current
+    if (page === null) return
+    page.scrollTop = projectListScrollRef.current
+    restoreProjectListScrollRef.current = false
+  }, [selected, view, creating, projects])
 
   const reload = async () => {
     try {
@@ -3117,7 +3159,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
   const list = projects ?? []
 
   return (
-    <div className="pp-page">
+    <div className="pp-page" ref={pageRef}>
       <div className="pp-shell">
         <header className="pp-header">
           <div className="pp-title-wrap">
@@ -3143,7 +3185,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
               {getLanguage() === 'zh' ? 'EN' : '中'}
             </button>
             {view === 'projects' && (
-              <Button variant="primary" onClick={() => { setCreating(true); setSelected(null) }}>
+              <Button variant="primary" onClick={() => { rememberProjectListScroll(); setCreating(true); setSelected(null) }}>
                 {t('newProject')}
               </Button>
             )}
@@ -3151,21 +3193,21 @@ function Workbench({ t }: { t: (key: string) => string }) {
         </header>
 
         <div className="pp-view-tabs">
-          <button type="button" className={view === 'projects' && selected === null ? 'active' : ''} onClick={() => { setView('projects'); setSelected(null); setCreating(false) }}>{t('projectsTab')}</button>
-          <button type="button" className={view === 'global' ? 'active' : ''} onClick={() => { setView('global'); setSelected(null); setCreating(false) }}>{t('allPhotosTab')}</button>
+          <button type="button" className={view === 'projects' && selected === null ? 'active' : ''} onClick={switchToProjects}>{t('projectsTab')}</button>
+          <button type="button" className={view === 'global' ? 'active' : ''} onClick={switchToGlobal}>{t('allPhotosTab')}</button>
         </div>
 
         {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
 
         {selected !== null ? (
-          <ProjectDetail t={t} id={selected} onBack={() => setSelected(null)} />
+          <ProjectDetail t={t} id={selected} onBack={backToProjects} />
         ) : view === 'global' ? (
           <GlobalPhotoWall t={t} projects={list} />
         ) : creating ? (
           <CreateForm
             t={t}
             onCreated={id => { setCreating(false); setSelected(id); void reload() }}
-            onCancel={() => setCreating(false)}
+            onCancel={() => { restoreProjectListScrollRef.current = true; setCreating(false) }}
           />
         ) : projects === null ? (
           <StateCard kind="loading" title={t('loading')} />
@@ -3183,7 +3225,7 @@ function Workbench({ t }: { t: (key: string) => string }) {
                 <button
                   type="button"
                   className="pp-project"
-                  onClick={() => setSelected(project.id)}
+                  onClick={() => openProject(project.id)}
                 >
                   <span className="pp-project-top">
                     <strong className="pp-project-name">{project.name}</strong>
