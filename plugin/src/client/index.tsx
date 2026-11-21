@@ -816,9 +816,9 @@ function SceneEditor({ t, projectId, photoId, detail, onClose, onSaved }: any) {
     <ModalShell title={t('editScenes')} closeLabel={t('close')} onClose={onClose}>
       <div className="pp-form">
         <div className="pp-muted">{t('sceneEditHint')}</div>
-        <div className="pp-scene-options">
+        <div className="pp-option-group pp-option-group-wrap pp-option-group-scene" role="group" aria-label={t('editScenes')}>
           {Object.entries(SCENE_KEYS).map(([scene, key]) => (
-            <label key={scene}>
+            <label key={scene} className="pp-option">
               <input
                 type="checkbox"
                 checked={selected.includes(scene)}
@@ -833,9 +833,9 @@ function SceneEditor({ t, projectId, photoId, detail, onClose, onSaved }: any) {
           {selected.length === 0 ? (
             <div className="pp-muted">{t('primarySceneEmpty')}</div>
           ) : (
-            <div className="pp-radio-group" role="radiogroup" aria-label={t('primaryScene')}>
+            <div className="pp-option-group pp-option-group-primary" role="radiogroup" aria-label={t('primaryScene')}>
               {selected.map(scene => (
-                <label className="pp-radio-option" key={scene}>
+                <label className="pp-option" key={scene}>
                   <input
                     type="radio"
                     name="primary-scene"
@@ -1688,33 +1688,34 @@ function ExportDialog({ t, projectId, onClose, onDone }: { t: (key: string) => s
               </Button>
             </div>
           </label>
-          <div className="pp-row" style={{ alignItems: 'center' }}>
-            <span className="pp-muted">{t('exportBuckets')}</span>
-            {['keep', 'maybe', 'reject'].map(bucket => (
-              <label key={bucket} className="pp-chip" style={{ cursor: 'pointer', gap: 6 }}>
-                <input type="checkbox" checked={buckets.includes(bucket)} onChange={() => toggleBucket(bucket)} />
-                {verdictLabel(t, bucket)}
-              </label>
-            ))}
-          </div>
-          <fieldset className="pp-export-fieldset">
-            <legend>{t('exportMode')}</legend>
-            <div className="pp-radio-group" role="radiogroup" aria-label={t('exportMode')}>
-              <label className="pp-radio-option">
+          <div className="pp-export-fields">
+            <span className="pp-export-label">{t('exportBuckets')}</span>
+            <div className="pp-option-group">
+              {['keep', 'maybe', 'reject'].map(bucket => (
+                <label key={bucket} className="pp-option">
+                  <input type="checkbox" checked={buckets.includes(bucket)} onChange={() => toggleBucket(bucket)} />
+                  {verdictLabel(t, bucket)}
+                </label>
+              ))}
+            </div>
+            <span className="pp-export-label">{t('exportMode')}</span>
+            <div className="pp-option-group" role="radiogroup" aria-label={t('exportMode')}>
+              <label className="pp-option">
                 <input type="radio" name="project-export-mode" value="hardlink" disabled={applyEdits} checked={!applyEdits && mode === 'hardlink'} onChange={() => setMode('hardlink')} />
                 {t('exportHardlink')}
               </label>
-              <label className="pp-radio-option">
+              <label className="pp-option">
                 <input type="radio" name="project-export-mode" value="copy" disabled={applyEdits} checked={applyEdits || mode === 'copy'} onChange={() => setMode('copy')} />
                 {t('exportCopy')}
               </label>
             </div>
-          </fieldset>
-          <div className="pp-checks">
-            <label>
-              <input type="checkbox" checked={applyEdits} onChange={event => toggleEdits(event.target.checked)} />
-              {t('editExport')}
-            </label>
+            <span className="pp-export-label" aria-hidden="true" />
+            <div className="pp-option-group pp-option-group-span">
+              <label className="pp-option">
+                <input type="checkbox" checked={applyEdits} onChange={event => toggleEdits(event.target.checked)} />
+                {t('editExport')}
+              </label>
+            </div>
           </div>
           {applyEdits && <div className="pp-callout">{t('editExportHint')}</div>}
         </div>
@@ -2755,53 +2756,50 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose, onDone }: any)
             </Button>
           </div>
         </label>
-        <div className="pp-row" style={{ alignItems: 'center' }}>
-          <span className="pp-muted">{t('exportBuckets')}</span>
-          {['keep', 'maybe', 'reject'].map(bucket => (
-            <label key={bucket} className="pp-chip" style={{ cursor: 'pointer', gap: 6 }}>
-              <input
-                type="checkbox"
-                disabled={selected.length > 0}
-                checked={buckets.includes(bucket)}
-                onChange={() => setBuckets(current => current.includes(bucket) ? current.filter(item => item !== bucket) : [...current, bucket])}
-              />
-              {verdictLabel(t, bucket)}
+        <div className="pp-export-fields">
+          <span className="pp-export-label">{t('exportBuckets')}</span>
+          <div className="pp-option-group">
+            {['keep', 'maybe', 'reject'].map(bucket => (
+              <label key={bucket} className="pp-option">
+                <input
+                  type="checkbox"
+                  disabled={selected.length > 0}
+                  checked={buckets.includes(bucket)}
+                  onChange={() => setBuckets(current => current.includes(bucket) ? current.filter(item => item !== bucket) : [...current, bucket])}
+                />
+                {verdictLabel(t, bucket)}
+              </label>
+            ))}
+          </div>
+          <span className="pp-export-label">{t('exportLayout')}</span>
+          <div className="pp-option-group" role="radiogroup" aria-label={t('exportLayout')}>
+            <label className="pp-option">
+              <input type="radio" name="global-export-layout" value="project" checked={layout === 'project'} onChange={() => setLayout(GLOBAL_LAYOUT_PROJECT)} />
+              {t('exportLayoutProject')}
             </label>
-          ))}
-        </div>
-        <div className="pp-export-options">
-          <fieldset className="pp-export-fieldset">
-            <legend>{t('exportLayout')}</legend>
-            <div className="pp-radio-group" role="radiogroup" aria-label={t('exportLayout')}>
-              <label className="pp-radio-option">
-                <input type="radio" name="global-export-layout" value="project" checked={layout === 'project'} onChange={() => setLayout(GLOBAL_LAYOUT_PROJECT)} />
-                {t('exportLayoutProject')}
-              </label>
-              <label className="pp-radio-option">
-                <input type="radio" name="global-export-layout" value="flat" checked={layout === 'flat'} onChange={() => setLayout(GLOBAL_LAYOUT_FLAT)} />
-                {t('exportLayoutFlat')}
-              </label>
-            </div>
-          </fieldset>
-          <fieldset className="pp-export-fieldset">
-            <legend>{t('exportMode')}</legend>
-            <div className="pp-radio-group" role="radiogroup" aria-label={t('exportMode')}>
-              <label className="pp-radio-option">
-                <input type="radio" name="global-export-mode" value="hardlink" checked={mode === 'hardlink'} onChange={() => setMode('hardlink')} />
-                {t('exportHardlink')}
-              </label>
-              <label className="pp-radio-option">
-                <input type="radio" name="global-export-mode" value="copy" checked={mode === 'copy'} onChange={() => setMode('copy')} />
-                {t('exportCopy')}
-              </label>
-            </div>
-          </fieldset>
-        </div>
-        <div className="pp-row pp-export-edit">
-          <label className="pp-chip" style={{ cursor: 'pointer', gap: 6 }}>
-            <input type="checkbox" checked={applyEdits} onChange={event => { setApplyEdits(event.target.checked); setPreview(null) }} />
-            {t('applyEdits')}
-          </label>
+            <label className="pp-option">
+              <input type="radio" name="global-export-layout" value="flat" checked={layout === 'flat'} onChange={() => setLayout(GLOBAL_LAYOUT_FLAT)} />
+              {t('exportLayoutFlat')}
+            </label>
+          </div>
+          <span className="pp-export-label">{t('exportMode')}</span>
+          <div className="pp-option-group" role="radiogroup" aria-label={t('exportMode')}>
+            <label className="pp-option">
+              <input type="radio" name="global-export-mode" value="hardlink" checked={mode === 'hardlink'} onChange={() => setMode('hardlink')} />
+              {t('exportHardlink')}
+            </label>
+            <label className="pp-option">
+              <input type="radio" name="global-export-mode" value="copy" checked={mode === 'copy'} onChange={() => setMode('copy')} />
+              {t('exportCopy')}
+            </label>
+          </div>
+          <span className="pp-export-label" aria-hidden="true" />
+          <div className="pp-option-group pp-option-group-span">
+            <label className="pp-option">
+              <input type="checkbox" checked={applyEdits} onChange={event => { setApplyEdits(event.target.checked); setPreview(null) }} />
+              {t('applyEdits')}
+            </label>
+          </div>
         </div>
         {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
         {preview !== null && (
