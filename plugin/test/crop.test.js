@@ -52,5 +52,16 @@ test('resizeCrop supports free aspect and minimum size', () => {
 })
 
 test('preset list contains the requested ratios', () => {
-  assert.deepEqual(CROP_RATIOS.map(item => item.id), ['free', '4:3', '5:4', '1:1', '16:9', '16:10', '3:2'])
+  assert.deepEqual(CROP_RATIOS.map(item => item.id), ['free', 'original', '4:3', '5:4', '1:1', '16:9', '16:10', '3:2'])
+})
+
+test('resizeCrop keeps the aspect ratio when clamped at the frame edge', () => {
+  const start = { left: 0.7, top: 0.1, width: 0.2, height: 0.2 }
+  const edge = resizeCrop(start, 'e', 0.5, 0, 1, 1)
+  assert.ok(Math.abs(edge.width - edge.height) < 1e-9)
+  assert.ok(edge.left + edge.width <= 1.0000001)
+  const corner = resizeCrop({ left: 0.7, top: 0.7, width: 0.2, height: 0.2 }, 'se', 0.5, 0.5, 1, 1)
+  assert.ok(Math.abs(corner.width - corner.height) < 1e-9)
+  assert.ok(corner.left + corner.width <= 1.0000001)
+  assert.ok(corner.top + corner.height <= 1.0000001)
 })
