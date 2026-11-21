@@ -2,6 +2,7 @@
 
 export const CROP_RATIOS = [
   { id: 'free', value: null },
+  { id: 'original', value: null },
   { id: '4:3', value: 4 / 3 },
   { id: '5:4', value: 5 / 4 },
   { id: '1:1', value: 1 },
@@ -78,44 +79,50 @@ export function moveCrop(crop, dx, dy) {
 function fitLocked(crop, handle, dx, dy, frameAspect, aspect) {
   const current = normalizeCrop(crop)
   const ratio = aspect / frameAspect
-  const centerX = current.left + current.width / 2
-  const centerY = current.top + current.height / 2
   const west = handle.includes('w')
   const east = handle.includes('e')
   const north = handle.includes('n')
   const south = handle.includes('s')
-  let width = current.width
-  let height = current.height
+  const centerX = current.left + current.width / 2
+  const centerY = current.top + current.height / 2
+  const minHeight = Math.max(MIN_SIZE, MIN_SIZE / ratio)
+  const minWidth = minHeight * ratio
 
-  if (west || east) {
-    width = clamp(current.width + (east ? dx : -dx), MIN_SIZE, 1)
-    height = width / ratio
-    if (height > 1) {
-      height = 1
-      width = height * ratio
-    }
-    if (width > 1) {
-      width = 1
-      height = width / ratio
-    }
+  if ((west || east) && (north || south)) {
+    // 角点：锚定对角，按宽高比取最大可放入画面的尺寸。
+    const maxWidth = east ? 1 - current.left : current.left + current.width
+    const maxHeight = south ? 1 - current.top : current.top + current.height
+    let width = clamp(current.width + (east ? dx : -dx), minWidth, Math.min(maxWidth, maxHeight * ratio))
+    let height = width / ratio
+    if (height > maxHeight) { height = maxHeight; width = height * ratio }
+    if (width > maxWidth) { width = maxWidth; height = width / ratio }
     const left = east ? current.left : current.left + current.width - width
-    const top = centerY - height / 2
+    const top = south ? current.top : current.top + current.height - height
     return normalizeCrop({ left, top, width, height })
   }
 
-  height = clamp(current.height + (south ? dy : -dy), MIN_SIZE, 1)
-  width = height * ratio
-  if (width > 1) {
-    width = 1
-    height = width / ratio
+  if (west || east) {
+    // 左右边：以当前垂直中心为锚，宽度受上下边界约束。
+    const maxWidth = east ? 1 - current.left : current.left + current.width
+    const maxByCenter = 2 * Math.min(centerY, 1 - centerY) * ratio
+    const width = clamp(current.width + (east ? dx : -dx), minWidth, Math.min(maxWidth, maxByCenter))
+    const height = width / ratio
+    return normalizeCrop({
+      left: east ? current.left : current.left + current.width - width,
+      top: centerY - height / 2,
+      width,
+      height,
+    })
   }
-  if (height > 1) {
-    height = 1
-    width = height * ratio
-  }
+
+  // 上下边：以当前水平中心为锚，高度受左右边界约束。
+  const maxHeight = south ? 1 - current.top : current.top + current.height
+  const maxByCenter = (2 * Math.min(centerX, 1 - centerX)) / ratio
+  const height = clamp(current.height + (south ? dy : -dy), minHeight, Math.min(maxHeight, maxByCenter))
+  const width = height * ratio
   return normalizeCrop({
     left: centerX - width / 2,
-    top: north ? current.top : current.top + current.height - height,
+    top: south ? current.top : current.top + current.height - height,
     width,
     height,
   })

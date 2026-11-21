@@ -186,6 +186,9 @@ var zh = {
   editRecipeSave: "\u4FDD\u5B58",
   editRecipeCropReadonly: "\u88C1\u526A",
   cropEdit: "\u88C1\u526A\u56FE\u7247",
+  cropTitle: "\u88C1\u526A",
+  cropHint: "\u62D6\u52A8\u8FB9\u6846\u88C1\u526A\uFF0C\u62D6\u52A8\u65F6\u663E\u793A\u4E95\u5B57\u683C",
+  cropOriginal: "\u539F\u56FE",
   cropFree: "\u81EA\u7531",
   cropSwap: "\u5207\u6362\u957F\u77ED\u8FB9",
   cropReset: "\u91CD\u7F6E\u88C1\u526A",
@@ -460,6 +463,9 @@ var en = {
   editRecipeSave: "Save",
   editRecipeCropReadonly: "Crop",
   cropEdit: "Crop image",
+  cropTitle: "Crop",
+  cropHint: "Drag the frame to crop; guides appear while dragging",
+  cropOriginal: "Original",
   cropFree: "Free",
   cropSwap: "Swap sides",
   cropReset: "Reset crop",
@@ -1317,6 +1323,58 @@ var STYLES = `
   .pp-drawer { width: 100vw; }
   .pp-history-row { grid-template-columns: 1fr; }
 }
+
+.pp-single-visual { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.pp-crop-panel {
+  display: grid; gap: 10px; padding: 12px 14px;
+  border-radius: 14px; border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
+}
+.pp-crop-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pp-crop-panel-head strong { font-size: 13px; font-weight: 650; }
+.pp-crop-panel-head .pp-muted { font-size: 11px; text-align: right; }
+.pp-crop-angle { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.pp-crop-angle > span:first-child { width: 34px; flex: none; }
+.pp-crop-angle-range { flex: 1; min-width: 80px; height: 22px; accent-color: var(--dsw-alias-brand-primary); cursor: pointer; }
+.pp-crop-angle-value { width: 44px; flex: none; text-align: right; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary); }
+.pp-crop-ratios { display: flex; align-items: stretch; gap: 6px; overflow-x: auto; padding: 2px 1px 4px; scrollbar-width: thin; }
+.pp-crop-ratio {
+  flex: 0 0 56px; min-height: 52px; display: grid; place-items: center; align-content: center; gap: 4px;
+  padding: 5px 2px; border-radius: 9px; border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary);
+  font-size: 10px; line-height: 1.2; cursor: pointer;
+}
+.pp-crop-ratio:hover { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); }
+.pp-crop-ratio.active { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, var(--dsw-alias-bg-layer-1)); }
+.pp-crop-ratio-icon { display: block; width: 24px; height: 17px; border: 1.5px solid currentColor; border-radius: 2px; }
+.pp-crop-ratio-icon[data-ratio="4:3"] { width: 23px; height: 17px; }
+.pp-crop-ratio-icon[data-ratio="5:4"] { width: 21px; height: 17px; }
+.pp-crop-ratio-icon[data-ratio="1:1"] { width: 18px; height: 18px; }
+.pp-crop-ratio-icon[data-ratio="16:9"] { width: 25px; height: 14px; }
+.pp-crop-ratio-icon[data-ratio="16:10"] { width: 24px; height: 15px; }
+.pp-crop-ratio-icon[data-ratio="3:2"] { width: 24px; height: 16px; }
+.pp-crop-ratio-icon[data-ratio="original"] { width: 24px; height: 17px; border-width: 2px; }
+.pp-crop-ratio-icon-free { border-style: dashed; border-radius: 3px; }
+.pp-crop-actions { display: flex; align-items: stretch; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 2px; }
+.pp-crop-action {
+  min-width: 64px; min-height: 48px; display: grid; place-items: center; align-content: center; gap: 3px;
+  padding: 4px 8px; border-radius: 9px; border: 1px solid transparent;
+  background: transparent; color: var(--dsw-alias-label-secondary);
+  font-size: 10px; line-height: 1.2; cursor: pointer;
+}
+.pp-crop-action:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.pp-crop-action:disabled { opacity: .4; cursor: not-allowed; }
+.pp-crop-action-primary { color: var(--dsw-alias-label-primary-foreground); background: var(--dsw-alias-button-primary-fill); border-color: transparent; }
+.pp-crop-action-primary:hover { color: var(--dsw-alias-label-primary-foreground); filter: brightness(1.03); }
+.pp-crop-action-glyph { font-size: 18px; line-height: 1; }
+.pp-crop-thirds { position: absolute; inset: 0; pointer-events: none; }
+.pp-crop-thirds span { position: absolute; background: rgba(255, 255, 255, .7); box-shadow: 0 0 2px rgba(0, 0, 0, .5); }
+.pp-crop-thirds .v { top: 0; bottom: 0; width: 1px; }
+.pp-crop-thirds .h { left: 0; right: 0; height: 1px; }
+
+.pp-stage-cropping img { max-height: 52vh; }
+.pp-stage-cropping { min-height: 260px; padding: 10px; }
+
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;
@@ -1367,6 +1425,7 @@ function computeVisibleRows({
 // plugin/src/client/crop.js
 var CROP_RATIOS = [
   { id: "free", value: null },
+  { id: "original", value: null },
   { id: "4:3", value: 4 / 3 },
   { id: "5:4", value: 5 / 4 },
   { id: "1:1", value: 1 },
@@ -1433,42 +1492,50 @@ function moveCrop(crop, dx, dy) {
 function fitLocked(crop, handle, dx, dy, frameAspect, aspect) {
   const current = normalizeCrop(crop);
   const ratio = aspect / frameAspect;
-  const centerX = current.left + current.width / 2;
-  const centerY = current.top + current.height / 2;
   const west = handle.includes("w");
   const east = handle.includes("e");
   const north = handle.includes("n");
   const south = handle.includes("s");
-  let width = current.width;
-  let height = current.height;
+  const centerX = current.left + current.width / 2;
+  const centerY = current.top + current.height / 2;
+  const minHeight = Math.max(MIN_SIZE, MIN_SIZE / ratio);
+  const minWidth = minHeight * ratio;
+  if ((west || east) && (north || south)) {
+    const maxWidth = east ? 1 - current.left : current.left + current.width;
+    const maxHeight2 = south ? 1 - current.top : current.top + current.height;
+    let width2 = clamp(current.width + (east ? dx : -dx), minWidth, Math.min(maxWidth, maxHeight2 * ratio));
+    let height2 = width2 / ratio;
+    if (height2 > maxHeight2) {
+      height2 = maxHeight2;
+      width2 = height2 * ratio;
+    }
+    if (width2 > maxWidth) {
+      width2 = maxWidth;
+      height2 = width2 / ratio;
+    }
+    const left = east ? current.left : current.left + current.width - width2;
+    const top = south ? current.top : current.top + current.height - height2;
+    return normalizeCrop({ left, top, width: width2, height: height2 });
+  }
   if (west || east) {
-    width = clamp(current.width + (east ? dx : -dx), MIN_SIZE, 1);
-    height = width / ratio;
-    if (height > 1) {
-      height = 1;
-      width = height * ratio;
-    }
-    if (width > 1) {
-      width = 1;
-      height = width / ratio;
-    }
-    const left = east ? current.left : current.left + current.width - width;
-    const top = centerY - height / 2;
-    return normalizeCrop({ left, top, width, height });
+    const maxWidth = east ? 1 - current.left : current.left + current.width;
+    const maxByCenter2 = 2 * Math.min(centerY, 1 - centerY) * ratio;
+    const width2 = clamp(current.width + (east ? dx : -dx), minWidth, Math.min(maxWidth, maxByCenter2));
+    const height2 = width2 / ratio;
+    return normalizeCrop({
+      left: east ? current.left : current.left + current.width - width2,
+      top: centerY - height2 / 2,
+      width: width2,
+      height: height2
+    });
   }
-  height = clamp(current.height + (south ? dy : -dy), MIN_SIZE, 1);
-  width = height * ratio;
-  if (width > 1) {
-    width = 1;
-    height = width / ratio;
-  }
-  if (height > 1) {
-    height = 1;
-    width = height * ratio;
-  }
+  const maxHeight = south ? 1 - current.top : current.top + current.height;
+  const maxByCenter = 2 * Math.min(centerX, 1 - centerX) / ratio;
+  const height = clamp(current.height + (south ? dy : -dy), minHeight, Math.min(maxHeight, maxByCenter));
+  const width = height * ratio;
   return normalizeCrop({
     left: centerX - width / 2,
-    top: north ? current.top : current.top + current.height - height,
+    top: south ? current.top : current.top + current.height - height,
     width,
     height
   });
@@ -2230,9 +2297,16 @@ function cropRatioLabel(id, frameAspect, swapped) {
   const horizontal = frameAspect >= 1 ? !swapped : swapped;
   return horizontal ? `${long}:${short}` : `${short}:${long}`;
 }
+function CropRatioIcon({ id }) {
+  if (id === "free") {
+    return /* @__PURE__ */ h2("span", { className: "pp-crop-ratio-icon pp-crop-ratio-icon-free", "aria-hidden": "true" });
+  }
+  return /* @__PURE__ */ h2("span", { className: "pp-crop-ratio-icon", "data-ratio": id, "aria-hidden": "true" });
+}
 function CropOverlay({ crop, frameAspect, aspect, onChange }) {
   const layerRef = (0, import_react2.useRef)(null);
   const dragRef = (0, import_react2.useRef)(null);
+  const [dragging, setDragging] = (0, import_react2.useState)(false);
   const current = normalizeCrop(crop);
   const start = (handle, event) => {
     event.preventDefault();
@@ -2241,6 +2315,7 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }) {
     if (layer === null) return;
     const rect = layer.getBoundingClientRect();
     layer.setPointerCapture?.(event.pointerId);
+    setDragging(true);
     dragRef.current = {
       handle,
       startX: event.clientX,
@@ -2260,6 +2335,7 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }) {
   const end = (event) => {
     if (dragRef.current === null) return;
     dragRef.current = null;
+    setDragging(false);
     layerRef.current?.releasePointerCapture?.(event.pointerId);
   };
   return /* @__PURE__ */ h2(
@@ -2282,6 +2358,7 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }) {
         style: { left: `${current.left * 100}%`, top: `${current.top * 100}%`, width: `${current.width * 100}%`, height: `${current.height * 100}%` },
         onPointerDown: (event) => start("move", event)
       },
+      dragging && /* @__PURE__ */ h2("div", { className: "pp-crop-thirds", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "v", style: { left: "66.666%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "66.666%" } })),
       CROP_HANDLES.map((handle) => /* @__PURE__ */ h2(
         "span",
         {
@@ -2314,6 +2391,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [recipeError, setRecipeError] = (0, import_react2.useState)(null);
   const draftPreviewUrlRef = (0, import_react2.useRef)(null);
   const cropFrameUrlRef = (0, import_react2.useRef)(null);
+  const cropPanelRef = (0, import_react2.useRef)(null);
   const draftIsIdentity = isIdentityDraft(draftRecipe);
   const draftCrop = normalizeCrop(draftRecipe?.crop);
   const savedCrop = normalizeCrop(detail?.editRecipe?.crop);
@@ -2384,6 +2462,10 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   };
   const applyCropRatio = (id) => {
     setCropRatio(id);
+    if (id === "original") {
+      setDraftRecipe((current) => ({ ...current, crop: { left: 0, top: 0, width: 1, height: 1 } }));
+      return;
+    }
     const preset = CROP_RATIOS.find((item) => item.id === id);
     if (!preset?.value) return;
     const aspect = orientedAspect(preset.value, frameAspect, cropSwapped);
@@ -2398,7 +2480,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setDraftRecipe((current) => ({ ...current, crop: fitAspect(current.crop, frameAspect, aspect) }));
   };
   const resetCrop = () => {
-    setCropRatio("free");
+    setCropRatio("original");
     setCropSwapped(false);
     setDraftRecipe((current) => ({ ...current, crop: { left: 0, top: 0, width: 1, height: 1 } }));
   };
@@ -2479,6 +2561,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [photoId, index, items, detail, deciding]);
+  (0, import_react2.useEffect)(() => {
+    if (cropEditing) cropPanelRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [cropEditing]);
   (0, import_react2.useEffect)(() => {
     return () => {
       if (draftPreviewUrlRef.current !== null) {
@@ -2593,7 +2678,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const cropSrc = cropFrameUrl ?? `${detail.previewUrl}?v=${version}`;
   const stageSrc = cropEditing ? cropSrc : imageSrc;
   const sceneText = Array.isArray(detail.scenes) ? detail.scenes.map((scene) => sceneLabel(t, scene)).join(" \xB7 ") : "";
-  return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), detail.group !== void 0 && /* @__PURE__ */ h2(Button, { onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h2("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h2("div", { className: "pp-single-body" }, /* @__PURE__ */ h2("div", { className: "pp-stage" }, /* @__PURE__ */ h2("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h2(
+  return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), detail.group !== void 0 && /* @__PURE__ */ h2(Button, { onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h2("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h2("div", { className: "pp-single-body" }, /* @__PURE__ */ h2("div", { className: "pp-single-visual" }, /* @__PURE__ */ h2("div", { className: `pp-stage${cropEditing ? " pp-stage-cropping" : ""}` }, /* @__PURE__ */ h2("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h2(
     "img",
     {
       src: stageSrc,
@@ -2650,10 +2735,33 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       onClick: () => setShowEdited((value) => !value)
     },
     showingEdited ? t("editAfter") : t("editBefore")
-  ))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
+  ))), cropEditing && /* @__PURE__ */ h2("div", { className: "pp-crop-panel", ref: cropPanelRef }, /* @__PURE__ */ h2("div", { className: "pp-crop-panel-head" }, /* @__PURE__ */ h2("strong", null, t("cropTitle")), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("cropHint"))), /* @__PURE__ */ h2("label", { className: "pp-crop-angle" }, /* @__PURE__ */ h2("span", null, t("editRotate")), /* @__PURE__ */ h2(
+    "input",
+    {
+      className: "pp-crop-angle-range",
+      type: "range",
+      min: -5,
+      max: 5,
+      step: 0.1,
+      value: Number(draftRecipe?.rotate ?? 0),
+      onChange: (event) => setRecipeField("rotate", Number(event.target.value))
+    }
+  ), /* @__PURE__ */ h2("span", { className: "pp-crop-angle-value" }, Number(draftRecipe?.rotate ?? 0).toFixed(1), "\xB0")), /* @__PURE__ */ h2("div", { className: "pp-crop-ratios" }, CROP_RATIOS.map((preset) => /* @__PURE__ */ h2(
+    "button",
+    {
+      type: "button",
+      key: preset.id,
+      className: `pp-crop-ratio${cropRatio === preset.id ? " active" : ""}`,
+      onClick: () => applyCropRatio(preset.id)
+    },
+    /* @__PURE__ */ h2(CropRatioIcon, { id: preset.id }),
+    /* @__PURE__ */ h2("span", null, preset.id === "free" ? t("cropFree") : preset.id === "original" ? t("cropOriginal") : cropRatioLabel(preset.id, frameAspect, cropSwapped))
+  ))), /* @__PURE__ */ h2("div", { className: "pp-crop-actions" }, /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", onClick: cancelCrop }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m4 4 8 8M12 4l-8 8", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round" })), /* @__PURE__ */ h2("span", null, t("cropCancel"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", disabled: cropRatio === "free" || cropRatio === "original" || cropRatio === "1:1", onClick: swapCropAspect }, /* @__PURE__ */ h2("span", { className: "pp-crop-action-glyph" }, "\u21C4"), /* @__PURE__ */ h2("span", null, t("cropSwap"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", onClick: resetCrop }, /* @__PURE__ */ h2("span", { className: "pp-crop-action-glyph" }, "\u21BA"), /* @__PURE__ */ h2("span", null, t("cropReset"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action pp-crop-action-primary", onClick: () => {
+    void saveRecipe();
+  } }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m3.2 8.4 3 3 6.6-7", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round" })), /* @__PURE__ */ h2("span", null, t("cropFinish")))))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h2("div", { key, className: "pp-meter" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h2("div", { className: "pp-meter-track" }, /* @__PURE__ */ h2("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h2("span", null, value === null || value === void 0 ? "\u2014" : value));
-  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, postProcessingLabel(t, code))))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-recipe-card-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi"))), recipe === null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe")), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.map((control) => {
+  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, postProcessingLabel(t, code))))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-recipe-card-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi"))), recipe === null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe")), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.filter((control) => !(cropEditing && control.key === "rotate")).map((control) => {
     const value = Number(draftRecipe?.[control.key] ?? 0);
     const display = `${control.signed && value > 0 ? "+" : ""}${value.toFixed(control.digits)}${control.unit}`;
     return /* @__PURE__ */ h2("label", { className: "pp-recipe-control", key: control.key }, /* @__PURE__ */ h2("span", { className: "pp-recipe-control-head" }, /* @__PURE__ */ h2("span", null, t(control.label)), /* @__PURE__ */ h2("span", { className: "pp-recipe-value" }, display)), /* @__PURE__ */ h2(
@@ -2668,16 +2776,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
         onChange: (event) => setRecipeField(control.key, Number(event.target.value))
       }
     ));
-  })), /* @__PURE__ */ h2("div", { className: "pp-crop-summary" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", draftCrop.width === 1 && draftCrop.height === 1 ? t("editCropNone") : `${Math.round(draftCrop.width * 100)}% \xD7 ${Math.round(draftCrop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(draftCrop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(draftCrop.top * 100)}%`), !cropEditing && /* @__PURE__ */ h2(Button, { size: "sm", onClick: enterCrop }, t("cropEdit"))), cropEditing && /* @__PURE__ */ h2("div", { className: "pp-crop-toolbar" }, /* @__PURE__ */ h2("div", { className: "pp-crop-ratios" }, CROP_RATIOS.map((preset) => /* @__PURE__ */ h2(
-    "button",
-    {
-      type: "button",
-      key: preset.id,
-      className: `pp-crop-ratio${cropRatio === preset.id ? " active" : ""}`,
-      onClick: () => applyCropRatio(preset.id)
-    },
-    preset.id === "free" ? t("cropFree") : cropRatioLabel(preset.id, frameAspect, cropSwapped)
-  ))), /* @__PURE__ */ h2("div", { className: "pp-crop-actions" }, /* @__PURE__ */ h2(Button, { size: "sm", disabled: cropRatio === "free" || cropRatio === "1:1", onClick: swapCropAspect }, t("cropSwap")), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: resetCrop }, t("cropReset")), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: cancelCrop }, t("cropCancel")), /* @__PURE__ */ h2(Button, { size: "sm", onClick: finishCrop }, t("cropFinish")))), recipeError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: recipeError }), /* @__PURE__ */ h2("div", { className: "pp-recipe-actions" }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: recipeBusy, onClick: () => {
+  })), /* @__PURE__ */ h2("div", { className: "pp-crop-summary" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", draftCrop.width === 1 && draftCrop.height === 1 ? t("editCropNone") : `${Math.round(draftCrop.width * 100)}% \xD7 ${Math.round(draftCrop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(draftCrop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(draftCrop.top * 100)}%`), !cropEditing && /* @__PURE__ */ h2(Button, { size: "sm", onClick: enterCrop }, t("cropEdit"))), recipeError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: recipeError }), /* @__PURE__ */ h2("div", { className: "pp-recipe-actions" }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: recipeBusy, onClick: () => {
     void resetRecipe();
   } }, t("editRecipeReset")), /* @__PURE__ */ h2(
     Button,

@@ -657,6 +657,58 @@ export const STYLES = `
   .pp-drawer { width: 100vw; }
   .pp-history-row { grid-template-columns: 1fr; }
 }
+
+.pp-single-visual { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.pp-crop-panel {
+  display: grid; gap: 10px; padding: 12px 14px;
+  border-radius: 14px; border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
+}
+.pp-crop-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pp-crop-panel-head strong { font-size: 13px; font-weight: 650; }
+.pp-crop-panel-head .pp-muted { font-size: 11px; text-align: right; }
+.pp-crop-angle { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.pp-crop-angle > span:first-child { width: 34px; flex: none; }
+.pp-crop-angle-range { flex: 1; min-width: 80px; height: 22px; accent-color: var(--dsw-alias-brand-primary); cursor: pointer; }
+.pp-crop-angle-value { width: 44px; flex: none; text-align: right; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary); }
+.pp-crop-ratios { display: flex; align-items: stretch; gap: 6px; overflow-x: auto; padding: 2px 1px 4px; scrollbar-width: thin; }
+.pp-crop-ratio {
+  flex: 0 0 56px; min-height: 52px; display: grid; place-items: center; align-content: center; gap: 4px;
+  padding: 5px 2px; border-radius: 9px; border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary);
+  font-size: 10px; line-height: 1.2; cursor: pointer;
+}
+.pp-crop-ratio:hover { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); }
+.pp-crop-ratio.active { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, var(--dsw-alias-bg-layer-1)); }
+.pp-crop-ratio-icon { display: block; width: 24px; height: 17px; border: 1.5px solid currentColor; border-radius: 2px; }
+.pp-crop-ratio-icon[data-ratio="4:3"] { width: 23px; height: 17px; }
+.pp-crop-ratio-icon[data-ratio="5:4"] { width: 21px; height: 17px; }
+.pp-crop-ratio-icon[data-ratio="1:1"] { width: 18px; height: 18px; }
+.pp-crop-ratio-icon[data-ratio="16:9"] { width: 25px; height: 14px; }
+.pp-crop-ratio-icon[data-ratio="16:10"] { width: 24px; height: 15px; }
+.pp-crop-ratio-icon[data-ratio="3:2"] { width: 24px; height: 16px; }
+.pp-crop-ratio-icon[data-ratio="original"] { width: 24px; height: 17px; border-width: 2px; }
+.pp-crop-ratio-icon-free { border-style: dashed; border-radius: 3px; }
+.pp-crop-actions { display: flex; align-items: stretch; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 2px; }
+.pp-crop-action {
+  min-width: 64px; min-height: 48px; display: grid; place-items: center; align-content: center; gap: 3px;
+  padding: 4px 8px; border-radius: 9px; border: 1px solid transparent;
+  background: transparent; color: var(--dsw-alias-label-secondary);
+  font-size: 10px; line-height: 1.2; cursor: pointer;
+}
+.pp-crop-action:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.pp-crop-action:disabled { opacity: .4; cursor: not-allowed; }
+.pp-crop-action-primary { color: var(--dsw-alias-label-primary-foreground); background: var(--dsw-alias-button-primary-fill); border-color: transparent; }
+.pp-crop-action-primary:hover { color: var(--dsw-alias-label-primary-foreground); filter: brightness(1.03); }
+.pp-crop-action-glyph { font-size: 18px; line-height: 1; }
+.pp-crop-thirds { position: absolute; inset: 0; pointer-events: none; }
+.pp-crop-thirds span { position: absolute; background: rgba(255, 255, 255, .7); box-shadow: 0 0 2px rgba(0, 0, 0, .5); }
+.pp-crop-thirds .v { top: 0; bottom: 0; width: 1px; }
+.pp-crop-thirds .h { left: 0; right: 0; height: 1px; }
+
+.pp-stage-cropping img { max-height: 52vh; }
+.pp-stage-cropping { min-height: 260px; padding: 10px; }
+
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;

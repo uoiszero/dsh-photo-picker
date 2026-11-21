@@ -833,9 +833,17 @@ function cropRatioLabel(id: string, frameAspect: number, swapped: boolean): stri
   return horizontal ? `${long}:${short}` : `${short}:${long}`
 }
 
+function CropRatioIcon({ id }: { id: string }) {
+  if (id === 'free') {
+    return <span className="pp-crop-ratio-icon pp-crop-ratio-icon-free" aria-hidden="true" />
+  }
+  return <span className="pp-crop-ratio-icon" data-ratio={id} aria-hidden="true" />
+}
+
 function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
   const layerRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<any>(null)
+  const [dragging, setDragging] = useState(false)
   const current = normalizeCrop(crop)
 
   const start = (handle: string, event: React.PointerEvent) => {
@@ -845,6 +853,7 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
     if (layer === null) return
     const rect = layer.getBoundingClientRect()
     layer.setPointerCapture?.(event.pointerId)
+    setDragging(true)
     dragRef.current = {
       handle,
       startX: event.clientX,
@@ -866,6 +875,7 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
   const end = (event: React.PointerEvent) => {
     if (dragRef.current === null) return
     dragRef.current = null
+    setDragging(false)
     layerRef.current?.releasePointerCapture?.(event.pointerId)
   }
 
@@ -886,6 +896,14 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
         style={{ left: `${current.left * 100}%`, top: `${current.top * 100}%`, width: `${current.width * 100}%`, height: `${current.height * 100}%` }}
         onPointerDown={event => start('move', event)}
       >
+        {dragging && (
+          <div className="pp-crop-thirds" aria-hidden="true">
+            <span className="v" style={{ left: '33.333%' }} />
+            <span className="v" style={{ left: '66.666%' }} />
+            <span className="h" style={{ top: '33.333%' }} />
+            <span className="h" style={{ top: '66.666%' }} />
+          </div>
+        )}
         {CROP_HANDLES.map(handle => (
           <span
             key={handle}
@@ -919,6 +937,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [recipeError, setRecipeError] = useState<string | null>(null)
   const draftPreviewUrlRef = useRef<string | null>(null)
   const cropFrameUrlRef = useRef<string | null>(null)
+  const cropPanelRef = useRef<HTMLDivElement | null>(null)
   const draftIsIdentity = isIdentityDraft(draftRecipe)
   const draftCrop = normalizeCrop(draftRecipe?.crop)
   const savedCrop = normalizeCrop(detail?.editRecipe?.crop)
@@ -1001,6 +1020,10 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
 
   const applyCropRatio = (id: string) => {
     setCropRatio(id)
+    if (id === 'original') {
+      setDraftRecipe((current: any) => ({ ...current, crop: { left: 0, top: 0, width: 1, height: 1 } }))
+      return
+    }
     const preset = CROP_RATIOS.find(item => item.id === id)
     if (!preset?.value) return
     const aspect = orientedAspect(preset.value, frameAspect, cropSwapped)
@@ -1017,7 +1040,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   }
 
   const resetCrop = () => {
-    setCropRatio('free')
+    setCropRatio('original')
     setCropSwapped(false)
     setDraftRecipe((current: any) => ({ ...current, crop: { left: 0, top: 0, width: 1, height: 1 } }))
   }
@@ -1109,6 +1132,10 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [photoId, index, items, detail, deciding])
+
+  useEffect(() => {
+    if (cropEditing) cropPanelRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [cropEditing])
 
   useEffect(() => {
     return () => {
@@ -1246,7 +1273,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       </div>
 
       <div className="pp-single-body">
-        <div className="pp-stage">
+        <div className="pp-single-visual">
+        <div className={`pp-stage${cropEditing ? ' pp-stage-cropping' : ''}`}>
           <div className="pp-stage-frame">
             <img
               src={stageSrc}
@@ -1316,6 +1344,63 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
             )}
           </div>
         </div>
+        {cropEditing && (
+          <div className="pp-crop-panel" ref={cropPanelRef}>
+            <div className="pp-crop-panel-head">
+              <strong>{t('cropTitle')}</strong>
+              <span className="pp-muted">{t('cropHint')}</span>
+            </div>
+            <label className="pp-crop-angle">
+              <span>{t('editRotate')}</span>
+              <input
+                className="pp-crop-angle-range"
+                type="range"
+                min={-5}
+                max={5}
+                step={0.1}
+                value={Number(draftRecipe?.rotate ?? 0)}
+                onChange={event => setRecipeField('rotate', Number(event.target.value))}
+              />
+              <span className="pp-crop-angle-value">{Number(draftRecipe?.rotate ?? 0).toFixed(1)}°</span>
+            </label>
+            <div className="pp-crop-ratios">
+              {CROP_RATIOS.map(preset => (
+                <button
+                  type="button"
+                  key={preset.id}
+                  className={`pp-crop-ratio${cropRatio === preset.id ? ' active' : ''}`}
+                  onClick={() => applyCropRatio(preset.id)}
+                >
+                  <CropRatioIcon id={preset.id} />
+                  <span>{preset.id === 'free' ? t('cropFree') : preset.id === 'original' ? t('cropOriginal') : cropRatioLabel(preset.id, frameAspect, cropSwapped)}</span>
+                </button>
+              ))}
+            </div>
+            <div className="pp-crop-actions">
+              <button type="button" className="pp-crop-action" onClick={cancelCrop}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                </svg>
+                <span>{t('cropCancel')}</span>
+              </button>
+              <button type="button" className="pp-crop-action" disabled={cropRatio === 'free' || cropRatio === 'original' || cropRatio === '1:1'} onClick={swapCropAspect}>
+                <span className="pp-crop-action-glyph">⇄</span>
+                <span>{t('cropSwap')}</span>
+              </button>
+              <button type="button" className="pp-crop-action" onClick={resetCrop}>
+                <span className="pp-crop-action-glyph">↺</span>
+                <span>{t('cropReset')}</span>
+              </button>
+              <button type="button" className="pp-crop-action pp-crop-action-primary" onClick={() => { void saveRecipe() }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="m3.2 8.4 3 3 6.6-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>{t('cropFinish')}</span>
+              </button>
+            </div>
+          </div>
+        )}
+        </div>
         <aside className="pp-card pp-panel">
           <div className="pp-row" style={{ gap: 6 }}>
             <Button style={{ flex: 1 }} disabled={deciding} onClick={() => decide('keep')}>{t('keep')}</Button>
@@ -1361,7 +1446,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
             </div>
             {recipe === null && <div className="pp-muted">{t('editNoRecipe')}</div>}
             <div className="pp-recipe-editor-grid">
-              {RECIPE_CONTROLS.map(control => {
+              {RECIPE_CONTROLS.filter(control => !(cropEditing && control.key === 'rotate')).map(control => {
                 const value = Number(draftRecipe?.[control.key] ?? 0)
                 const display = `${control.signed && value > 0 ? '+' : ''}${value.toFixed(control.digits)}${control.unit}`
                 return (
@@ -1391,28 +1476,6 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
               </span>
               {!cropEditing && <Button size="sm" onClick={enterCrop}>{t('cropEdit')}</Button>}
             </div>
-            {cropEditing && (
-              <div className="pp-crop-toolbar">
-                <div className="pp-crop-ratios">
-                  {CROP_RATIOS.map(preset => (
-                    <button
-                      type="button"
-                      key={preset.id}
-                      className={`pp-crop-ratio${cropRatio === preset.id ? ' active' : ''}`}
-                      onClick={() => applyCropRatio(preset.id)}
-                    >
-                      {preset.id === 'free' ? t('cropFree') : cropRatioLabel(preset.id, frameAspect, cropSwapped)}
-                    </button>
-                  ))}
-                </div>
-                <div className="pp-crop-actions">
-                  <Button size="sm" disabled={cropRatio === 'free' || cropRatio === '1:1'} onClick={swapCropAspect}>{t('cropSwap')}</Button>
-                  <Button size="sm" variant="ghost" onClick={resetCrop}>{t('cropReset')}</Button>
-                  <Button size="sm" variant="ghost" onClick={cancelCrop}>{t('cropCancel')}</Button>
-                  <Button size="sm" onClick={finishCrop}>{t('cropFinish')}</Button>
-                </div>
-              </div>
-            )}
             {recipeError !== null && <StateCard kind="error" title={t('errorTitle')} message={recipeError} />}
             <div className="pp-recipe-actions">
               {detail.editSource === 'human' && (
