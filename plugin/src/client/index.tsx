@@ -11,7 +11,7 @@ import { getLanguage, postProcessingLabel, setLanguage, subscribeLanguage, trans
 import { installStyles } from './theme.js'
 import { computeColumns, computeRowHeight, computeVisibleRows, TILE_GAP, TILE_MIN, TILE_MIN_NARROW } from './virtual.js'
 import { CROP_RATIOS, fitAspect, moveCrop, normalizeCrop, orientedAspect, resizeCrop } from './crop.js'
-import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, Select, StateCard, Tabs } from './ui'
+import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, StateCard, Tabs } from './ui'
 
 
 // Plan 3 SMB 首版等待 macOS 网络卷权限方案，先隐藏入口；Host/API 代码保留。
@@ -830,9 +830,25 @@ function SceneEditor({ t, projectId, photoId, detail, onClose, onSaved }: any) {
           ))}
         </div>
         <Field label={t('primaryScene')}>
-          <Select value={primary ?? ''} disabled={busy || selected.length === 0} onChange={event => setPrimary(event.target.value)}>
-            {selected.map(scene => <option key={scene} value={scene}>{sceneLabel(t, scene)}</option>)}
-          </Select>
+          {selected.length === 0 ? (
+            <div className="pp-muted">{t('primarySceneEmpty')}</div>
+          ) : (
+            <div className="pp-radio-group" role="radiogroup" aria-label={t('primaryScene')}>
+              {selected.map(scene => (
+                <label className="pp-radio-option" key={scene}>
+                  <input
+                    type="radio"
+                    name="primary-scene"
+                    value={scene}
+                    disabled={busy}
+                    checked={(primary ?? selected[0]) === scene}
+                    onChange={() => setPrimary(scene)}
+                  />
+                  {sceneLabel(t, scene)}
+                </label>
+              ))}
+            </div>
+          )}
         </Field>
         <div className="pp-muted">{detail.sceneSource === 'human' ? t('sceneSourceHuman') : t('sceneSourceAi')}</div>
         {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
@@ -1680,17 +1696,20 @@ function ExportDialog({ t, projectId, onClose, onDone }: { t: (key: string) => s
                 {verdictLabel(t, bucket)}
               </label>
             ))}
-            <span className="pp-muted" style={{ marginLeft: 8 }}>{t('exportMode')}</span>
-            <select
-              value={applyEdits ? 'copy' : mode}
-              disabled={applyEdits}
-              onChange={event => setMode(event.target.value)}
-              className="pp-select pp-select-sm"
-            >
-              <option value="hardlink">{t('exportHardlink')}</option>
-              <option value="copy">{t('exportCopy')}</option>
-            </select>
           </div>
+          <fieldset className="pp-export-fieldset">
+            <legend>{t('exportMode')}</legend>
+            <div className="pp-radio-group" role="radiogroup" aria-label={t('exportMode')}>
+              <label className="pp-radio-option">
+                <input type="radio" name="project-export-mode" value="hardlink" disabled={applyEdits} checked={!applyEdits && mode === 'hardlink'} onChange={() => setMode('hardlink')} />
+                {t('exportHardlink')}
+              </label>
+              <label className="pp-radio-option">
+                <input type="radio" name="project-export-mode" value="copy" disabled={applyEdits} checked={applyEdits || mode === 'copy'} onChange={() => setMode('copy')} />
+                {t('exportCopy')}
+              </label>
+            </div>
+          </fieldset>
           <div className="pp-checks">
             <label>
               <input type="checkbox" checked={applyEdits} onChange={event => toggleEdits(event.target.checked)} />

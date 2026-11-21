@@ -93,6 +93,7 @@ var zh = {
   deleteProject: "\u5220\u9664",
   deleteProjectConfirm: "\u786E\u5B9A\u5220\u9664\u9879\u76EE\u201C{name}\u201D\u5417\uFF1F\u5C06\u5220\u9664\u672C\u5730\u5DE5\u4F5C\u533A\u3001\u6570\u636E\u5E93\u548C\u7F29\u7565\u56FE\uFF0C\u6E90\u7167\u7247\u4E0D\u4F1A\u88AB\u5220\u9664\u3002",
   primaryScene: "\u4E3B\u573A\u666F",
+  primarySceneEmpty: "\u5148\u52FE\u9009\u81F3\u5C11\u4E00\u4E2A\u573A\u666F\u3002",
   sceneEditHint: "\u52FE\u9009 1\u20133 \u4E2A\u573A\u666F\uFF0C\u4E3B\u573A\u666F\u51B3\u5B9A\u8BC4\u5206\u91CD\u70B9\uFF1B\u4E0D\u52FE\u9009\u4EFB\u4F55\u573A\u666F\u4F1A\u6062\u590D AI \u6807\u7B7E\u3002",
   sceneSourceHuman: "\u5F53\u524D\u4F7F\u7528\u4EBA\u5DE5\u573A\u666F\u6807\u7B7E",
   sceneSourceAi: "\u5F53\u524D\u4F7F\u7528 AI \u573A\u666F\u6807\u7B7E",
@@ -407,6 +408,7 @@ var en = {
   deleteProject: "Delete",
   deleteProjectConfirm: "Delete project \u201C{name}\u201D? This removes its local workspace, database and thumbnails; source photos are untouched.",
   primaryScene: "Primary scene",
+  primarySceneEmpty: "Select at least one scene first.",
   sceneEditHint: "Select 1\u20133 scenes; the primary scene drives scoring. Clearing all restores AI tags.",
   sceneSourceHuman: "Using manual scene tags",
   sceneSourceAi: "Using AI scene tags",
@@ -1782,10 +1784,6 @@ function Field({ label, help, children, className = "", as = "label" }) {
 function Input(props) {
   return /* @__PURE__ */ h("input", { className: "pp-input", ...props });
 }
-function Select(props) {
-  const { compact = false, className = "", ...rest } = props;
-  return /* @__PURE__ */ h("select", { className: `pp-select${compact ? " pp-select-sm" : ""} ${className}`.trim(), ...rest });
-}
 function StateCard({ kind, title, message, action }) {
   return /* @__PURE__ */ h("div", { className: `pp-state pp-state-${kind}`, role: kind === "error" ? "alert" : void 0 }, /* @__PURE__ */ h("span", { className: "pp-state-icon", "aria-hidden": "true" }, kind === "loading" ? /* @__PURE__ */ h("span", { className: "pp-spinner" }) : kind === "error" ? "!" : "\u2014"), /* @__PURE__ */ h("span", { className: "pp-state-copy" }, /* @__PURE__ */ h("strong", null, title), message !== void 0 && message !== null && message !== "" && /* @__PURE__ */ h("span", null, message)), action);
 }
@@ -2469,7 +2467,17 @@ function SceneEditor({ t, projectId, photoId, detail, onClose, onSaved }) {
       disabled: busy || !selected.includes(scene) && selected.length >= 3,
       onChange: () => toggle(scene)
     }
-  ), t(key)))), /* @__PURE__ */ h2(Field, { label: t("primaryScene") }, /* @__PURE__ */ h2(Select, { value: primary ?? "", disabled: busy || selected.length === 0, onChange: (event) => setPrimary(event.target.value) }, selected.map((scene) => /* @__PURE__ */ h2("option", { key: scene, value: scene }, sceneLabel(t, scene))))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.sceneSource === "human" ? t("sceneSourceHuman") : t("sceneSourceAi")), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), /* @__PURE__ */ h2(ActionBar, { end: true }, detail.sceneSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: busy, onClick: () => save(true) }, t("resetScenes")), /* @__PURE__ */ h2(Button, { disabled: busy, onClick: onClose }, t("cancel")), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy, onClick: () => save(false) }, t("saveScenes")))));
+  ), t(key)))), /* @__PURE__ */ h2(Field, { label: t("primaryScene") }, selected.length === 0 ? /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("primarySceneEmpty")) : /* @__PURE__ */ h2("div", { className: "pp-radio-group", role: "radiogroup", "aria-label": t("primaryScene") }, selected.map((scene) => /* @__PURE__ */ h2("label", { className: "pp-radio-option", key: scene }, /* @__PURE__ */ h2(
+    "input",
+    {
+      type: "radio",
+      name: "primary-scene",
+      value: scene,
+      disabled: busy,
+      checked: (primary ?? selected[0]) === scene,
+      onChange: () => setPrimary(scene)
+    }
+  ), sceneLabel(t, scene))))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.sceneSource === "human" ? t("sceneSourceHuman") : t("sceneSourceAi")), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), /* @__PURE__ */ h2(ActionBar, { end: true }, detail.sceneSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: busy, onClick: () => save(true) }, t("resetScenes")), /* @__PURE__ */ h2(Button, { disabled: busy, onClick: onClose }, t("cancel")), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy, onClick: () => save(false) }, t("saveScenes")))));
 }
 var RECIPE_CONTROLS = [
   { key: "exposureEv", label: "editExposure", min: -2, max: 2, step: 0.05, digits: 2, signed: true, unit: "EV" },
@@ -3100,17 +3108,7 @@ function ExportDialog({ t, projectId, onClose, onDone }) {
       className: "pp-input",
       style: { flex: 1 }
     }
-  ), /* @__PURE__ */ h2(Button, { disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("exportChoose")))), /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h2("label", { key: bucket, className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket))), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: 8 } }, t("exportMode")), /* @__PURE__ */ h2(
-    "select",
-    {
-      value: applyEdits ? "copy" : mode,
-      disabled: applyEdits,
-      onChange: (event) => setMode(event.target.value),
-      className: "pp-select pp-select-sm"
-    },
-    /* @__PURE__ */ h2("option", { value: "hardlink" }, t("exportHardlink")),
-    /* @__PURE__ */ h2("option", { value: "copy" }, t("exportCopy"))
-  )), /* @__PURE__ */ h2("div", { className: "pp-checks" }, /* @__PURE__ */ h2("label", null, /* @__PURE__ */ h2("input", { type: "checkbox", checked: applyEdits, onChange: (event) => toggleEdits(event.target.checked) }), t("editExport"))), applyEdits && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("editExportHint"))), running && /* @__PURE__ */ h2(ExportProgress, { t, progress }), /* @__PURE__ */ h2("div", { className: "pp-actions" }, /* @__PURE__ */ h2(Button, { disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h2("span", { style: { flex: 1 } }), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, /* @__PURE__ */ h2("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h2("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume")), preview.editedCount > 0 && /* @__PURE__ */ h2("div", { style: { marginTop: 4 } }, t("editExport"), ": ", preview.editedCount)), result !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, /* @__PURE__ */ h2("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h2("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h2("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h2(
+  ), /* @__PURE__ */ h2(Button, { disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("exportChoose")))), /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h2("label", { key: bucket, className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: buckets.includes(bucket), onChange: () => toggleBucket(bucket) }), verdictLabel(t, bucket)))), /* @__PURE__ */ h2("fieldset", { className: "pp-export-fieldset" }, /* @__PURE__ */ h2("legend", null, t("exportMode")), /* @__PURE__ */ h2("div", { className: "pp-radio-group", role: "radiogroup", "aria-label": t("exportMode") }, /* @__PURE__ */ h2("label", { className: "pp-radio-option" }, /* @__PURE__ */ h2("input", { type: "radio", name: "project-export-mode", value: "hardlink", disabled: applyEdits, checked: !applyEdits && mode === "hardlink", onChange: () => setMode("hardlink") }), t("exportHardlink")), /* @__PURE__ */ h2("label", { className: "pp-radio-option" }, /* @__PURE__ */ h2("input", { type: "radio", name: "project-export-mode", value: "copy", disabled: applyEdits, checked: applyEdits || mode === "copy", onChange: () => setMode("copy") }), t("exportCopy")))), /* @__PURE__ */ h2("div", { className: "pp-checks" }, /* @__PURE__ */ h2("label", null, /* @__PURE__ */ h2("input", { type: "checkbox", checked: applyEdits, onChange: (event) => toggleEdits(event.target.checked) }), t("editExport"))), applyEdits && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("editExportHint"))), running && /* @__PURE__ */ h2(ExportProgress, { t, progress }), /* @__PURE__ */ h2("div", { className: "pp-actions" }, /* @__PURE__ */ h2(Button, { disabled: busy || dest === "", onClick: () => execute("preview") }, t("exportPreview")), /* @__PURE__ */ h2("span", { style: { flex: 1 } }), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || dest === "" || preview === null, onClick: () => execute("run") }, t("exportRun"))), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error), preview !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, /* @__PURE__ */ h2("div", null, Object.entries(preview.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 "), " \xB7 ", (preview.totalBytes / 1024 / 1024).toFixed(1), " MB"), /* @__PURE__ */ h2("div", { style: { marginTop: 4 } }, t("exportSkipped"), " ", preview.skippedExisting, " \xB7 ", t("exportConflict"), " ", preview.conflictCount, " \xB7 ", preview.sameVolume ? t("exportSameVolume") : t("exportCrossVolume")), preview.editedCount > 0 && /* @__PURE__ */ h2("div", { style: { marginTop: 4 } }, t("editExport"), ": ", preview.editedCount)), result !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, /* @__PURE__ */ h2("div", null, t("exportResult"), ": ", Object.entries(result.counts).map(([bucket, count]) => `${verdictLabel(t, bucket)} ${count}`).join(" \xB7 ")), /* @__PURE__ */ h2("div", { style: { marginTop: 4, wordBreak: "break-all" } }, t("manifest"), ": ", result.manifestPath), /* @__PURE__ */ h2("div", { className: "pp-actions", style: { marginTop: 8 } }, /* @__PURE__ */ h2(
     Button,
     {
       onClick: () => api("/photo-picker/api/fs/reveal", {
