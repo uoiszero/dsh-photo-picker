@@ -2,7 +2,16 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.5.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+**版本 0.6.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+
+### 0.6.0 新增
+
+- 单图「修图建议」加入手动裁剪：自由裁剪、`4:3` / `5:4` / `1:1` / `16:9` / `16:10` / `3:2` 预设、原图、长短边切换。
+- 裁剪框支持拖动移动和 8 个边角把手；拖动时显示井字格，松开隐藏；支持触屏、键盘微调和 aria 标签。
+- 裁剪控制区移到图片下方并 sticky，角度滑块、比例图标和「保存并完成」动作栏在同一工作区；打开单图时项目概览折叠为紧凑栏。
+- 项目设置支持切换模型路由（默认 `deepseek-official / deepseek-flash`）；Qwen3-VL-Plus / Qwen4-Max 作为备选，兼容不支持 `reasoningEffort` 的模型。
+- 后期建议代码完成中英文标签化，补齐 `shadow_lift` / `highlight_recover` / `denoise`。
+- 人工裁剪允许小于 18% 的微调；AI 自动配方仍过滤安全微裁。
 
 ### 0.5.0 新增
 
@@ -343,6 +352,8 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 12：手动裁剪](docs/superpowers/plans/2026-11-21-photo-picker-12-manual-crop.md)
 
 ## 版本
+
+0.6.0（手动裁剪 + 聚焦单图 + 模型路由）：自由裁剪、比例预设与长短边切换，裁剪控制 sticky，单图聚焦模式；项目可切换 DeepSeek/Qwen 路由，人工微裁保留。
 
 0.5.0（人工修正 + 可微调修图 + 删除项目）：场景标签人工修正、删除项目、manifest 场景/修图来源；修图建议滑杆拖动即时预览、保存才落库。
 
