@@ -709,6 +709,42 @@ export const STYLES = `
 .pp-stage-cropping img { max-height: 52vh; }
 .pp-stage-cropping { min-height: 260px; padding: 10px; }
 
+.pp-focus-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  position: sticky; top: 8px; z-index: 20; margin-bottom: 10px;
+  padding: 8px 12px; border-radius: 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 92%, transparent);
+  backdrop-filter: blur(12px);
+}
+.pp-focus-name { font-size: 14px; font-weight: 650; }
+.pp-focus-bar .pp-muted { font-size: 11px; }
+.pp-detail-focused .pp-single { gap: 8px; }
+.pp-crop-panel { position: sticky; bottom: 10px; z-index: 9; box-shadow: 0 10px 30px rgba(0, 0, 0, .12); }
+
+.pp-crop-handle {
+  width: 28px; height: 28px; padding: 0; border: 0; background: transparent;
+}
+.pp-crop-handle::after {
+  content: ''; position: absolute; inset: 8px; width: 12px; height: 12px;
+  border-radius: 3px; border: 1.5px solid #fff; background: rgba(0, 0, 0, .52);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+}
+.pp-crop-handle-nw { left: -14px; top: -14px; cursor: nwse-resize; }
+.pp-crop-handle-n { left: calc(50% - 14px); top: -14px; cursor: ns-resize; }
+.pp-crop-handle-ne { right: -14px; top: -14px; cursor: nesw-resize; }
+.pp-crop-handle-e { right: -14px; top: calc(50% - 14px); cursor: ew-resize; }
+.pp-crop-handle-se { right: -14px; bottom: -14px; cursor: nwse-resize; }
+.pp-crop-handle-s { left: calc(50% - 14px); bottom: -14px; cursor: ns-resize; }
+.pp-crop-handle-sw { left: -14px; bottom: -14px; cursor: nesw-resize; }
+.pp-crop-handle-w { left: -14px; top: calc(50% - 14px); cursor: ew-resize; }
+.pp-crop-handle:focus-visible, .pp-crop-selection:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px;
+}
+.pp-crop-ratios { scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
+.pp-crop-ratio { scroll-snap-align: start; }
+.pp-crop-ratio:last-child { margin-right: 1px; }
+
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;

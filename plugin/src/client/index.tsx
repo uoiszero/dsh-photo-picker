@@ -10,7 +10,7 @@ const PANEL_ID = 'photo-picker'
 import { getLanguage, postProcessingLabel, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
 import { computeColumns, computeRowHeight, computeVisibleRows, TILE_GAP, TILE_MIN, TILE_MIN_NARROW } from './virtual.js'
-import { CROP_RATIOS, fitAspect, normalizeCrop, orientedAspect, resizeCrop } from './crop.js'
+import { CROP_RATIOS, fitAspect, moveCrop, normalizeCrop, orientedAspect, resizeCrop } from './crop.js'
 import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, Select, StateCard, Tabs } from './ui'
 
 
@@ -293,11 +293,12 @@ const DIMENSION_LABELS: Record<string, string> = {
   moment: 'dimensionMoment',
 }
 
-function ReviewSection({ t, projectId, version, onChanged }: {
+function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
   t: (key: string) => string
   projectId: string
   version: number
   onChanged?: () => void
+  onFocusChange?: (focused: boolean) => void
 }) {
   const PAGE_SIZE = 200
   const [items, setItems] = useState<any[]>([])
@@ -322,6 +323,8 @@ function ReviewSection({ t, projectId, version, onChanged }: {
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 20 })
   const filterKey = `${filter}|${scene}|${sort}`
   const lastFilterKey = useRef('')
+
+  useEffect(() => { onFocusChange?.(single !== null || groupView !== null) }, [single, groupView, onFocusChange])
 
   const fetchPage = async (offset: number) => {
     const params = new URLSearchParams({ scope: 'review', sort, limit: String(PAGE_SIZE), offset: String(offset) })
@@ -825,6 +828,10 @@ function isIdentityDraft(recipe: any): boolean {
 }
 
 const CROP_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
+const CROP_HANDLE_KEYS: Record<string, string> = {
+  nw: 'cropHandleNw', n: 'cropHandleN', ne: 'cropHandleNe', e: 'cropHandleE',
+  se: 'cropHandleSe', s: 'cropHandleS', sw: 'cropHandleSw', w: 'cropHandleW',
+}
 
 function cropRatioLabel(id: string, frameAspect: number, swapped: boolean): string {
   if (id === 'free') return ''
@@ -840,7 +847,7 @@ function CropRatioIcon({ id }: { id: string }) {
   return <span className="pp-crop-ratio-icon" data-ratio={id} aria-hidden="true" />
 }
 
-function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
+function CropOverlay({ t, crop, frameAspect, aspect, onChange }: any) {
   const layerRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<any>(null)
   const [dragging, setDragging] = useState(false)
@@ -879,6 +886,20 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
     layerRef.current?.releasePointerCapture?.(event.pointerId)
   }
 
+  const nudge = (event: React.KeyboardEvent, handle: string) => {
+    const dx = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
+    const dy = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0
+    if (dx === 0 && dy === 0) return
+    event.preventDefault()
+    event.stopPropagation()
+    const step = event.shiftKey ? 0.01 : 0.005
+    if (handle === 'move' && !event.shiftKey) {
+      onChange(moveCrop(current, dx * step, dy * step))
+    } else {
+      onChange(resizeCrop(current, handle === 'move' ? 'se' : handle, dx * step, dy * step, frameAspect, aspect))
+    }
+  }
+
   return (
     <div
       className="pp-crop-layer"
@@ -893,8 +914,12 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
       <div className="pp-crop-mask" style={{ left: `${(current.left + current.width) * 100}%`, right: 0, top: `${current.top * 100}%`, height: `${current.height * 100}%` }} />
       <div
         className="pp-crop-selection"
+        role="group"
+        tabIndex={0}
+        aria-label={t('cropArea')}
         style={{ left: `${current.left * 100}%`, top: `${current.top * 100}%`, width: `${current.width * 100}%`, height: `${current.height * 100}%` }}
         onPointerDown={event => start('move', event)}
+        onKeyDown={event => nudge(event, 'move')}
       >
         {dragging && (
           <div className="pp-crop-thirds" aria-hidden="true">
@@ -908,7 +933,11 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
           <span
             key={handle}
             className={`pp-crop-handle pp-crop-handle-${handle}`}
+            role="button"
+            tabIndex={0}
+            aria-label={t(CROP_HANDLE_KEYS[handle])}
             onPointerDown={event => start(handle, event)}
+            onKeyDown={event => nudge(event, handle)}
           />
         ))}
       </div>
@@ -1008,6 +1037,14 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setCropFrame(null)
   }
 
+  const completeCrop = () => {
+    if (!draftDirty) {
+      finishCrop()
+      return
+    }
+    void saveRecipe()
+  }
+
   const cancelCrop = () => {
     if (cropEntry !== null) {
       setDraftRecipe((current: any) => ({ ...current, crop: { ...cropEntry } }))
@@ -1037,12 +1074,6 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     if (!preset?.value) return
     const aspect = orientedAspect(preset.value, frameAspect, next)
     setDraftRecipe((current: any) => ({ ...current, crop: fitAspect(current.crop, frameAspect, aspect) }))
-  }
-
-  const resetCrop = () => {
-    setCropRatio('original')
-    setCropSwapped(false)
-    setDraftRecipe((current: any) => ({ ...current, crop: { left: 0, top: 0, width: 1, height: 1 } }))
   }
 
   const onCropFrameLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
@@ -1119,6 +1150,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (cropEditing) return
       const target = event.target as HTMLElement | null
       if (target !== null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
       if (event.key === 'j' || event.key === 'ArrowRight') void move(1)
@@ -1131,7 +1163,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [photoId, index, items, detail, deciding])
+  }, [photoId, index, items, detail, deciding, cropEditing])
 
   useEffect(() => {
     if (cropEditing) cropPanelRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
@@ -1285,6 +1317,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
             {!cropEditing && sceneText !== '' && <span className="pp-stage-scenes" title={sceneText}>{sceneText}</span>}
             {cropEditing && (
               <CropOverlay
+                t={t}
                 crop={draftRecipe.crop}
                 frameAspect={frameAspect}
                 aspect={cropAspect}
@@ -1387,11 +1420,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
                 <span className="pp-crop-action-glyph">⇄</span>
                 <span>{t('cropSwap')}</span>
               </button>
-              <button type="button" className="pp-crop-action" onClick={resetCrop}>
-                <span className="pp-crop-action-glyph">↺</span>
-                <span>{t('cropReset')}</span>
-              </button>
-              <button type="button" className="pp-crop-action pp-crop-action-primary" onClick={() => { void saveRecipe() }}>
+              <button type="button" className="pp-crop-action pp-crop-action-primary" onClick={completeCrop}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <path d="m3.2 8.4 3 3 6.6-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -1481,14 +1510,16 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
               {detail.editSource === 'human' && (
                 <Button variant="ghost" disabled={recipeBusy} onClick={() => { void resetRecipe() }}>{t('editRecipeReset')}</Button>
               )}
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={recipeBusy || !draftDirty}
-                onClick={() => { void saveRecipe() }}
-              >
-                {t('editRecipeSave')}
-              </Button>
+              {!cropEditing && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={recipeBusy || !draftDirty}
+                  onClick={() => { void saveRecipe() }}
+                >
+                  {t('editRecipeSave')}
+                </Button>
+              )}
             </div>
           </div>
           <div className="pp-muted">
@@ -2187,6 +2218,7 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
   const [noticeDismissed, setNoticeDismissed] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [focusMode, setFocusMode] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = async () => {
@@ -2296,7 +2328,20 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
   }
 
   return (
-    <div className="pp-detail">
+    <div className={`pp-detail${focusMode ? ' pp-detail-focused' : ''}`}>
+      {focusMode ? (
+        <div className="pp-focus-bar">
+          <BackButton label={t('back')} onClick={onBack} />
+          <strong className="pp-focus-name">{detail.name}</strong>
+          <span className="pp-pill">{statusLabel(t, detail.status)}</span>
+          {runningLabel !== null && <span className="pp-pill" data-tone="live">{t('running')} · {runningLabel}</span>}
+          <span style={{ flex: 1 }} />
+          <span className="pp-muted">{t('spent')} ¥{spent.toFixed(2)}</span>
+          <Button size="sm" onClick={() => setExporting(true)}>{t('export')}</Button>
+          <Button size="sm" onClick={() => setSettingsOpen(true)}>{t('settings')}</Button>
+        </div>
+      ) : (
+        <>
       <div className="pp-page-nav">
         <BackButton label={t('back')} onClick={onBack} />
       </div>
@@ -2392,6 +2437,8 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
 
         {aiDisabled && <div className="pp-callout">{t('aiDisabled')}</div>}
       </Card>
+        </>
+      )}
 
       {exporting && <ExportDialog t={t} projectId={id} onClose={() => setExporting(false)} />}
       {settingsOpen && (
@@ -2444,7 +2491,7 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
         </details>
       )}
 
-      <ReviewSection t={t} projectId={id} version={version} onChanged={refresh} />
+      <ReviewSection t={t} projectId={id} version={version} onChanged={refresh} onFocusChange={setFocusMode} />
       <CalibrationSection t={t} projectId={id} onApplied={refresh} />
 
       {pipelineNotice !== null && !noticeDismissed && (
