@@ -109,6 +109,60 @@ function summarizeStats(t: (key: string) => string, stats: any) {
   return parts.join(' · ')
 }
 
+function estimateExportMs(preview: any): number | null {
+  const total = Number(preview?.total ?? 0)
+  if (!Number.isFinite(total) || total <= 0) return null
+  const bytes = Math.max(0, Number(preview?.totalBytes ?? 0))
+  const edited = Math.max(0, Number(preview?.editedCount ?? 0))
+  const estimated = 900 + total * 35 + (bytes / (12 * 1024 * 1024)) * 1000 + edited * 250
+  return Math.min(90_000, Math.max(1200, estimated))
+}
+
+/** 虚拟导出进度：有预览时按预估时间，否则在 1/3 后减速。 */
+function useVirtualExportProgress(active: boolean, preview: any): number {
+  const [progress, setProgress] = useState(0)
+  useEffect(() => {
+    if (!active) {
+      setProgress(0)
+      return
+    }
+    const startedAt = Date.now()
+    const estimated = estimateExportMs(preview)
+    const update = () => {
+      const elapsed = Date.now() - startedAt
+      if (estimated !== null) {
+        setProgress(Math.min(0.96, (elapsed / estimated) * 0.96))
+        return
+      }
+      // 无法估算时，先快速到 1/3，再把剩余 2/3 拉长。
+      const slowStart = 1800
+      const next = elapsed <= slowStart
+        ? (elapsed / slowStart) * (1 / 3)
+        : 1 / 3 + (0.96 - 1 / 3) * (1 - Math.exp(-(elapsed - slowStart) / 12000))
+      setProgress(Math.min(0.96, next))
+    }
+    update()
+    const timer = setInterval(update, 100)
+    return () => clearInterval(timer)
+  }, [active, preview])
+  return progress
+}
+
+function ExportProgress({ t, progress }: { t: (key: string) => string; progress: number }) {
+  const percent = Math.max(0, Math.min(99, Math.round(progress * 100)))
+  return (
+    <div className="pp-export-progress">
+      <div className="pp-export-progress-head">
+        <span>{t('exportInProgress')}</span>
+        <span>{percent}%</span>
+      </div>
+      <div className="pp-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
+        <div className="pp-progress-fill" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  )
+}
+
 function CreateForm({ t, onCreated, onCancel }: {
   t: (key: string) => string
   onCreated: (id: string) => void
@@ -1542,7 +1596,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   )
 }
 
-function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; projectId: string; onClose: () => void }) {
+function ExportDialog({ t, projectId, onClose, onDone }: { t: (key: string) => string; projectId: string; onClose: () => void; onDone?: (result: any) => void }) {
   const [dest, setDest] = useState('')
   const [buckets, setBuckets] = useState(['keep', 'maybe'])
   const [mode, setMode] = useState('hardlink')
@@ -1550,8 +1604,10 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
   const [preview, setPreview] = useState<any>(null)
   const [result, setResult] = useState<any>(null)
   const [busy, setBusy] = useState(false)
+  const [running, setRunning] = useState(false)
   const [choosing, setChoosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const progress = useVirtualExportProgress(running, preview)
 
   const toggleBucket = (bucket: string) => setBuckets(current => (
     current.includes(bucket) ? current.filter(item => item !== bucket) : [...current, bucket]
@@ -1578,6 +1634,7 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
 
   const execute = async (action: 'preview' | 'run') => {
     setBusy(true)
+    if (action === 'run') setRunning(true)
     setError(null)
     try {
       const data = await api(`/photo-picker/api/projects/${projectId}/export/${action}`, {
@@ -1588,11 +1645,13 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
       else {
         setResult(data)
         setPreview(null)
+        onDone?.(data)
       }
     } catch (cause) {
       setError(String(cause))
     } finally {
       setBusy(false)
+      setRunning(false)
     }
   }
 
@@ -1640,6 +1699,8 @@ function ExportDialog({ t, projectId, onClose }: { t: (key: string) => string; p
           </div>
           {applyEdits && <div className="pp-callout">{t('editExportHint')}</div>}
         </div>
+
+        {running && <ExportProgress t={t} progress={progress} />}
 
         <div className="pp-actions">
           <Button disabled={busy || dest === ''} onClick={() => execute('preview')}>{t('exportPreview')}</Button>
@@ -2221,6 +2282,7 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
   const [runTab, setRunTab] = useState<'checkpoints' | 'ai'>('checkpoints')
   const [noticeDismissed, setNoticeDismissed] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [exportNotice, setExportNotice] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [focusMode, setFocusMode] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -2461,7 +2523,17 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
         </>
       )}
 
-      {exporting && <ExportDialog t={t} projectId={id} onClose={() => setExporting(false)} />}
+      {exporting && (
+        <ExportDialog
+          t={t}
+          projectId={id}
+          onClose={() => setExporting(false)}
+          onDone={(result: any) => {
+            setExporting(false)
+            setExportNotice(t('exportDoneToast').replace('{count}', String(result.total ?? 0)))
+          }}
+        />
+      )}
       {settingsOpen && (
         <SettingsDrawer
           t={t}
@@ -2555,12 +2627,19 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
           </Button>
         </div>
       )}
+
+      {exportNotice !== null && (
+        <div className="pp-toast" data-kind="done" aria-live="polite">
+          <span style={{ flex: 1 }}>{exportNotice}</span>
+          <Button size="sm" variant="ghost" onClick={() => setExportNotice(null)}>{t('close')}</Button>
+        </div>
+      )}
     </div>
   )
 }
 
 
-function GlobalExportDialog({ t, filters, selectedItems, onClose }: any) {
+function GlobalExportDialog({ t, filters, selectedItems, onClose, onDone }: any) {
   const [dest, setDest] = useState('')
   const [buckets, setBuckets] = useState(['keep', 'maybe'])
   const [layout, setLayout] = useState('project')
@@ -2569,8 +2648,10 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }: any) {
   const [preview, setPreview] = useState<any>(null)
   const [result, setResult] = useState<any>(null)
   const [busy, setBusy] = useState(false)
+  const [running, setRunning] = useState(false)
   const [choosing, setChoosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const progress = useVirtualExportProgress(running, preview)
   const selected = Array.isArray(selectedItems) ? selectedItems : []
 
   const choose = async () => {
@@ -2610,6 +2691,7 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }: any) {
   const execute = async (action: 'preview' | 'run') => {
     if (busy) return
     setBusy(true)
+    if (action === 'run') setRunning(true)
     setError(null)
     try {
       const data = await request(action)
@@ -2617,11 +2699,13 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }: any) {
       else {
         setResult(data)
         setPreview(null)
+        onDone?.(data)
       }
     } catch (cause) {
       setError(String(cause))
     } finally {
       setBusy(false)
+      setRunning(false)
     }
   }
 
@@ -2711,6 +2795,8 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }: any) {
             {t('exportResult')} {result.total ?? 0} · {t('manifest')} {result.manifestPath}
           </div>
         )}
+        {running && <ExportProgress t={t} progress={progress} />}
+
         <div className="pp-actions">
           <Button disabled={busy || dest.trim() === ''} onClick={() => { void execute('preview') }}>
             {busy ? t('loading') : t('exportPreview')}
@@ -2738,6 +2824,7 @@ function GlobalPhotoWall({ t, projects }: any) {
   const [selected, setSelected] = useState<string[]>([])
   const [active, setActive] = useState<any>(null)
   const [exporting, setExporting] = useState(false)
+  const [exportNotice, setExportNotice] = useState<string | null>(null)
   const requestRef = useRef(0)
   const filterKey = JSON.stringify({ projectIds, scenes, verdicts, sort })
 
@@ -2942,7 +3029,18 @@ function GlobalPhotoWall({ t, projects }: any) {
           filters={{ projectIds, scenes, verdicts }}
           selectedItems={selectedItems}
           onClose={() => setExporting(false)}
+          onDone={(result: any) => {
+            setExporting(false)
+            setExportNotice(t('exportDoneToast').replace('{count}', String(result.total ?? 0)))
+          }}
         />
+      )}
+
+      {exportNotice !== null && (
+        <div className="pp-toast" data-kind="done" aria-live="polite">
+          <span style={{ flex: 1 }}>{exportNotice}</span>
+          <Button size="sm" variant="ghost" onClick={() => setExportNotice(null)}>{t('close')}</Button>
+        </div>
       )}
     </section>
   )
