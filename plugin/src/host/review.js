@@ -95,9 +95,23 @@ function buildWhere(projectId, opts = {}) {
     clauses.push(`${VERDICT_SQL} = ?`)
     params.push(opts.verdict)
   }
+  const verdicts = Array.isArray(opts.verdicts)
+    ? [...new Set(opts.verdicts.filter(value => VERDICTS.has(value)))]
+    : []
+  if (verdicts.length > 0) {
+    clauses.push(`${VERDICT_SQL} IN (${verdicts.map(() => '?').join(', ')})`)
+    params.push(...verdicts)
+  }
   if (opts.scene !== undefined && SCENE_VALUES.includes(opts.scene)) {
     clauses.push('COALESCE(so.scenes_json, a.scenes_json) LIKE ?')
     params.push(`%"${opts.scene}"%`)
+  }
+  const scenes = Array.isArray(opts.scenes)
+    ? [...new Set(opts.scenes.filter(value => SCENE_VALUES.includes(value)))]
+    : []
+  if (scenes.length > 0) {
+    clauses.push(`(${scenes.map(() => 'COALESCE(so.scenes_json, a.scenes_json) LIKE ?').join(' OR ')})`)
+    params.push(...scenes.map(scene => `%"${scene}"%`))
   }
   if (opts.groupId !== undefined) {
     clauses.push('p.group_id = ?')
@@ -115,7 +129,8 @@ function buildWhere(projectId, opts = {}) {
 }
 
 export function listReviewPhotos(db, projectId, opts = {}) {
-  const limit = Math.min(Math.max(Number(opts.limit ?? 60), 1), 500)
+  const maxLimit = Math.min(Math.max(Number(opts.maxLimit ?? 500), 1), 5000)
+  const limit = Math.min(Math.max(Number(opts.limit ?? 60), 1), maxLimit)
   const offset = Math.max(Number(opts.offset ?? 0), 0)
   const { clauses, params } = buildWhere(projectId, opts)
   const where = clauses.length > 0 ? ` AND ${clauses.join(' AND ')}` : ''

@@ -94,6 +94,13 @@ CREATE TABLE IF NOT EXISTS stage_runs (
   stats_json TEXT,
   cost_cny REAL NOT NULL DEFAULT 0,
   error TEXT,
+  model_route TEXT,
+  model_id TEXT,
+  prompt_version TEXT,
+  tokens_in INTEGER NOT NULL DEFAULT 0,
+  tokens_out INTEGER NOT NULL DEFAULT 0,
+  call_count INTEGER NOT NULL DEFAULT 0,
+  error_code TEXT,
   started_at INTEGER,
   finished_at INTEGER
 );
@@ -192,6 +199,7 @@ CREATE INDEX IF NOT EXISTS idx_photos_project_state ON photos(project_id, state)
 CREATE INDEX IF NOT EXISTS idx_photos_project_group ON photos(project_id, group_id);
 CREATE INDEX IF NOT EXISTS idx_photos_project_taken ON photos(project_id, taken_at);
 CREATE INDEX IF NOT EXISTS idx_stage_runs_project ON stage_runs(project_id, stage);
+CREATE INDEX IF NOT EXISTS idx_stage_runs_project_started ON stage_runs(project_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_assess_target ON assessments(target_kind, target_id);
 `
 
@@ -214,6 +222,19 @@ export function ensureAssessmentSceneColumns(db) {
   }
 }
 
+/** v0.7 新增 AI 阶段记录字段；旧库显式补列。 */
+export function ensureStageRunColumns(db) {
+  const columns = db.prepare('PRAGMA table_info(stage_runs)').all().map(row => row.name)
+  const additions = [
+    ['model_route', 'TEXT'], ['model_id', 'TEXT'], ['prompt_version', 'TEXT'],
+    ['tokens_in', 'INTEGER NOT NULL DEFAULT 0'], ['tokens_out', 'INTEGER NOT NULL DEFAULT 0'],
+    ['call_count', 'INTEGER NOT NULL DEFAULT 0'], ['error_code', 'TEXT'],
+  ]
+  for (const [name, type] of additions) {
+    if (!columns.includes(name)) db.exec(`ALTER TABLE stage_runs ADD COLUMN ${name} ${type}`)
+  }
+}
+
 /** 打开（必要时创建）一个项目数据库。 */
 export function openDb(workspaceDir) {
   mkdirSync(workspaceDir, { recursive: true })
@@ -223,6 +244,7 @@ export function openDb(workspaceDir) {
   db.exec(SCHEMA)
   ensureAssessmentRecipeColumn(db)
   ensureAssessmentSceneColumns(db)
+  ensureStageRunColumns(db)
   return db
 }
 

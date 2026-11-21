@@ -33,13 +33,13 @@ function normalizeOptions({ dest, buckets = ['keep', 'maybe'], mode = 'hardlink'
   return { dest: resolved, buckets: bucketList, mode, layout, edit }
 }
 
-function sourceOf(project) {
+export function sourceOf(project) {
   const source = project.sourcePath ?? project.source_path
   if (typeof source !== 'string' || source === '') throw httpError('project source is missing', 'BAD_PROJECT', 500)
   return source
 }
 
-function assertDestOutsideSource(project, dest) {
+export function assertDestOutsideSource(project, dest) {
   const source = path.resolve(sourceOf(project))
   // Windows 盘符/UNC 大小写不敏感，不能用字符串前缀比较。
   if (isSameOrInside(source, dest)) {
@@ -47,7 +47,7 @@ function assertDestOutsideSource(project, dest) {
   }
 }
 
-function selectPhotos(db, projectId) {
+export function selectPhotos(db, projectId) {
   return db.prepare(`
     SELECT p.id, p.rel_path, p.size_bytes, p.group_id,
            COALESCE(ro.recipe_json, a.recipe_json) AS recipe_json,
@@ -77,7 +77,7 @@ function selectPhotos(db, projectId) {
   `).all(projectId)
 }
 
-function recipeOf(item) {
+export function recipeOf(item) {
   if (item.recipe_json === null || item.recipe_json === undefined) return null
   try {
     return normalizeRecipe(JSON.parse(item.recipe_json), { allowMicroCrop: item.edit_source === 'human' })
@@ -86,7 +86,7 @@ function recipeOf(item) {
   }
 }
 
-function scenesOf(item) {
+export function scenesOf(item) {
   if (item.scenes_json === null || item.scenes_json === undefined) return []
   try {
     const value = JSON.parse(item.scenes_json)
@@ -96,7 +96,7 @@ function scenesOf(item) {
   }
 }
 
-function primarySceneOf(item, scenes) {
+export function primarySceneOf(item, scenes) {
   if (typeof item.primary_scene === 'string' && item.primary_scene !== '') return item.primary_scene
   return scenes[0] ?? null
 }
@@ -106,7 +106,7 @@ function selectedForBuckets(rows, buckets) {
   return rows.filter(row => wanted.has(row.verdict))
 }
 
-function sha8(text) {
+export function sha8(text) {
   return createHash('sha256').update(text).digest('hex').slice(0, 8)
 }
 
@@ -126,7 +126,7 @@ function targetPathFor(item, options, usedFlat, edited = false) {
   return target
 }
 
-async function fileSize(filePath) {
+export async function fileSize(filePath) {
   try {
     return (await stat(filePath)).size
   } catch {
@@ -158,7 +158,7 @@ async function sha256File(filePath) {
   })
 }
 
-async function sampleSources(project, items) {
+export async function sampleSources(project, items) {
   const sample = items.slice(0, 20)
   const records = []
   for (const item of sample) {
@@ -169,7 +169,7 @@ async function sampleSources(project, items) {
   return records
 }
 
-async function verifySourcesUnchanged(project, records) {
+export async function verifySourcesUnchanged(project, records) {
   const changed = []
   for (const record of records) {
     const sourcePath = path.join(sourceOf(project), record.relPath)
@@ -182,7 +182,7 @@ async function verifySourcesUnchanged(project, records) {
   return changed
 }
 
-function csvField(value) {
+export function csvField(value) {
   const text = String(value ?? '')
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }

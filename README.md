@@ -4,6 +4,15 @@
 
 **版本 0.6.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
 
+### 0.7.0（开发中）
+
+- 单图「修图建议」加入手动裁剪：自由裁剪、`4:3` / `5:4` / `1:1` / `16:9` / `16:10` / `3:2` 预设、原图、长短边切换。
+- 裁剪框支持拖动移动和 8 个边角把手；拖动时显示井字格，松开隐藏；支持触屏、键盘微调和 aria 标签。
+- 裁剪控制区移到图片下方并 sticky，角度滑块、比例图标和「保存并完成」动作栏在同一工作区；打开单图时项目概览折叠为紧凑栏。
+- 新增跨项目照片墙：项目多选、场景标签/判定筛选、按项目或分数排序、勾选或按筛选结果导出。
+- 新增项目级 AI 运行记录：grid / rank / score 的模型、状态、耗时、token、费用、处理数量和错误历史。
+- 跨项目导出使用项目分目录，写 aggregate manifest；原有单项目导出不变。
+
 ### 0.6.0 新增
 
 - 单图「修图建议」加入手动裁剪：自由裁剪、`4:3` / `5:4` / `1:1` / `16:9` / `16:10` / `3:2` 预设、原图、长短边切换。
@@ -266,7 +275,7 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 133 个单元/集成测试（node:test）
+npm test                 # 137 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
@@ -350,6 +359,7 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 10：可微调修图建议](docs/superpowers/plans/2026-11-18-photo-picker-10-editable-recipes.md)
   - [Plan 11：模型路由选择](docs/superpowers/plans/2026-11-21-photo-picker-11-model-route.md)
   - [Plan 12：手动裁剪](docs/superpowers/plans/2026-11-21-photo-picker-12-manual-crop.md)
+  - [Plan 13：AI 运行记录与跨项目照片墙](docs/superpowers/plans/2026-11-21-photo-picker-13-ai-runs-global-wall.md)
 
 ## 版本
 

@@ -8,6 +8,8 @@ import { dshHome } from './paths.js'
 import { isPeakHour } from './cost.js'
 import { renderEditedBuffer, renderEditedFile } from './edit.js'
 import { previewExport, runExport } from './export.js'
+import { listGlobalPhotos } from './global-wall.js'
+import { previewGlobalExport, runGlobalExport } from './global-export.js'
 import { renderPreview } from './images.js'
 import { fromPortablePath, platform } from './platform.js'
 import { connectSmb as connectSmbHost, defaultListVolumes } from './network.js'
@@ -271,13 +273,28 @@ export class PhotoPickerService extends Service {
     this.running.set(id, { stage, controller })
     task
       .then(result => this.events.emit('event', { projectId: id, stage, done: true, result }))
-      .catch(error => this.events.emit('event', {
-        projectId: id, stage, error: String(error?.message ?? error), code: error?.code,
-      }))
+      .catch(async error => {
+        await this.markStageFailed(db, id, stage, error).catch(() => {})
+        this.events.emit('event', {
+          projectId: id, stage, error: String(error?.message ?? error), code: error?.code,
+        })
+      })
       .finally(() => {
         if (this.running.get(id)?.stage === stage) this.running.delete(id)
       })
     return { started: stage }
+  }
+
+  /** 把异常阶段从 running 收尾为 failed，避免 AI 记录永久停在运行中。 */
+  async markStageFailed(db, projectId, stage, error) {
+    const now = Date.now()
+    const code = String(error?.code ?? 'STAGE_FAILED')
+    const result = db.prepare(`UPDATE stage_runs SET status = 'failed', error_code = ?, finished_at = ?
+                WHERE project_id = ? AND (? IS NULL OR stage = ?) AND status = 'running'`)
+      .run(code, now, projectId, stage ?? null, stage ?? null)
+    if (result.changes > 0) {
+      db.prepare('UPDATE projects SET status = ?, updated_at = ? WHERE id = ?').run('failed', now, projectId)
+    }
   }
 
   /** 构造单个阶段的实际任务；startStage 与自动串联共用。 */
@@ -384,26 +401,33 @@ export class PhotoPickerService extends Service {
     }
     const controller = new AbortController()
     this.running.set(id, { stage: 'pipeline', controller })
+    let lastStage = null
     const task = runPipeline({
       stages,
       signal: controller.signal,
       pauseBetween: project.stagePause === true,
-      onStage: event => this.events.emit('event', {
-        projectId: id,
-        pipeline: true,
-        stage: event.stage,
-        phase: event.phase,
-        ...(event.phase === 'done' ? { done: true, result: event.result } : {}),
-      }),
+      onStage: event => {
+        if (event.phase === 'start') lastStage = event.stage
+        this.events.emit('event', {
+          projectId: id,
+          pipeline: true,
+          stage: event.stage,
+          phase: event.phase,
+          ...(event.phase === 'done' ? { done: true, result: event.result } : {}),
+        })
+      },
       runStage: stage => this.stageTask(stage, { db, project, controller }),
     })
     task
       .then(result => this.events.emit('event', {
         projectId: id, pipeline: true, stage: 'pipeline', done: true, result,
       }))
-      .catch(error => this.events.emit('event', {
-        projectId: id, pipeline: true, stage: 'pipeline', error: String(error?.message ?? error), code: error?.code,
-      }))
+      .catch(async error => {
+        await this.markStageFailed(db, id, lastStage, error).catch(() => {})
+        this.events.emit('event', {
+          projectId: id, pipeline: true, stage: 'pipeline', error: String(error?.message ?? error), code: error?.code,
+        })
+      })
       .finally(() => {
         if (this.running.get(id)?.stage === 'pipeline') this.running.delete(id)
       })
@@ -428,6 +452,65 @@ export class PhotoPickerService extends Service {
   async reviewPhotos(id, options = {}) {
     const { db } = await this.store.open(id)
     return listReviewPhotos(db, id, options)
+  }
+
+  async aiRuns(id, { limit = 20, offset = 0 } = {}) {
+    const { db } = await this.store.open(id)
+    const limitValue = Number(limit)
+    const offsetValue = Number(offset)
+    const pageLimit = Math.min(Math.max(Number.isFinite(limitValue) ? limitValue : 20, 1), 100)
+    const pageOffset = Math.max(Number.isFinite(offsetValue) ? offsetValue : 0, 0)
+    const total = db.prepare(`
+      SELECT COUNT(*) AS n FROM stage_runs
+      WHERE project_id = ? AND stage IN ('grid', 'rank', 'score')
+    `).get(id).n
+    const rows = db.prepare(`
+      SELECT id, stage, status, model_route, model_id, prompt_version,
+             tokens_in, tokens_out, call_count, cost_cny, error_code,
+             started_at, finished_at, stats_json
+      FROM stage_runs
+      WHERE project_id = ? AND stage IN ('grid', 'rank', 'score')
+      ORDER BY started_at DESC, id DESC
+      LIMIT ? OFFSET ?
+    `).all(id, pageLimit, pageOffset)
+    return {
+      total,
+      items: rows.map(row => {
+        let stats = null
+        try { stats = row.stats_json === null ? null : JSON.parse(row.stats_json) } catch { stats = null }
+        return {
+          id: row.id,
+          stage: row.stage,
+          status: row.status,
+          modelRoute: row.model_route ?? null,
+          modelId: row.model_id ?? null,
+          promptVersion: row.prompt_version ?? null,
+          tokensIn: row.tokens_in ?? 0,
+          tokensOut: row.tokens_out ?? 0,
+          callCount: row.call_count ?? 0,
+          costCny: row.cost_cny ?? 0,
+          errorCode: row.error_code ?? null,
+          startedAt: row.started_at,
+          finishedAt: row.finished_at,
+          durationMs: row.started_at !== null && row.finished_at !== null
+            ? Math.max(0, row.finished_at - row.started_at)
+            : null,
+          stats,
+        }
+      }),
+    }
+  }
+
+  async globalPhotos(filters = {}) {
+    return listGlobalPhotos({ store: this.store, filters })
+  }
+
+  async globalExportPreview(options = {}) {
+    return previewGlobalExport({ store: this.store, ...options })
+  }
+
+  async globalExportRun(options = {}) {
+    return runGlobalExport({ store: this.store, ...options })
   }
 
   async photoDetail(id, photoId) {

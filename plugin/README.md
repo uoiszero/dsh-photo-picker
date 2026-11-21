@@ -37,6 +37,8 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 - **Budget and stability**: live USD/CNY usage, budget pause, concurrency/retry/backoff, off-peak mode, resumable stages.
 - **Project management**: delete a project and its local workspace without touching source photos.
 - **Review workbench**: filterable wall with AI scene tags and scene filters, 1600px single view, group compare, bulk decisions, undo.
+- **Cross-project wall**: filter reviewable photos from multiple projects by scene label, verdict and project; export the filtered set or a selection with a single manifest.
+- **AI run history**: per-project stage-level model/token/cost history for grid, rank and score.
 - **Portable edit recipes**: manual crop with freeform, 4:3 / 5:4 / 1:1 / 16:9 / 16:10 / 3:2 presets, orientation swap, and draggable handles. Tune exposure/contrast/saturation/sharpen/rotate, save a per-photo human recipe, or restore the AI recipe. The plugin renders previews with the bundled sharp engine and exports JPEG copies while keeping sources untouched. the scoring model can suggest crop/straighten/exposure/contrast/saturation/sharpen. Tune exposure/contrast/saturation/sharpen/rotate in the single view, save a per-photo human recipe, or restore the AI recipe. The plugin renders previews with the bundled sharp engine and exports JPEG copies while keeping sources untouched. Crop stays from the AI suggestion.
 - **No black corners**: straightening auto-crops the largest inscribed rectangle.
 - **No micro-crops**: recipes whose trimmed edges are all below 18% are treated as uncropped; the UI shows retained size and offsets.
