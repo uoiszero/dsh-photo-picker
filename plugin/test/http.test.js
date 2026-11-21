@@ -41,6 +41,7 @@ function stub() {
     async reveal(path) { return { revealed: path } },
     async promptInfo(projectId) { return { version: 'v1', project: projectId ?? null, prompts: { gridUser: 'x' } } },
     async models(route) { return { route, models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }] } },
+    async modelRoutes() { return [{ id: 'deepseek-official', name: 'DeepSeek', models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }] }] },
     async previewFile() { return undefined },
     async exportPreview(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
     async exportRun(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
@@ -73,6 +74,14 @@ test('health and project routes answer JSON', async () => {
 
     const list = await fetch(`${origin}/photo-picker/api/projects`)
     assert.deepEqual(await list.json(), [{ id: 'p1', name: 'demo' }])
+
+    const routes = await fetch(`${origin}/photo-picker/api/model-routes`)
+    assert.equal(routes.status, 200)
+    assert.deepEqual(await routes.json(), [{
+      id: 'deepseek-official',
+      name: 'DeepSeek',
+      models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }],
+    }])
 
     const created = await fetch(`${origin}/photo-picker/api/projects`, {
       method: 'POST',

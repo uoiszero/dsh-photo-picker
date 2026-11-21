@@ -232,6 +232,7 @@ var zh = {
   settingsTitle: "\u9879\u76EE\u8BBE\u7F6E",
   settingsBasic: "\u57FA\u7840",
   model: "\u6A21\u578B",
+  modelRoute: "\u6A21\u578B\u8DEF\u7531",
   concurrency: "\u5E76\u53D1",
   gridSize: "\u7F51\u683C\u89C4\u683C",
   gridCols: "\u5217",
@@ -499,6 +500,7 @@ var en = {
   settingsTitle: "Project settings",
   settingsBasic: "Basics",
   model: "Model",
+  modelRoute: "Model route",
   concurrency: "Concurrency",
   gridSize: "Grid size",
   gridCols: "Columns",
@@ -2603,6 +2605,7 @@ function CalibrationSection({ t, projectId, onApplied }) {
 }
 function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
   const [form, setForm] = (0, import_react2.useState)(() => ({
+    modelRoute: detail.modelRoute ?? "deepseek-official",
     modelId: detail.modelId ?? "deepseek-flash",
     concurrency: String(detail.concurrency ?? 8),
     budgetCny: String(detail.budgetCny ?? 30),
@@ -2618,6 +2621,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
     offpeakOnly: detail.offpeakOnly === true
   }));
   const [prompt, setPrompt] = (0, import_react2.useState)(null);
+  const [routes, setRoutes] = (0, import_react2.useState)([]);
   const [models, setModels] = (0, import_react2.useState)([]);
   const [busy, setBusy] = (0, import_react2.useState)(false);
   const [saved, setSaved] = (0, import_react2.useState)(false);
@@ -2625,9 +2629,33 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
   (0, import_react2.useEffect)(() => {
     api(`/photo-picker/api/prompt?project=${detail.id}`).then(setPrompt).catch(() => {
     });
-    api(`/photo-picker/api/models?route=${encodeURIComponent(detail.modelRoute ?? "deepseek-official")}`).then((data) => setModels(data.models ?? [])).catch(() => {
+    api("/photo-picker/api/model-routes").then((data) => {
+      const nextRoutes = Array.isArray(data) ? data : [];
+      setRoutes(nextRoutes);
+      const current = nextRoutes.find((route) => route.id === (detail.modelRoute ?? "deepseek-official"));
+      if (current !== void 0) setModels(current.models ?? []);
+      else {
+        api(`/photo-picker/api/models?route=${encodeURIComponent(detail.modelRoute ?? "deepseek-official")}`).then((result) => setModels(result.models ?? [])).catch(() => {
+        });
+      }
+    }).catch(() => {
+      api(`/photo-picker/api/models?route=${encodeURIComponent(detail.modelRoute ?? "deepseek-official")}`).then((data) => setModels(data.models ?? [])).catch(() => {
+      });
     });
   }, [detail.id]);
+  const changeRoute = async (routeId) => {
+    set("modelRoute", routeId);
+    try {
+      const data = await api(`/photo-picker/api/models?route=${encodeURIComponent(routeId)}`);
+      const nextModels = (data.models ?? []).filter((model) => !Array.isArray(model.inputModalities) || model.inputModalities.includes("image"));
+      setModels(nextModels);
+      if (!nextModels.some((model) => model.id === form.modelId)) {
+        set("modelId", nextModels[0]?.id ?? "");
+      }
+    } catch (cause) {
+      setError(String(cause));
+    }
+  };
   const set = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
     setSaved(false);
@@ -2639,6 +2667,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
       await api(`/photo-picker/api/projects/${detail.id}`, {
         method: "PATCH",
         body: JSON.stringify({
+          modelRoute: form.modelRoute,
           modelId: form.modelId,
           concurrency: Number(form.concurrency),
           budgetCny: Number(form.budgetCny),
@@ -2662,7 +2691,9 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }) {
       setBusy(false);
     }
   };
-  return /* @__PURE__ */ h2(DrawerShell, { title: t("settingsTitle"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("settingsBasic")), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("model")), /* @__PURE__ */ h2("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), className: "pp-select" }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
+  return /* @__PURE__ */ h2(DrawerShell, { title: t("settingsTitle"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("settingsBasic")), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("modelRoute")), /* @__PURE__ */ h2("select", { value: form.modelRoute, onChange: (event) => {
+    void changeRoute(event.target.value);
+  }, className: "pp-select" }, (routes.length === 0 ? [{ id: form.modelRoute, name: form.modelRoute }] : routes).map((route) => /* @__PURE__ */ h2("option", { key: route.id, value: route.id }, route.name ?? route.id, " (", route.id, ")")))), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("model")), /* @__PURE__ */ h2("select", { value: form.modelId, onChange: (event) => set("modelId", event.target.value), className: "pp-select" }, (models.length === 0 ? [{ id: form.modelId, name: form.modelId }] : models).map((model) => {
     const supportsImage = Array.isArray(model.inputModalities) ? model.inputModalities.includes("image") : true;
     return /* @__PURE__ */ h2("option", { key: model.id, value: model.id, disabled: !supportsImage }, model.name ?? model.id, supportsImage ? "" : ` \u2014 ${t("settingsNoImageModel")}`);
   }))), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("concurrency")), /* @__PURE__ */ h2("input", { value: form.concurrency, onChange: (event) => set("concurrency", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("budget")), /* @__PURE__ */ h2("input", { value: form.budgetCny, onChange: (event) => set("budgetCny", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("gridSize"), " / ", t("thresholds")), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("gridCols")), /* @__PURE__ */ h2("input", { value: form.gridCols, onChange: (event) => set("gridCols", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("gridRows")), /* @__PURE__ */ h2("input", { value: form.gridRows, onChange: (event) => set("gridRows", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("thresholdKeep")), /* @__PURE__ */ h2("input", { value: form.thresholdKeep, onChange: (event) => set("thresholdKeep", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("thresholdMaybe")), /* @__PURE__ */ h2("input", { value: form.thresholdMaybe, onChange: (event) => set("thresholdMaybe", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("grouping")), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("burstSeconds")), /* @__PURE__ */ h2("input", { value: form.groupBurstSeconds, onChange: (event) => set("groupBurstSeconds", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("burstHamming")), /* @__PURE__ */ h2("input", { value: form.groupBurstHamming, onChange: (event) => set("groupBurstHamming", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-row" }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("sceneSeconds")), /* @__PURE__ */ h2("input", { value: form.groupSceneSeconds, onChange: (event) => set("groupSceneSeconds", event.target.value), className: "pp-input" })), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("sceneHamming")), /* @__PURE__ */ h2("input", { value: form.groupSceneHamming, onChange: (event) => set("groupSceneHamming", event.target.value), className: "pp-input" }))), /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("runOptions")), /* @__PURE__ */ h2("div", { className: "pp-checks" }, /* @__PURE__ */ h2("label", null, /* @__PURE__ */ h2("input", { type: "checkbox", checked: form.stagePause, onChange: (event) => set("stagePause", event.target.checked) }), t("stagePause")), /* @__PURE__ */ h2("label", null, /* @__PURE__ */ h2("input", { type: "checkbox", checked: form.offpeakOnly, onChange: (event) => set("offpeakOnly", event.target.checked) }), t("offpeak"))), prompt !== null && /* @__PURE__ */ h2("details", null, /* @__PURE__ */ h2("summary", { className: "pp-muted", style: { cursor: "pointer" } }, t("promptSection"), " \xB7 ", prompt.version, " \xB7 ", t("viewPrompt")), /* @__PURE__ */ h2("pre", null, prompt.prompts.gridUser, "\n\n---\n\n", prompt.prompts.rankUser, "\n\n---\n\n", prompt.prompts.scoreUser)), /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("rerunStages")), /* @__PURE__ */ h2("div", { className: "pp-actions" }, ["preprocess", "grid", "rank", "score"].map((stage) => /* @__PURE__ */ h2(Button, { key: stage, onClick: () => onRunStage?.(stage) }, t("rerun"), " ", stageLabel(t, stage)))), /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("sceneRescoreHint")), /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("settingsHint")), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), /* @__PURE__ */ h2("div", { className: "pp-modal-foot" }, /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy, onClick: save }, t("save")), saved && /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("saved")))));

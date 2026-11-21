@@ -91,6 +91,7 @@
 - **照片源**：本机目录（系统原生选文件夹对话框 + 应用内目录浏览）。SMB 网络源首版已实现但**暂停入口**：受 macOS 网络卷权限影响，DSH 进程无法列目录（EPERM）；待权限方案确定后恢复。NFS 需先手动挂载；Windows 可使用映射盘或 UNC 路径。数据库、缩略图、预览和网格图始终保存在本地工作区。
 - **本地预处理**：精确去重、模糊/曝光/分辨率过滤、dHash 连拍与同场景分组、384px 缩略图、1600px 预览按需生成。
 - **AI 粗筛**：4×4 网格拼图（SVG 编号、不裁切），每格一次调用；解析失败会强化提示重试，仍失败的照片标记为 `grid_error` 进入人工队列，不会消失。
+- **模型路由**：项目设置可切换 provider route 与模型；默认仍是 `deepseek-official / deepseek-flash`，Qwen 等作为备选。
 - **AI 精评**：组内排序（>6 张分块）→ 单张六维评分 → 阈值收敛；单张精评先判断人像/风光/建筑/街拍/活动/花植物/动物/雕塑展品等场景，再按主场景选择评分重点。坏 JSON 自动重试，人工判定永远覆盖 AI。
 - **预算与稳定性**：按 usage 实时计费、预算触顶暂停、并发/重试/退避、离峰开关、自动跑串联阶段、阶段间暂停、断点续跑。
 - **复核**：图墙筛选/排序/按场景筛选/多选改判/撤销最近 20 步；单图可手动编辑 1–3 个场景标签并指定主场景，人工标签优先；图墙按 200 张/页无限滚动并只渲染可视行；图墙缩略图显示 AI 场景标签；单图 1600px 预览、维度条、理由、后期建议、场景 chips；组对比 6 张/页；`J/K/P/M/X/Space` 快捷键。
@@ -256,7 +257,7 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 122 个单元/集成测试（node:test）
+npm test                 # 123 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
@@ -338,6 +339,7 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 8：照片墙分页与虚拟化](docs/superpowers/plans/2026-11-15-photo-picker-08-wall-virtualization.md)
   - [Plan 9：场景标签人工修正与删除项目](docs/superpowers/plans/2026-11-18-photo-picker-09-scene-overrides-export-delete.md)
   - [Plan 10：可微调修图建议](docs/superpowers/plans/2026-11-18-photo-picker-10-editable-recipes.md)
+  - [Plan 11：模型路由选择](docs/superpowers/plans/2026-11-21-photo-picker-11-model-route.md)
 
 ## 版本
 
