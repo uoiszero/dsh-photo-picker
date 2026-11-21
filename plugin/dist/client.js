@@ -3823,6 +3823,42 @@ function Workbench({ t }) {
   const [creating, setCreating] = (0, import_react2.useState)(false);
   const [deleting, setDeleting] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
+  const pageRef = (0, import_react2.useRef)(null);
+  const projectListScrollRef = (0, import_react2.useRef)(0);
+  const restoreProjectListScrollRef = (0, import_react2.useRef)(false);
+  const rememberProjectListScroll = () => {
+    if (view !== "projects" || selected !== null || creating) return;
+    projectListScrollRef.current = pageRef.current?.scrollTop ?? 0;
+  };
+  const openProject = (id) => {
+    rememberProjectListScroll();
+    setSelected(id);
+  };
+  const backToProjects = () => {
+    restoreProjectListScrollRef.current = true;
+    setSelected(null);
+  };
+  const switchToProjects = () => {
+    rememberProjectListScroll();
+    restoreProjectListScrollRef.current = true;
+    setView("projects");
+    setSelected(null);
+    setCreating(false);
+  };
+  const switchToGlobal = () => {
+    rememberProjectListScroll();
+    setView("global");
+    setSelected(null);
+    setCreating(false);
+  };
+  (0, import_react2.useLayoutEffect)(() => {
+    if (!restoreProjectListScrollRef.current) return;
+    if (selected !== null || view !== "projects" || creating) return;
+    const page = pageRef.current;
+    if (page === null) return;
+    page.scrollTop = projectListScrollRef.current;
+    restoreProjectListScrollRef.current = false;
+  }, [selected, view, creating, projects]);
   const reload = async () => {
     try {
       setProjects(await api("/photo-picker/api/projects"));
@@ -3849,7 +3885,7 @@ function Workbench({ t }) {
     }
   };
   const list = projects ?? [];
-  return /* @__PURE__ */ h2("div", { className: "pp-page" }, /* @__PURE__ */ h2("div", { className: "pp-shell" }, /* @__PURE__ */ h2("header", { className: "pp-header" }, /* @__PURE__ */ h2("div", { className: "pp-title-wrap" }, /* @__PURE__ */ h2("span", { className: "pp-mark", "aria-hidden": "true" }, /* @__PURE__ */ h2("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none" }, /* @__PURE__ */ h2("circle", { cx: "12", cy: "12", r: "8.4", stroke: "currentColor", strokeWidth: "1.6" }), /* @__PURE__ */ h2("path", { d: "M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }), /* @__PURE__ */ h2("circle", { cx: "12", cy: "12", r: "2.6", stroke: "currentColor", strokeWidth: "1.4" }))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("h1", { className: "pp-title" }, t("title")), /* @__PURE__ */ h2("p", { className: "pp-subtitle" }, t("subtitle")))), /* @__PURE__ */ h2("div", { className: "pp-header-actions" }, /* @__PURE__ */ h2(
+  return /* @__PURE__ */ h2("div", { className: "pp-page", ref: pageRef }, /* @__PURE__ */ h2("div", { className: "pp-shell" }, /* @__PURE__ */ h2("header", { className: "pp-header" }, /* @__PURE__ */ h2("div", { className: "pp-title-wrap" }, /* @__PURE__ */ h2("span", { className: "pp-mark", "aria-hidden": "true" }, /* @__PURE__ */ h2("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none" }, /* @__PURE__ */ h2("circle", { cx: "12", cy: "12", r: "8.4", stroke: "currentColor", strokeWidth: "1.6" }), /* @__PURE__ */ h2("path", { d: "M12 3.9 16.15 8.3l-1.55 5.25h-5.2L7.85 8.3 12 3.9Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }), /* @__PURE__ */ h2("circle", { cx: "12", cy: "12", r: "2.6", stroke: "currentColor", strokeWidth: "1.4" }))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("h1", { className: "pp-title" }, t("title")), /* @__PURE__ */ h2("p", { className: "pp-subtitle" }, t("subtitle")))), /* @__PURE__ */ h2("div", { className: "pp-header-actions" }, /* @__PURE__ */ h2(
     "button",
     {
       type: "button",
@@ -3859,17 +3895,10 @@ function Workbench({ t }) {
     },
     getLanguage() === "zh" ? "EN" : "\u4E2D"
   ), view === "projects" && /* @__PURE__ */ h2(Button, { variant: "primary", onClick: () => {
+    rememberProjectListScroll();
     setCreating(true);
     setSelected(null);
-  } }, t("newProject")))), /* @__PURE__ */ h2("div", { className: "pp-view-tabs" }, /* @__PURE__ */ h2("button", { type: "button", className: view === "projects" && selected === null ? "active" : "", onClick: () => {
-    setView("projects");
-    setSelected(null);
-    setCreating(false);
-  } }, t("projectsTab")), /* @__PURE__ */ h2("button", { type: "button", className: view === "global" ? "active" : "", onClick: () => {
-    setView("global");
-    setSelected(null);
-    setCreating(false);
-  } }, t("allPhotosTab"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), selected !== null ? /* @__PURE__ */ h2(ProjectDetail, { t, id: selected, onBack: () => setSelected(null) }) : view === "global" ? /* @__PURE__ */ h2(GlobalPhotoWall, { t, projects: list }) : creating ? /* @__PURE__ */ h2(
+  } }, t("newProject")))), /* @__PURE__ */ h2("div", { className: "pp-view-tabs" }, /* @__PURE__ */ h2("button", { type: "button", className: view === "projects" && selected === null ? "active" : "", onClick: switchToProjects }, t("projectsTab")), /* @__PURE__ */ h2("button", { type: "button", className: view === "global" ? "active" : "", onClick: switchToGlobal }, t("allPhotosTab"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), selected !== null ? /* @__PURE__ */ h2(ProjectDetail, { t, id: selected, onBack: backToProjects }) : view === "global" ? /* @__PURE__ */ h2(GlobalPhotoWall, { t, projects: list }) : creating ? /* @__PURE__ */ h2(
     CreateForm,
     {
       t,
@@ -3878,7 +3907,10 @@ function Workbench({ t }) {
         setSelected(id);
         void reload();
       },
-      onCancel: () => setCreating(false)
+      onCancel: () => {
+        restoreProjectListScrollRef.current = true;
+        setCreating(false);
+      }
     }
   ) : projects === null ? /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") }) : list.length === 0 ? /* @__PURE__ */ h2(
     StateCard,
@@ -3893,7 +3925,7 @@ function Workbench({ t }) {
     {
       type: "button",
       className: "pp-project",
-      onClick: () => setSelected(project.id)
+      onClick: () => openProject(project.id)
     },
     /* @__PURE__ */ h2("span", { className: "pp-project-top" }, /* @__PURE__ */ h2("strong", { className: "pp-project-name" }, project.name), /* @__PURE__ */ h2("span", { className: "pp-pill" }, statusLabel(t, project.status)), /* @__PURE__ */ h2("span", { className: "pp-chevron" }, "\u2192")),
     /* @__PURE__ */ h2("span", { className: "pp-project-path", title: project.sourcePath }, project.sourcePath),
