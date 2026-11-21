@@ -337,6 +337,7 @@ var zh = {
   history: "\u8FD0\u884C\u8BB0\u5F55",
   samples: "\u62BD\u6837",
   aiRuns: "AI \u8FD0\u884C\u8BB0\u5F55",
+  runHistorySubtitle: "\u6700\u8FD1\u9636\u6BB5\u68C0\u67E5\u70B9\u4E0E\u5168\u90E8 AI \u9636\u6BB5\u8FD0\u884C",
   runTabCheckpoints: "\u9636\u6BB5\u68C0\u67E5\u70B9",
   runTabAi: "AI \u5386\u53F2",
   runHistoryEmpty: "\u8FD8\u6CA1\u6709\u9636\u6BB5\u68C0\u67E5\u70B9\u3002",
@@ -652,6 +653,7 @@ var en = {
   history: "Run history",
   samples: "Samples",
   aiRuns: "AI run history",
+  runHistorySubtitle: "Latest stage checkpoints and all AI stage runs",
   runTabCheckpoints: "Stage checkpoints",
   runTabAi: "AI history",
   runHistoryEmpty: "No stage checkpoints yet.",
@@ -1014,21 +1016,62 @@ var STYLES = `
   cursor: pointer; list-style: none; font-size: 13px; font-weight: 600;
 }
 .pp-history > summary::-webkit-details-marker { display: none; }
-.pp-history > summary::after { content: '\u2304'; margin-left: auto; color: var(--dsw-alias-label-secondary); transition: transform .15s; }
-.pp-history[open] > summary::after { transform: rotate(180deg); }
-.pp-history-count { margin-left: 6px; }
-.pp-history-body { border-top: 1px solid var(--dsw-alias-border-l1); }
-.pp-history-row {
-  display: grid; grid-template-columns: 96px 88px 1fr auto; gap: 10px;
-  align-items: center; padding: 10px 18px; font-size: 12px;
-  border-top: 1px solid var(--dsw-alias-border-l1);
+.pp-history > summary::after {
+  content: ''; display: block; flex: none; align-self: center;
+  width: 7px; height: 7px; margin-left: auto;
+  border-right: 1.5px solid var(--dsw-alias-label-secondary);
+  border-bottom: 1.5px solid var(--dsw-alias-label-secondary);
+  transform: rotate(45deg); transform-origin: center;
+  transition: transform .15s ease;
 }
-.pp-history-row:first-child { border-top: 0; }
-.pp-history-row strong { font-weight: 600; }
-.pp-history-samples { padding: 0 18px 12px; }
-.pp-history-samples > summary { cursor: pointer; font-size: 11px; color: var(--dsw-alias-label-secondary); }
-.pp-history-samples > div { display: grid; grid-template-columns: repeat(8, minmax(0, 84px)); gap: 8px; margin-top: 8px; }
-.pp-history-samples img {
+.pp-history[open] > summary::after { transform: rotate(225deg); }
+.pp-history-count { margin-left: 6px; }
+.pp-history-subtitle {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11px; font-weight: 400; color: var(--dsw-alias-label-secondary);
+}
+.pp-history-body { border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-run-toolbar { padding: 12px 18px 10px; }
+.pp-run-tabs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px;
+  border-radius: 10px; background: var(--dsw-alias-bg-layer-2);
+}
+.pp-run-tabs button {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 0; border: 0; background: transparent; padding: 7px 10px;
+  border-radius: 8px; color: var(--dsw-alias-label-secondary); font-size: 12px; cursor: pointer;
+}
+.pp-run-tabs button.active {
+  background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+}
+.pp-run-tab-count {
+  min-width: 18px; padding: 1px 5px; border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary);
+  font-size: 10px; line-height: 1.6; text-align: center;
+}
+.pp-run-tabs button.active .pp-run-tab-count {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, var(--dsw-alias-bg-layer-1));
+  color: var(--dsw-alias-brand-primary);
+}
+.pp-run-row {
+  padding: 12px 18px; border-top: 1px solid var(--dsw-alias-border-l1); font-size: 12px;
+}
+.pp-run-row:first-child { border-top: 0; }
+.pp-run-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.pp-run-main strong { font-weight: 600; }
+.pp-run-cost { margin-left: auto; flex: none; }
+.pp-run-meta {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;
+  font-size: 11px; color: var(--dsw-alias-label-secondary);
+}
+.pp-run-error { color: var(--pp-status-reject); }
+.pp-run-empty { padding: 16px 18px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.pp-run-load-more { display: flex; justify-content: center; padding: 4px 18px 14px; }
+.pp-run-samples { margin-top: 8px; }
+.pp-run-samples > summary { cursor: pointer; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-run-samples > div { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; margin-top: 8px; }
+.pp-run-samples img {
   width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 7px;
   background: var(--dsw-alias-bg-layer-2);
 }
@@ -1379,7 +1422,6 @@ var STYLES = `
   border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary, #cc4b3f) 24%, var(--dsw-alias-border-l1));
 }
 .pp-project { padding: 14px; }
-  .pp-history-row { grid-template-columns: 1fr auto; }
 }
 @media (max-width: 480px) {
   .pp-header-actions { width: 100%; justify-content: flex-end; }
@@ -1395,7 +1437,6 @@ var STYLES = `
   .pp-overlay { padding: 0; }
   .pp-modal { width: 100vw; max-height: 100vh; border-radius: 0; }
   .pp-drawer { width: 100vw; }
-  .pp-history-row { grid-template-columns: 1fr; }
 }
 
 .pp-single-visual { display: grid; gap: 10px; align-content: start; min-width: 0; }
@@ -1530,11 +1571,6 @@ var STYLES = `
 .pp-option:hover { color: var(--dsw-alias-brand-primary); }
 .pp-option:has(input:disabled) { opacity: .5; cursor: not-allowed; }
 .pp-option input { margin: 0; accent-color: var(--dsw-alias-brand-primary); }
-.pp-run-tabs { display: inline-flex; gap: 3px; padding: 3px; margin-bottom: 3px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); }
-.pp-run-tabs button { border: 0; background: transparent; padding: 5px 10px; border-radius: 999px; color: var(--dsw-alias-label-secondary); font-size: 11px; cursor: pointer; }
-.pp-run-tabs button.active { background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
-.pp-run-ai-row { display: grid; gap: 3px; }
-.pp-run-meta { display: flex; gap: 10px; flex-wrap: wrap; padding: 0 0 4px 2px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
 
 .pp-export-progress { display: grid; gap: 5px; padding: 8px 0 2px; }
 .pp-export-progress-head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
@@ -1947,6 +1983,9 @@ function ExportProgress({ t, progress }) {
   const percent = Math.max(0, Math.min(99, Math.round(progress * 100)));
   return /* @__PURE__ */ h2("div", { className: "pp-export-progress" }, /* @__PURE__ */ h2("div", { className: "pp-export-progress-head" }, /* @__PURE__ */ h2("span", null, t("exportInProgress")), /* @__PURE__ */ h2("span", null, percent, "%")), /* @__PURE__ */ h2("div", { className: "pp-progress-track", role: "progressbar", "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": percent }, /* @__PURE__ */ h2("div", { className: "pp-progress-fill", style: { width: `${percent}%` } })));
 }
+function RunHistoryRow({ t, stage, status, costCny, meta, children }) {
+  return /* @__PURE__ */ h2("div", { className: "pp-run-row" }, /* @__PURE__ */ h2("div", { className: "pp-run-main" }, /* @__PURE__ */ h2("span", { className: "pp-dot", "data-status": status, "aria-hidden": "true" }), /* @__PURE__ */ h2("strong", null, stage), /* @__PURE__ */ h2("span", { className: "pp-pill" }, runStatusLabel(t, status)), /* @__PURE__ */ h2("span", { className: "pp-chip pp-run-cost" }, "\xA5", Number(costCny ?? 0).toFixed(4))), meta !== null && meta !== void 0 && /* @__PURE__ */ h2("div", { className: "pp-run-meta" }, meta), children);
+}
 function CreateForm({ t, onCreated, onCancel }) {
   const [sourceKind, setSourceKind] = (0, import_react2.useState)("local");
   const [smbUrl, setSmbUrl] = (0, import_react2.useState)("");
@@ -2099,9 +2138,41 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
   const [visibleRange, setVisibleRange] = (0, import_react2.useState)({ start: 0, end: 20 });
   const filterKey = `${filter}|${scene}|${sort}`;
   const lastFilterKey = (0, import_react2.useRef)("");
+  const photoListScrollRef = (0, import_react2.useRef)(0);
+  const restorePhotoListScrollRef = (0, import_react2.useRef)(false);
+  const rememberPhotoListScroll = () => {
+    const root = wallRef.current?.closest(".pp-page");
+    if (root !== null) photoListScrollRef.current = root.scrollTop;
+  };
+  const openPhoto = (id) => {
+    rememberPhotoListScroll();
+    setSingle(id);
+  };
+  const closePhoto = () => {
+    restorePhotoListScrollRef.current = true;
+    setSingle(null);
+  };
   (0, import_react2.useEffect)(() => {
     onFocusChange?.(single !== null || groupView !== null);
   }, [single, groupView, onFocusChange]);
+  (0, import_react2.useLayoutEffect)(() => {
+    if (!restorePhotoListScrollRef.current || single !== null || groupView !== null) return;
+    const root = wallRef.current?.closest(".pp-page");
+    if (root === null) return;
+    let frame = 0;
+    let attempts = 0;
+    const apply2 = () => {
+      root.scrollTop = photoListScrollRef.current;
+      attempts += 1;
+      if (attempts < 3) frame = requestAnimationFrame(apply2);
+      else restorePhotoListScrollRef.current = false;
+    };
+    apply2();
+    frame = requestAnimationFrame(apply2);
+    return () => {
+      if (frame !== 0) cancelAnimationFrame(frame);
+    };
+  }, [single, groupView, items.length]);
   const fetchPage = async (offset) => {
     const params = new URLSearchParams({ scope: "review", sort, limit: String(PAGE_SIZE), offset: String(offset) });
     if (filter !== "all") params.set("verdict", filter);
@@ -2333,7 +2404,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
           await refreshLoaded();
           onChanged?.();
         },
-        onClose: () => setSingle(null)
+        onClose: closePhoto
       }
     );
   }
@@ -2384,7 +2455,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
             className: `pp-tile${selected.includes(item.id) ? " selected" : ""}`,
             title: sceneText === "" ? item.relPath : `${item.relPath} \xB7 ${sceneText}`,
             "aria-label": sceneText === "" ? item.relPath : `${item.relPath} \xB7 ${sceneText}`,
-            onClick: () => setSingle(item.id)
+            onClick: () => openPhoto(item.id)
           },
           /* @__PURE__ */ h2("img", { src: `${item.thumbUrl}?v=${version}`, alt: item.relPath, loading: "lazy" }),
           /* @__PURE__ */ h2(
@@ -3571,17 +3642,64 @@ function ProjectDetail({ t, id, onBack }) {
       onSaved: refresh,
       onRunStage: (stage) => run(stage)
     }
-  ), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), (checkpoints.length > 0 || aiRuns.length > 0) && /* @__PURE__ */ h2("details", { className: "pp-card pp-history pp-run-history" }, /* @__PURE__ */ h2("summary", null, /* @__PURE__ */ h2("span", null, t("history")), /* @__PURE__ */ h2("span", { className: "pp-muted pp-history-count" }, checkpoints.filter((checkpoint) => checkpoint.status === "done").length, " / ", checkpoints.length)), /* @__PURE__ */ h2("div", { className: "pp-history-body" }, /* @__PURE__ */ h2("div", { className: "pp-run-tabs" }, /* @__PURE__ */ h2("button", { type: "button", className: runTab === "checkpoints" ? "active" : "", onClick: () => setRunTab("checkpoints") }, t("runTabCheckpoints")), /* @__PURE__ */ h2("button", { type: "button", className: runTab === "ai" ? "active" : "", onClick: () => setRunTab("ai") }, t("runTabAi"))), runTab === "checkpoints" ? checkpoints.length > 0 ? checkpoints.map((checkpoint) => /* @__PURE__ */ h2("div", { key: checkpoint.stage }, /* @__PURE__ */ h2("div", { className: "pp-history-row" }, /* @__PURE__ */ h2("strong", null, stageLabel(t, checkpoint.stage)), /* @__PURE__ */ h2("span", { className: "pp-pill" }, runStatusLabel(t, checkpoint.status)), /* @__PURE__ */ h2("span", { className: "pp-muted" }, summarizeStats(t, checkpoint.stats)), /* @__PURE__ */ h2("span", { className: "pp-chip" }, "\xA5", Number(checkpoint.costCny ?? 0).toFixed(4))), (checkpoint.sampleIds ?? []).length > 0 && /* @__PURE__ */ h2("details", { className: "pp-history-samples" }, /* @__PURE__ */ h2("summary", null, t("samples"), " \xB7 ", checkpoint.sampleIds.length), /* @__PURE__ */ h2("div", null, checkpoint.sampleIds.map((pid) => /* @__PURE__ */ h2(
-    "img",
+  ), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), (checkpoints.length > 0 || aiRuns.length > 0) && /* @__PURE__ */ h2("details", { className: "pp-card pp-history pp-run-history" }, /* @__PURE__ */ h2("summary", null, /* @__PURE__ */ h2("span", null, t("history")), /* @__PURE__ */ h2("span", { className: "pp-history-subtitle" }, t("runHistorySubtitle"))), /* @__PURE__ */ h2("div", { className: "pp-history-body" }, /* @__PURE__ */ h2("div", { className: "pp-run-toolbar" }, /* @__PURE__ */ h2("div", { className: "pp-run-tabs", role: "tablist", "aria-label": t("history") }, /* @__PURE__ */ h2(
+    "button",
     {
-      key: pid,
-      src: `/photo-picker/media/thumb/${id}/${pid}?v=${version}`,
-      alt: pid,
-      loading: "lazy"
+      type: "button",
+      id: "run-tab-checkpoints",
+      role: "tab",
+      "aria-selected": runTab === "checkpoints",
+      "aria-controls": "run-panel-checkpoints",
+      className: runTab === "checkpoints" ? "active" : "",
+      onClick: () => setRunTab("checkpoints")
+    },
+    /* @__PURE__ */ h2("span", null, t("runTabCheckpoints")),
+    /* @__PURE__ */ h2("span", { className: "pp-run-tab-count" }, checkpoints.length)
+  ), /* @__PURE__ */ h2(
+    "button",
+    {
+      type: "button",
+      id: "run-tab-ai",
+      role: "tab",
+      "aria-selected": runTab === "ai",
+      "aria-controls": "run-panel-ai",
+      className: runTab === "ai" ? "active" : "",
+      onClick: () => setRunTab("ai")
+    },
+    /* @__PURE__ */ h2("span", null, t("runTabAi")),
+    /* @__PURE__ */ h2("span", { className: "pp-run-tab-count" }, aiRunsTotal)
+  ))), runTab === "checkpoints" ? /* @__PURE__ */ h2("div", { id: "run-panel-checkpoints", role: "tabpanel", "aria-labelledby": "run-tab-checkpoints", className: "pp-run-list" }, checkpoints.length > 0 ? checkpoints.map((checkpoint) => /* @__PURE__ */ h2(
+    RunHistoryRow,
+    {
+      key: checkpoint.stage,
+      t,
+      stage: stageLabel(t, checkpoint.stage),
+      status: checkpoint.status,
+      costCny: checkpoint.costCny,
+      meta: summarizeStats(t, checkpoint.stats)
+    },
+    (checkpoint.sampleIds ?? []).length > 0 && /* @__PURE__ */ h2("details", { className: "pp-run-samples" }, /* @__PURE__ */ h2("summary", null, t("samples"), " \xB7 ", checkpoint.sampleIds.length), /* @__PURE__ */ h2("div", null, checkpoint.sampleIds.map((pid) => /* @__PURE__ */ h2(
+      "img",
+      {
+        key: pid,
+        src: `/photo-picker/media/thumb/${id}/${pid}?v=${version}`,
+        alt: pid,
+        loading: "lazy"
+      }
+    ))))
+  )) : /* @__PURE__ */ h2("div", { className: "pp-run-empty" }, t("runHistoryEmpty"))) : /* @__PURE__ */ h2("div", { id: "run-panel-ai", role: "tabpanel", "aria-labelledby": "run-tab-ai", className: "pp-run-list" }, aiRuns.length > 0 ? /* @__PURE__ */ h2(Fragment2, null, aiRuns.map((run2) => /* @__PURE__ */ h2(
+    RunHistoryRow,
+    {
+      key: run2.id,
+      t,
+      stage: stageLabel(t, run2.stage),
+      status: run2.status,
+      costCny: run2.costCny,
+      meta: /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("span", null, run2.modelId ?? t("aiRunsLegacy")), /* @__PURE__ */ h2("span", null, run2.startedAt ? new Date(run2.startedAt).toLocaleString() : "\u2014"), /* @__PURE__ */ h2("span", null, t("aiRunTokens"), " ", run2.tokensIn ?? 0, " / ", run2.tokensOut ?? 0), /* @__PURE__ */ h2("span", null, t("aiRunCalls"), " ", run2.callCount ?? 0), /* @__PURE__ */ h2("span", null, t("aiRunDuration"), " ", run2.durationMs === null || run2.durationMs === void 0 ? "\u2014" : `${Math.round(run2.durationMs / 1e3)}${t("secondsShort")}`), run2.errorCode !== null && run2.errorCode !== void 0 && /* @__PURE__ */ h2("span", { className: "pp-run-error" }, run2.errorCode), /* @__PURE__ */ h2("span", null, summarizeStats(t, run2.stats)))
     }
-  )))))) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("runHistoryEmpty")) : aiRuns.length > 0 ? /* @__PURE__ */ h2(Fragment2, null, aiRuns.map((run2) => /* @__PURE__ */ h2("div", { className: "pp-run-ai-row", key: run2.id }, /* @__PURE__ */ h2("div", { className: "pp-history-row" }, /* @__PURE__ */ h2("strong", null, stageLabel(t, run2.stage)), /* @__PURE__ */ h2("span", { className: "pp-pill" }, runStatusLabel(t, run2.status)), /* @__PURE__ */ h2("span", { className: "pp-muted" }, run2.modelId ?? t("aiRunsLegacy")), /* @__PURE__ */ h2("span", { className: "pp-muted" }, run2.startedAt ? new Date(run2.startedAt).toLocaleString() : "\u2014"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, "\xA5", Number(run2.costCny ?? 0).toFixed(4))), /* @__PURE__ */ h2("div", { className: "pp-run-meta" }, /* @__PURE__ */ h2("span", null, t("aiRunTokens"), " ", run2.tokensIn ?? 0, " / ", run2.tokensOut ?? 0), /* @__PURE__ */ h2("span", null, t("aiRunCalls"), " ", run2.callCount ?? 0), /* @__PURE__ */ h2("span", null, t("aiRunDuration"), " ", run2.durationMs === null || run2.durationMs === void 0 ? "\u2014" : `${Math.round(run2.durationMs / 1e3)}${t("secondsShort")}`), run2.errorCode !== null && run2.errorCode !== void 0 && /* @__PURE__ */ h2("span", null, run2.errorCode), /* @__PURE__ */ h2("span", null, summarizeStats(t, run2.stats))))), aiRuns.length < aiRunsTotal && /* @__PURE__ */ h2(Button, { size: "sm", disabled: aiRunsLoading, onClick: () => {
+  )), aiRuns.length < aiRunsTotal && /* @__PURE__ */ h2("div", { className: "pp-run-load-more" }, /* @__PURE__ */ h2(Button, { size: "sm", disabled: aiRunsLoading, onClick: () => {
     void loadMoreAiRuns();
-  } }, aiRunsLoading ? t("loading") : t("loadMore"))) : /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("aiRunsEmpty")))), /* @__PURE__ */ h2(ReviewSection, { t, projectId: id, version, onChanged: refresh, onFocusChange: setFocusMode }), /* @__PURE__ */ h2(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setNoticeDismissed(true) }, t("close"))), exportNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": "done", "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, exportNotice), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setExportNotice(null) }, t("close"))));
+  } }, aiRunsLoading ? t("loading") : t("loadMore")))) : /* @__PURE__ */ h2("div", { className: "pp-run-empty" }, t("aiRunsEmpty"))))), /* @__PURE__ */ h2(ReviewSection, { t, projectId: id, version, onChanged: refresh, onFocusChange: setFocusMode }), /* @__PURE__ */ h2(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setNoticeDismissed(true) }, t("close"))), exportNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": "done", "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, exportNotice), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setExportNotice(null) }, t("close"))));
 }
 var GLOBAL_LAYOUT_PROJECT = "project";
 var GLOBAL_LAYOUT_FLAT = "flat";

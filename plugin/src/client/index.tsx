@@ -163,6 +163,21 @@ function ExportProgress({ t, progress }: { t: (key: string) => string; progress:
   )
 }
 
+function RunHistoryRow({ t, stage, status, costCny, meta, children }: any) {
+  return (
+    <div className="pp-run-row">
+      <div className="pp-run-main">
+        <span className="pp-dot" data-status={status} aria-hidden="true" />
+        <strong>{stage}</strong>
+        <span className="pp-pill">{runStatusLabel(t, status)}</span>
+        <span className="pp-chip pp-run-cost">¥{Number(costCny ?? 0).toFixed(4)}</span>
+      </div>
+      {meta !== null && meta !== undefined && <div className="pp-run-meta">{meta}</div>}
+      {children}
+    </div>
+  )
+}
+
 function CreateForm({ t, onCreated, onCancel }: {
   t: (key: string) => string
   onCreated: (id: string) => void
@@ -377,8 +392,44 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 20 })
   const filterKey = `${filter}|${scene}|${sort}`
   const lastFilterKey = useRef('')
+  const photoListScrollRef = useRef(0)
+  const restorePhotoListScrollRef = useRef(false)
+
+  const rememberPhotoListScroll = () => {
+    const root = wallRef.current?.closest(".pp-page") as HTMLElement | null
+    if (root !== null) photoListScrollRef.current = root.scrollTop
+  }
+
+  const openPhoto = (id: string) => {
+    rememberPhotoListScroll()
+    setSingle(id)
+  }
+
+  const closePhoto = () => {
+    restorePhotoListScrollRef.current = true
+    setSingle(null)
+  }
 
   useEffect(() => { onFocusChange?.(single !== null || groupView !== null) }, [single, groupView, onFocusChange])
+
+  useLayoutEffect(() => {
+    if (!restorePhotoListScrollRef.current || single !== null || groupView !== null) return
+    const root = wallRef.current?.closest(".pp-page") as HTMLElement | null
+    if (root === null) return
+    let frame = 0
+    let attempts = 0
+    const apply = () => {
+      root.scrollTop = photoListScrollRef.current
+      attempts += 1
+      if (attempts < 3) frame = requestAnimationFrame(apply)
+      else restorePhotoListScrollRef.current = false
+    }
+    apply()
+    frame = requestAnimationFrame(apply)
+    return () => {
+      if (frame !== 0) cancelAnimationFrame(frame)
+    }
+  }, [single, groupView, items.length])
 
   const fetchPage = async (offset: number) => {
     const params = new URLSearchParams({ scope: 'review', sort, limit: String(PAGE_SIZE), offset: String(offset) })
@@ -619,7 +670,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
         onOpenGroup={setGroupView}
         onDecide={decide}
         onScenesUpdated={async () => { await refreshLoaded(); onChanged?.() }}
-        onClose={() => setSingle(null)}
+        onClose={closePhoto}
       />
     )
   }
@@ -707,7 +758,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
                         className={`pp-tile${selected.includes(item.id) ? ' selected' : ''}`}
                         title={sceneText === '' ? item.relPath : `${item.relPath} · ${sceneText}`}
                         aria-label={sceneText === '' ? item.relPath : `${item.relPath} · ${sceneText}`}
-                        onClick={() => setSingle(item.id)}
+                        onClick={() => openPhoto(item.id)}
                       >
                         <img src={`${item.thumbUrl}?v=${version}`} alt={item.relPath} loading="lazy" />
                         <span
@@ -2570,68 +2621,102 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
         <details className="pp-card pp-history pp-run-history">
           <summary>
             <span>{t('history')}</span>
-            <span className="pp-muted pp-history-count">
-              {checkpoints.filter(checkpoint => checkpoint.status === 'done').length} / {checkpoints.length}
-            </span>
+            <span className="pp-history-subtitle">{t('runHistorySubtitle')}</span>
           </summary>
           <div className="pp-history-body">
-            <div className="pp-run-tabs">
-              <button type="button" className={runTab === 'checkpoints' ? 'active' : ''} onClick={() => setRunTab('checkpoints')}>{t('runTabCheckpoints')}</button>
-              <button type="button" className={runTab === 'ai' ? 'active' : ''} onClick={() => setRunTab('ai')}>{t('runTabAi')}</button>
+            <div className="pp-run-toolbar">
+              <div className="pp-run-tabs" role="tablist" aria-label={t('history')}>
+                <button
+                  type="button"
+                  id="run-tab-checkpoints"
+                  role="tab"
+                  aria-selected={runTab === 'checkpoints'}
+                  aria-controls="run-panel-checkpoints"
+                  className={runTab === 'checkpoints' ? 'active' : ''}
+                  onClick={() => setRunTab('checkpoints')}
+                >
+                  <span>{t('runTabCheckpoints')}</span>
+                  <span className="pp-run-tab-count">{checkpoints.length}</span>
+                </button>
+                <button
+                  type="button"
+                  id="run-tab-ai"
+                  role="tab"
+                  aria-selected={runTab === 'ai'}
+                  aria-controls="run-panel-ai"
+                  className={runTab === 'ai' ? 'active' : ''}
+                  onClick={() => setRunTab('ai')}
+                >
+                  <span>{t('runTabAi')}</span>
+                  <span className="pp-run-tab-count">{aiRunsTotal}</span>
+                </button>
+              </div>
             </div>
+
             {runTab === 'checkpoints' ? (
-              checkpoints.length > 0 ? checkpoints.map(checkpoint => (
-                <div key={checkpoint.stage}>
-                  <div className="pp-history-row">
-                    <strong>{stageLabel(t, checkpoint.stage)}</strong>
-                    <span className="pp-pill">{runStatusLabel(t, checkpoint.status)}</span>
-                    <span className="pp-muted">{summarizeStats(t, checkpoint.stats)}</span>
-                    <span className="pp-chip">¥{Number(checkpoint.costCny ?? 0).toFixed(4)}</span>
-                  </div>
-                  {(checkpoint.sampleIds ?? []).length > 0 && (
-                    <details className="pp-history-samples">
-                      <summary>{t('samples')} · {checkpoint.sampleIds.length}</summary>
-                      <div>
-                        {checkpoint.sampleIds.map((pid: string) => (
-                          <img
-                            key={pid}
-                            src={`/photo-picker/media/thumb/${id}/${pid}?v=${version}`}
-                            alt={pid}
-                            loading="lazy"
-                          />
-                        ))}
+              <div id="run-panel-checkpoints" role="tabpanel" aria-labelledby="run-tab-checkpoints" className="pp-run-list">
+                {checkpoints.length > 0 ? checkpoints.map(checkpoint => (
+                  <RunHistoryRow
+                    key={checkpoint.stage}
+                    t={t}
+                    stage={stageLabel(t, checkpoint.stage)}
+                    status={checkpoint.status}
+                    costCny={checkpoint.costCny}
+                    meta={summarizeStats(t, checkpoint.stats)}
+                  >
+                    {(checkpoint.sampleIds ?? []).length > 0 && (
+                      <details className="pp-run-samples">
+                        <summary>{t('samples')} · {checkpoint.sampleIds.length}</summary>
+                        <div>
+                          {checkpoint.sampleIds.map((pid: string) => (
+                            <img
+                              key={pid}
+                              src={`/photo-picker/media/thumb/${id}/${pid}?v=${version}`}
+                              alt={pid}
+                              loading="lazy"
+                            />
+                          ))}
+                        </div>
+                      </details>
+                    )}
+                  </RunHistoryRow>
+                )) : <div className="pp-run-empty">{t('runHistoryEmpty')}</div>}
+              </div>
+            ) : (
+              <div id="run-panel-ai" role="tabpanel" aria-labelledby="run-tab-ai" className="pp-run-list">
+                {aiRuns.length > 0 ? (
+                  <>
+                    {aiRuns.map(run => (
+                      <RunHistoryRow
+                        key={run.id}
+                        t={t}
+                        stage={stageLabel(t, run.stage)}
+                        status={run.status}
+                        costCny={run.costCny}
+                        meta={(
+                          <>
+                            <span>{run.modelId ?? t('aiRunsLegacy')}</span>
+                            <span>{run.startedAt ? new Date(run.startedAt).toLocaleString() : '—'}</span>
+                            <span>{t('aiRunTokens')} {run.tokensIn ?? 0} / {run.tokensOut ?? 0}</span>
+                            <span>{t('aiRunCalls')} {run.callCount ?? 0}</span>
+                            <span>{t('aiRunDuration')} {run.durationMs === null || run.durationMs === undefined ? '—' : `${Math.round(run.durationMs / 1000)}${t('secondsShort')}`}</span>
+                            {run.errorCode !== null && run.errorCode !== undefined && <span className="pp-run-error">{run.errorCode}</span>}
+                            <span>{summarizeStats(t, run.stats)}</span>
+                          </>
+                        )}
+                      />
+                    ))}
+                    {aiRuns.length < aiRunsTotal && (
+                      <div className="pp-run-load-more">
+                        <Button size="sm" disabled={aiRunsLoading} onClick={() => { void loadMoreAiRuns() }}>
+                          {aiRunsLoading ? t('loading') : t('loadMore')}
+                        </Button>
                       </div>
-                    </details>
-                  )}
-                </div>
-              )) : <div className="pp-muted">{t('runHistoryEmpty')}</div>
-            ) : aiRuns.length > 0 ? (
-              <>
-                {aiRuns.map(run => (
-                  <div className="pp-run-ai-row" key={run.id}>
-                    <div className="pp-history-row">
-                      <strong>{stageLabel(t, run.stage)}</strong>
-                      <span className="pp-pill">{runStatusLabel(t, run.status)}</span>
-                      <span className="pp-muted">{run.modelId ?? t('aiRunsLegacy')}</span>
-                      <span className="pp-muted">{run.startedAt ? new Date(run.startedAt).toLocaleString() : '—'}</span>
-                      <span className="pp-chip">¥{Number(run.costCny ?? 0).toFixed(4)}</span>
-                    </div>
-                    <div className="pp-run-meta">
-                      <span>{t('aiRunTokens')} {run.tokensIn ?? 0} / {run.tokensOut ?? 0}</span>
-                      <span>{t('aiRunCalls')} {run.callCount ?? 0}</span>
-                      <span>{t('aiRunDuration')} {run.durationMs === null || run.durationMs === undefined ? '—' : `${Math.round(run.durationMs / 1000)}${t('secondsShort')}`}</span>
-                      {run.errorCode !== null && run.errorCode !== undefined && <span>{run.errorCode}</span>}
-                      <span>{summarizeStats(t, run.stats)}</span>
-                    </div>
-                  </div>
-                ))}
-                {aiRuns.length < aiRunsTotal && (
-                  <Button size="sm" disabled={aiRunsLoading} onClick={() => { void loadMoreAiRuns() }}>
-                    {aiRunsLoading ? t('loading') : t('loadMore')}
-                  </Button>
-                )}
-              </>
-            ) : <div className="pp-muted">{t('aiRunsEmpty')}</div>}
+                    )}
+                  </>
+                ) : <div className="pp-run-empty">{t('aiRunsEmpty')}</div>}
+              </div>
+            )}
           </div>
         </details>
       )}
