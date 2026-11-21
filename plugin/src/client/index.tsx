@@ -2639,6 +2639,9 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
 }
 
 
+const GLOBAL_LAYOUT_PROJECT = 'project'
+const GLOBAL_LAYOUT_FLAT = 'flat'
+
 function GlobalExportDialog({ t, filters, selectedItems, onClose, onDone }: any) {
   const [dest, setDest] = useState('')
   const [buckets, setBuckets] = useState(['keep', 'maybe'])
@@ -2752,11 +2755,11 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose, onDone }: any)
             <legend>{t('exportLayout')}</legend>
             <div className="pp-radio-group" role="radiogroup" aria-label={t('exportLayout')}>
               <label className="pp-radio-option">
-                <input type="radio" name="global-export-layout" value="project" checked={layout === 'project'} onChange={() => setLayout('project')} />
+                <input type="radio" name="global-export-layout" value="project" checked={layout === 'project'} onChange={() => setLayout(GLOBAL_LAYOUT_PROJECT)} />
                 {t('exportLayoutProject')}
               </label>
               <label className="pp-radio-option">
-                <input type="radio" name="global-export-layout" value="flat" checked={layout === 'flat'} onChange={() => setLayout('flat')} />
+                <input type="radio" name="global-export-layout" value="flat" checked={layout === 'flat'} onChange={() => setLayout(GLOBAL_LAYOUT_FLAT)} />
                 {t('exportLayoutFlat')}
               </label>
             </div>
