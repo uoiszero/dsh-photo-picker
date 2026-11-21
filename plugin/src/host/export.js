@@ -80,7 +80,7 @@ function selectPhotos(db, projectId) {
 function recipeOf(item) {
   if (item.recipe_json === null || item.recipe_json === undefined) return null
   try {
-    return normalizeRecipe(JSON.parse(item.recipe_json))
+    return normalizeRecipe(JSON.parse(item.recipe_json), { allowMicroCrop: item.edit_source === 'human' })
   } catch {
     return null
   }

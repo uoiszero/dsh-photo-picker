@@ -509,6 +509,31 @@ export const STYLES = `
 .pp-recipe-source { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pp-recipe-editor-grid { display: grid; gap: 14px; margin-top: 8px; }
 .pp-recipe-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; }
+.pp-crop-summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.pp-crop-summary > .pp-muted { min-width: 0; }
+.pp-crop-toolbar { display: grid; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-crop-ratios { display: flex; flex-wrap: wrap; gap: 5px; }
+.pp-crop-ratio {
+  min-height: 28px; padding: 3px 8px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-secondary); font-size: 11px; font-weight: 500;
+}
+.pp-crop-ratio:hover { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); }
+.pp-crop-ratio.active { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 9%, var(--dsw-alias-bg-layer-1)); }
+.pp-crop-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+.pp-crop-layer { position: absolute; inset: 0; z-index: 6; touch-action: none; user-select: none; }
+.pp-crop-mask { position: absolute; background: rgba(0, 0, 0, .48); pointer-events: none; }
+.pp-crop-selection { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .7); cursor: move; touch-action: none; }
+.pp-crop-handle { position: absolute; width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid #fff; background: rgba(0, 0, 0, .52); }
+.pp-crop-handle-nw { left: -7px; top: -7px; cursor: nwse-resize; }
+.pp-crop-handle-n { left: calc(50% - 6px); top: -7px; cursor: ns-resize; }
+.pp-crop-handle-ne { right: -7px; top: -7px; cursor: nesw-resize; }
+.pp-crop-handle-e { right: -7px; top: calc(50% - 6px); cursor: ew-resize; }
+.pp-crop-handle-se { right: -7px; bottom: -7px; cursor: nwse-resize; }
+.pp-crop-handle-s { left: calc(50% - 6px); bottom: -7px; cursor: ns-resize; }
+.pp-crop-handle-sw { left: -7px; bottom: -7px; cursor: nesw-resize; }
+.pp-crop-handle-w { left: -7px; top: calc(50% - 6px); cursor: ew-resize; }
 .pp-recipe-control { display: grid; gap: 4px; }
 .pp-recipe-control-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-recipe-value { font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary); }

@@ -45,7 +45,7 @@ export function isMicroCrop(crop) {
 }
 
 /** 缺失/恒等/坏数据返回 null；合法配方返回规范化对象。 */
-export function normalizeRecipe(input) {
+export function normalizeRecipe(input, { allowMicroCrop = false } = {}) {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) return null
   const version = number(input.version) ?? RECIPE_VERSION
   if (version !== RECIPE_VERSION) return null
@@ -71,7 +71,7 @@ export function normalizeRecipe(input) {
     saturation: round4(clamp(number(read(input, 'saturation', '饱和度')) ?? 0, -1, 1)),
     sharpen: round4(clamp(number(read(input, 'sharpen', 'sharpening', '锐化')) ?? 0, 0, 2)),
   }
-  if (isMicroCrop(recipe.crop)) {
+  if (!allowMicroCrop && isMicroCrop(recipe.crop)) {
     recipe.crop = { left: 0, top: 0, width: 1, height: 1 }
   }
   return isIdentityRecipe(recipe) ? null : recipe

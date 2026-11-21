@@ -15,7 +15,7 @@
 
 ```bash
 npm install              # 依赖（sharp/exifr/nanoid/esbuild；类型检查用 tsc）
-npm test                 # 全部 node:test（123 个）
+npm test                 # 全部 node:test（132 个）
 npm run typecheck        # tsc --noEmit（TSX 只转译、esbuild 不做类型检查）
 npm run build:client     # plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # /tmp/pp-fixtures（120 张测试图）
@@ -61,7 +61,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - 项目工作区：`~/Pictures/PhotoPicker/<项目>/`（`db.sqlite`、`thumbs/`、`previews/`、`grids/`、`logs/`）。源目录只读。
 - 照片状态：`ok`、`unreadable`、`filtered_dup/blur/exposure/small`、`grid_selected`、`grid_rejected`、`grid_error`、`scored`、`score_failed`。
 - **判定优先级**：`decisions(source='human')` > `decisions(source='ai')` > `assessments(score/verdict)` > `'maybe'`。任何 AI 写入都不得覆盖 human。
-- **人工修图**：`photo_recipe_overrides` 优先于 AI `assessments.recipe_json`；单图可微调全局参数，裁剪仍用 AI 建议。
+- **人工修图**：`photo_recipe_overrides` 优先于 AI `assessments.recipe_json`；单图可微调全局参数，裁剪可自由拖动或使用比例预设。
 - **逐张场景**：项目不再用题材先验；单张精评调用同时输出 `scenes` / `primary_scene`（人像/风光/建筑/街拍/活动/花植物/动物/雕塑展品/其他），存 `assessments.scenes_json` / `primary_scene`。人工修正存 `photo_scene_overrides`，优先于 AI。`projects.theme` 仅保留旧库兼容，不参与提示词。
 - **删除项目**：只删工作区/数据库/缩略图，源照片目录只读；运行中的项目必须先暂停/取消。
 - 阶段：`scan → preprocess → grid → rank → score`；`orchestrator.js` 负责自动串联，`stage_pause=1` 时每阶段结束停止；预算暂停 / 取消（abort）也会停。
@@ -85,7 +85,7 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - 网格打包是**分组感知**的，实际格数可能大于 `ceil(候选/16)`，测试不要假设等于该值。
 - 组对比每页 6 张；`groupDetail` 的成员按分数降序，名次从 1 开始。
 - 网络源（Plan 3）暂停：SMB 代码/API 保留，但 UI 入口隐藏；macOS 网络卷权限会让 DSH 列目录 EPERM。恢复前不要把它当可用功能。NFS 自动连接也未实现。
-- 修图配方的所有被裁边都 <18% 的微裁在 `recipe.js` 里按未裁切处理（模型容易给 8–12% 的“安全边距”）；裁剪坐标按**旋转并自动去掉黑角后的画布**归一化：`edit.js` 先 `autoOrient`/`rotate`，再按原始尺寸计算最大内接矩形居中裁剪，最后才 `cropPixels`；不要把原图坐标直接喂给 `sharp.extract`。
+- 修图配方的所有被裁边都 <18% 的微裁在 `recipe.js` 里默认按未裁切处理（模型容易给 8–12% 的“安全边距”）；**人工裁剪使用 `allowMicroCrop: true`，必须保留**。裁剪坐标按**旋转并自动去掉黑角后的画布**归一化：`edit.js` 先 `autoOrient`/`rotate`，再按原始尺寸计算最大内接矩形居中裁剪，最后才 `cropPixels`；不要把原图坐标直接喂给 `sharp.extract`。
 - 编辑预览 URL 带 `editSignature`（配方 + 引擎签名）；改了裁切/渲染策略后必须让签名变化，否则浏览器会继续显示旧图。
 - `edit:'recipe'` 导出强制 `copy`，绝不硬链接编辑后的新文件；HEIC/RAW 走 `decodeToJpeg` 平台回退，v1 编辑副本最长边 1200px，不保留原始分辨率。
 - 平台相关副作用必须走 `src/host/platform.js`（`sips`/`osascript`/`open`、WIC、`explorer`），不要散落在业务代码；测试用 `createPlatform({ platform, run, spawnProcess })` 注入假实现。

@@ -184,7 +184,13 @@ var zh = {
   editRecipeHuman: "\u6211\u7684\u8C03\u6574",
   editRecipeReset: "\u6062\u590D AI \u5EFA\u8BAE",
   editRecipeSave: "\u4FDD\u5B58",
-  editRecipeCropReadonly: "\u88C1\u526A\uFF08\u53EA\u8BFB\uFF09",
+  editRecipeCropReadonly: "\u88C1\u526A",
+  cropEdit: "\u88C1\u526A\u56FE\u7247",
+  cropFree: "\u81EA\u7531",
+  cropSwap: "\u5207\u6362\u957F\u77ED\u8FB9",
+  cropReset: "\u91CD\u7F6E\u88C1\u526A",
+  cropCancel: "\u53D6\u6D88\u88C1\u526A",
+  cropFinish: "\u5B8C\u6210",
   editBefore: "\u539F\u56FE",
   editAfter: "\u4FEE\u56FE",
   editToggleHint: "\u70B9\u51FB\u5207\u6362\u539F\u56FE/\u4FEE\u56FE",
@@ -452,7 +458,13 @@ var en = {
   editRecipeHuman: "My edit",
   editRecipeReset: "Restore AI",
   editRecipeSave: "Save",
-  editRecipeCropReadonly: "Crop (read-only)",
+  editRecipeCropReadonly: "Crop",
+  cropEdit: "Crop image",
+  cropFree: "Free",
+  cropSwap: "Swap sides",
+  cropReset: "Reset crop",
+  cropCancel: "Cancel crop",
+  cropFinish: "Done",
   editBefore: "Before",
   editAfter: "After",
   editToggleHint: "Click to switch original/edited",
@@ -1157,6 +1169,31 @@ var STYLES = `
 .pp-recipe-source { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pp-recipe-editor-grid { display: grid; gap: 14px; margin-top: 8px; }
 .pp-recipe-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; }
+.pp-crop-summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.pp-crop-summary > .pp-muted { min-width: 0; }
+.pp-crop-toolbar { display: grid; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-crop-ratios { display: flex; flex-wrap: wrap; gap: 5px; }
+.pp-crop-ratio {
+  min-height: 28px; padding: 3px 8px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-secondary); font-size: 11px; font-weight: 500;
+}
+.pp-crop-ratio:hover { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); }
+.pp-crop-ratio.active { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 9%, var(--dsw-alias-bg-layer-1)); }
+.pp-crop-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+.pp-crop-layer { position: absolute; inset: 0; z-index: 6; touch-action: none; user-select: none; }
+.pp-crop-mask { position: absolute; background: rgba(0, 0, 0, .48); pointer-events: none; }
+.pp-crop-selection { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .7); cursor: move; touch-action: none; }
+.pp-crop-handle { position: absolute; width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid #fff; background: rgba(0, 0, 0, .52); }
+.pp-crop-handle-nw { left: -7px; top: -7px; cursor: nwse-resize; }
+.pp-crop-handle-n { left: calc(50% - 6px); top: -7px; cursor: ns-resize; }
+.pp-crop-handle-ne { right: -7px; top: -7px; cursor: nesw-resize; }
+.pp-crop-handle-e { right: -7px; top: calc(50% - 6px); cursor: ew-resize; }
+.pp-crop-handle-se { right: -7px; bottom: -7px; cursor: nwse-resize; }
+.pp-crop-handle-s { left: calc(50% - 6px); bottom: -7px; cursor: ns-resize; }
+.pp-crop-handle-sw { left: -7px; bottom: -7px; cursor: nesw-resize; }
+.pp-crop-handle-w { left: -7px; top: calc(50% - 6px); cursor: ew-resize; }
 .pp-recipe-control { display: grid; gap: 4px; }
 .pp-recipe-control-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .pp-recipe-value { font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary); }
@@ -1325,6 +1362,132 @@ function computeVisibleRows({
   const start = Math.min(totalRows, Math.max(0, first - overscan));
   const end = Math.min(totalRows, Math.max(0, first) + visible + overscan);
   return { start, end: Math.max(start, end) };
+}
+
+// plugin/src/client/crop.js
+var CROP_RATIOS = [
+  { id: "free", value: null },
+  { id: "4:3", value: 4 / 3 },
+  { id: "5:4", value: 5 / 4 },
+  { id: "1:1", value: 1 },
+  { id: "16:9", value: 16 / 9 },
+  { id: "16:10", value: 16 / 10 },
+  { id: "3:2", value: 3 / 2 }
+];
+var MIN_SIZE = 0.05;
+var clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+function normalizeSize(crop) {
+  const width = clamp(Number(crop.width) || 0, MIN_SIZE, 1);
+  const height = clamp(Number(crop.height) || 0, MIN_SIZE, 1);
+  const left = clamp(Number(crop.left) || 0, 0, 1 - width);
+  const top = clamp(Number(crop.top) || 0, 0, 1 - height);
+  return { left, top, width, height };
+}
+function normalizeCrop(crop) {
+  return normalizeSize(crop ?? { left: 0, top: 0, width: 1, height: 1 });
+}
+function orientedAspect(longShort, frameAspect, swapped = false) {
+  let aspect = frameAspect >= 1 ? longShort : 1 / longShort;
+  if (swapped) aspect = 1 / aspect;
+  return aspect;
+}
+function fitAspect(crop, frameAspect, aspect) {
+  const current = normalizeCrop(crop);
+  if (aspect === null || aspect === void 0 || !(aspect > 0) || !(frameAspect > 0)) return current;
+  const centerX = current.left + current.width / 2;
+  const centerY = current.top + current.height / 2;
+  const ratio = aspect / frameAspect;
+  let width = Math.min(2 * Math.min(centerX, 1 - centerX), 2 * Math.min(centerY, 1 - centerY) * ratio);
+  let height = width / ratio;
+  if (width < MIN_SIZE) {
+    width = MIN_SIZE;
+    height = width / ratio;
+  }
+  if (height < MIN_SIZE) {
+    height = MIN_SIZE;
+    width = height * ratio;
+  }
+  if (width > 1) {
+    width = 1;
+    height = width / ratio;
+  }
+  if (height > 1) {
+    height = 1;
+    width = height * ratio;
+  }
+  return normalizeCrop({
+    left: centerX - width / 2,
+    top: centerY - height / 2,
+    width,
+    height
+  });
+}
+function moveCrop(crop, dx, dy) {
+  const current = normalizeCrop(crop);
+  return normalizeCrop({
+    ...current,
+    left: current.left + dx,
+    top: current.top + dy
+  });
+}
+function fitLocked(crop, handle, dx, dy, frameAspect, aspect) {
+  const current = normalizeCrop(crop);
+  const ratio = aspect / frameAspect;
+  const centerX = current.left + current.width / 2;
+  const centerY = current.top + current.height / 2;
+  const west = handle.includes("w");
+  const east = handle.includes("e");
+  const north = handle.includes("n");
+  const south = handle.includes("s");
+  let width = current.width;
+  let height = current.height;
+  if (west || east) {
+    width = clamp(current.width + (east ? dx : -dx), MIN_SIZE, 1);
+    height = width / ratio;
+    if (height > 1) {
+      height = 1;
+      width = height * ratio;
+    }
+    if (width > 1) {
+      width = 1;
+      height = width / ratio;
+    }
+    const left = east ? current.left : current.left + current.width - width;
+    const top = centerY - height / 2;
+    return normalizeCrop({ left, top, width, height });
+  }
+  height = clamp(current.height + (south ? dy : -dy), MIN_SIZE, 1);
+  width = height * ratio;
+  if (width > 1) {
+    width = 1;
+    height = width / ratio;
+  }
+  if (height > 1) {
+    height = 1;
+    width = height * ratio;
+  }
+  return normalizeCrop({
+    left: centerX - width / 2,
+    top: north ? current.top : current.top + current.height - height,
+    width,
+    height
+  });
+}
+function resizeCrop(crop, handle, dx, dy, frameAspect, aspect) {
+  if (handle === "move") return moveCrop(crop, dx, dy);
+  if (aspect !== null && aspect !== void 0 && aspect > 0 && frameAspect > 0) {
+    return fitLocked(crop, handle, dx, dy, frameAspect, aspect);
+  }
+  const current = normalizeCrop(crop);
+  let left = current.left;
+  let top = current.top;
+  let right = current.left + current.width;
+  let bottom = current.top + current.height;
+  if (handle.includes("w")) left = clamp(left + dx, 0, right - MIN_SIZE);
+  if (handle.includes("e")) right = clamp(right + dx, left + MIN_SIZE, 1);
+  if (handle.includes("n")) top = clamp(top + dy, 0, bottom - MIN_SIZE);
+  if (handle.includes("s")) bottom = clamp(bottom + dy, top + MIN_SIZE, 1);
+  return normalizeCrop({ left, top, width: right - left, height: bottom - top });
 }
 
 // plugin/src/client/ui.tsx
@@ -2060,6 +2223,76 @@ function isIdentityDraft(recipe) {
   const crop = recipe?.crop ?? { left: 0, top: 0, width: 1, height: 1 };
   return Math.abs(crop.left) < 1e-6 && Math.abs(crop.top) < 1e-6 && Math.abs(crop.width - 1) < 1e-6 && Math.abs(crop.height - 1) < 1e-6 && Math.abs(recipe?.rotate ?? 0) < 1e-6 && Math.abs(recipe?.exposureEv ?? 0) < 1e-6 && Math.abs(recipe?.contrast ?? 0) < 1e-6 && Math.abs(recipe?.saturation ?? 0) < 1e-6 && Math.abs(recipe?.sharpen ?? 0) < 1e-6;
 }
+var CROP_HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+function cropRatioLabel(id, frameAspect, swapped) {
+  if (id === "free") return "";
+  const [long, short] = id.split(/:/);
+  const horizontal = frameAspect >= 1 ? !swapped : swapped;
+  return horizontal ? `${long}:${short}` : `${short}:${long}`;
+}
+function CropOverlay({ crop, frameAspect, aspect, onChange }) {
+  const layerRef = (0, import_react2.useRef)(null);
+  const dragRef = (0, import_react2.useRef)(null);
+  const current = normalizeCrop(crop);
+  const start = (handle, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const layer = layerRef.current;
+    if (layer === null) return;
+    const rect = layer.getBoundingClientRect();
+    layer.setPointerCapture?.(event.pointerId);
+    dragRef.current = {
+      handle,
+      startX: event.clientX,
+      startY: event.clientY,
+      crop: current,
+      width: rect.width,
+      height: rect.height
+    };
+  };
+  const move = (event) => {
+    const drag = dragRef.current;
+    if (drag === null) return;
+    const dx = (event.clientX - drag.startX) / Math.max(1, drag.width);
+    const dy = (event.clientY - drag.startY) / Math.max(1, drag.height);
+    onChange(resizeCrop(drag.crop, drag.handle, dx, dy, frameAspect, aspect));
+  };
+  const end = (event) => {
+    if (dragRef.current === null) return;
+    dragRef.current = null;
+    layerRef.current?.releasePointerCapture?.(event.pointerId);
+  };
+  return /* @__PURE__ */ h2(
+    "div",
+    {
+      className: "pp-crop-layer",
+      ref: layerRef,
+      onPointerMove: move,
+      onPointerUp: end,
+      onPointerCancel: end
+    },
+    /* @__PURE__ */ h2("div", { className: "pp-crop-mask", style: { left: 0, right: 0, top: 0, height: `${current.top * 100}%` } }),
+    /* @__PURE__ */ h2("div", { className: "pp-crop-mask", style: { left: 0, right: 0, top: `${(current.top + current.height) * 100}%`, bottom: 0 } }),
+    /* @__PURE__ */ h2("div", { className: "pp-crop-mask", style: { left: 0, width: `${current.left * 100}%`, top: `${current.top * 100}%`, height: `${current.height * 100}%` } }),
+    /* @__PURE__ */ h2("div", { className: "pp-crop-mask", style: { left: `${(current.left + current.width) * 100}%`, right: 0, top: `${current.top * 100}%`, height: `${current.height * 100}%` } }),
+    /* @__PURE__ */ h2(
+      "div",
+      {
+        className: "pp-crop-selection",
+        style: { left: `${current.left * 100}%`, top: `${current.top * 100}%`, width: `${current.width * 100}%`, height: `${current.height * 100}%` },
+        onPointerDown: (event) => start("move", event)
+      },
+      CROP_HANDLES.map((handle) => /* @__PURE__ */ h2(
+        "span",
+        {
+          key: handle,
+          className: `pp-crop-handle pp-crop-handle-${handle}`,
+          onPointerDown: (event) => start(handle, event)
+        }
+      ))
+    )
+  );
+}
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }) {
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
@@ -2071,11 +2304,26 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [sceneEditorOpen, setSceneEditorOpen] = (0, import_react2.useState)(false);
   const [draftRecipe, setDraftRecipe] = (0, import_react2.useState)(() => defaultRecipe());
   const [draftPreviewUrl, setDraftPreviewUrl] = (0, import_react2.useState)(null);
+  const [cropEditing, setCropEditing] = (0, import_react2.useState)(false);
+  const [cropFrameUrl, setCropFrameUrl] = (0, import_react2.useState)(null);
+  const [cropFrame, setCropFrame] = (0, import_react2.useState)(null);
+  const [cropEntry, setCropEntry] = (0, import_react2.useState)(null);
+  const [cropRatio, setCropRatio] = (0, import_react2.useState)("free");
+  const [cropSwapped, setCropSwapped] = (0, import_react2.useState)(false);
   const [recipeBusy, setRecipeBusy] = (0, import_react2.useState)(false);
   const [recipeError, setRecipeError] = (0, import_react2.useState)(null);
   const draftPreviewUrlRef = (0, import_react2.useRef)(null);
+  const cropFrameUrlRef = (0, import_react2.useRef)(null);
   const draftIsIdentity = isIdentityDraft(draftRecipe);
-  const draftDirty = detail === null ? false : RECIPE_CONTROLS.some((control) => Number(draftRecipe?.[control.key] ?? 0) !== Number(detail?.editRecipe?.[control.key] ?? 0));
+  const draftCrop = normalizeCrop(draftRecipe?.crop);
+  const savedCrop = normalizeCrop(detail?.editRecipe?.crop);
+  const cropDirty = JSON.stringify(draftCrop) !== JSON.stringify(savedCrop);
+  const draftDirty = detail === null ? false : cropDirty || RECIPE_CONTROLS.some((control) => Number(draftRecipe?.[control.key] ?? 0) !== Number(detail?.editRecipe?.[control.key] ?? 0));
+  const frameAspect = cropFrame !== null ? cropFrame.width / cropFrame.height : detail?.width && detail?.height ? detail.width / detail.height : 1;
+  const selectedRatio = CROP_RATIOS.find((item) => item.id === cropRatio);
+  const cropAspect = selectedRatio?.value ? orientedAspect(selectedRatio.value, frameAspect, cropSwapped) : null;
+  const cropBaseIdentity = isIdentityDraft({ ...draftRecipe, crop: { left: 0, top: 0, width: 1, height: 1 } });
+  const cropBaseKey = RECIPE_CONTROLS.map((control) => Number(draftRecipe?.[control.key] ?? 0)).join("|");
   const needMoreRef = (0, import_react2.useRef)(onNeedMore);
   (0, import_react2.useEffect)(() => {
     needMoreRef.current = onNeedMore;
@@ -2089,6 +2337,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setDetail(null);
     setShowEdited(false);
     setEditedFailed(false);
+    setCropEditing(false);
+    setCropFrame(null);
+    setCropEntry(null);
     loadDetail().catch((cause) => setError(String(cause)));
   }, [photoId]);
   (0, import_react2.useEffect)(() => {
@@ -2111,6 +2362,58 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setShowEdited(true);
     setDraftRecipe((current) => ({ ...current, [key]: value }));
   };
+  const enterCrop = () => {
+    setCropEntry({ ...normalizeCrop(draftRecipe.crop) });
+    setCropRatio("free");
+    setCropSwapped(false);
+    setCropFrame(null);
+    setCropEditing(true);
+  };
+  const finishCrop = () => {
+    setCropEditing(false);
+    setCropFrame(null);
+  };
+  const cancelCrop = () => {
+    if (cropEntry !== null) {
+      setDraftRecipe((current) => ({ ...current, crop: { ...cropEntry } }));
+    }
+    setCropEditing(false);
+    setCropFrame(null);
+    setCropRatio("free");
+    setCropSwapped(false);
+  };
+  const applyCropRatio = (id) => {
+    setCropRatio(id);
+    const preset = CROP_RATIOS.find((item) => item.id === id);
+    if (!preset?.value) return;
+    const aspect = orientedAspect(preset.value, frameAspect, cropSwapped);
+    setDraftRecipe((current) => ({ ...current, crop: fitAspect(current.crop, frameAspect, aspect) }));
+  };
+  const swapCropAspect = () => {
+    const next = !cropSwapped;
+    setCropSwapped(next);
+    const preset = CROP_RATIOS.find((item) => item.id === cropRatio);
+    if (!preset?.value) return;
+    const aspect = orientedAspect(preset.value, frameAspect, next);
+    setDraftRecipe((current) => ({ ...current, crop: fitAspect(current.crop, frameAspect, aspect) }));
+  };
+  const resetCrop = () => {
+    setCropRatio("free");
+    setCropSwapped(false);
+    setDraftRecipe((current) => ({ ...current, crop: { left: 0, top: 0, width: 1, height: 1 } }));
+  };
+  const onCropFrameLoad = (event) => {
+    const image = event.currentTarget;
+    if (!image.naturalWidth || !image.naturalHeight) return;
+    const nextFrame = { width: image.naturalWidth, height: image.naturalHeight };
+    setCropFrame(nextFrame);
+    if (!cropEditing) return;
+    const nextAspect = selectedRatio?.value ? orientedAspect(selectedRatio.value, nextFrame.width / nextFrame.height, cropSwapped) : null;
+    setDraftRecipe((current) => {
+      const crop = nextAspect === null ? normalizeCrop(current.crop) : fitAspect(current.crop, nextFrame.width / nextFrame.height, nextAspect);
+      return JSON.stringify(normalizeCrop(current.crop)) === JSON.stringify(crop) ? current : { ...current, crop };
+    });
+  };
   const saveRecipe = async () => {
     if (recipeBusy) return;
     setRecipeBusy(true);
@@ -2122,6 +2425,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       });
       await loadDetail();
       setShowEdited(true);
+      setCropEditing(false);
+      setCropFrame(null);
       await onScenesUpdated?.();
     } catch (cause) {
       setRecipeError(String(cause));
@@ -2140,6 +2445,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       });
       await loadDetail();
       setShowEdited(true);
+      setCropEditing(false);
+      setCropFrame(null);
       await onScenesUpdated?.();
     } catch (cause) {
       setRecipeError(String(cause));
@@ -2178,9 +2485,14 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
         URL.revokeObjectURL(draftPreviewUrlRef.current);
         draftPreviewUrlRef.current = null;
       }
+      if (cropFrameUrlRef.current !== null) {
+        URL.revokeObjectURL(cropFrameUrlRef.current);
+        cropFrameUrlRef.current = null;
+      }
     };
   }, [photoId]);
   (0, import_react2.useEffect)(() => {
+    if (cropEditing) return;
     if (!detail || !draftDirty) {
       if (draftPreviewUrlRef.current !== null) {
         URL.revokeObjectURL(draftPreviewUrlRef.current);
@@ -2229,7 +2541,46 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       clearTimeout(timer);
       controller.abort();
     };
-  }, [draftRecipe, draftDirty, draftIsIdentity, detail?.editSignature, photoId]);
+  }, [draftRecipe, draftDirty, draftIsIdentity, detail?.editSignature, photoId, cropEditing]);
+  (0, import_react2.useEffect)(() => {
+    if (!cropEditing || !detail || cropBaseIdentity) {
+      if (cropFrameUrlRef.current !== null) {
+        URL.revokeObjectURL(cropFrameUrlRef.current);
+        cropFrameUrlRef.current = null;
+        setCropFrameUrl(null);
+      }
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/photo-picker/api/projects/${projectId}/photos/${photoId}/edit-preview`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ recipe: { ...draftRecipe, crop: { left: 0, top: 0, width: 1, height: 1 } } }),
+          signal: controller.signal
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => void 0);
+          throw new Error(body?.error?.message ?? response.statusText);
+        }
+        const blob = await response.blob();
+        if (controller.signal.aborted) return;
+        const url = URL.createObjectURL(blob);
+        if (cropFrameUrlRef.current !== null) URL.revokeObjectURL(cropFrameUrlRef.current);
+        cropFrameUrlRef.current = url;
+        setCropFrameUrl(url);
+      } catch (cause) {
+        if (!controller.signal.aborted && cause?.name !== "AbortError") {
+          setRecipeError(String(cause));
+        }
+      }
+    }, 220);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [cropEditing, cropBaseIdentity, cropBaseKey, detail?.editSignature, photoId]);
   if (error !== null) return /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error });
   if (detail === null) return /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") });
   const dimensions = detail.dimensions ?? {};
@@ -2239,17 +2590,31 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const canCompare = (recipe !== null || draftPreviewing) && !editedFailed;
   const showingEdited = showEdited && canCompare;
   const imageSrc = showingEdited && draftPreviewing ? draftPreviewUrl : showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`;
+  const cropSrc = cropFrameUrl ?? `${detail.previewUrl}?v=${version}`;
+  const stageSrc = cropEditing ? cropSrc : imageSrc;
   const sceneText = Array.isArray(detail.scenes) ? detail.scenes.map((scene) => sceneLabel(t, scene)).join(" \xB7 ") : "";
   return /* @__PURE__ */ h2("section", { className: "pp-single" }, /* @__PURE__ */ h2("div", { className: "pp-single-head" }, /* @__PURE__ */ h2(BackButton, { label: t("backToWall"), onClick: onClose }), detail.group !== void 0 && /* @__PURE__ */ h2(Button, { onClick: () => onOpenGroup(detail.group.id) }, t("groupCompare")), /* @__PURE__ */ h2("span", { className: "pp-chip" }, index + 1, " / ", items.length), /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": detail.verdict }, verdictLabel(t, detail.verdict)), detail.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", detail.score), /* @__PURE__ */ h2("span", { className: "pp-muted", style: { marginLeft: "auto" } }, detail.relPath)), /* @__PURE__ */ h2("div", { className: "pp-single-body" }, /* @__PURE__ */ h2("div", { className: "pp-stage" }, /* @__PURE__ */ h2("div", { className: "pp-stage-frame" }, /* @__PURE__ */ h2(
     "img",
     {
-      src: imageSrc,
+      src: stageSrc,
       alt: detail.relPath,
+      onLoad: cropEditing ? onCropFrameLoad : void 0,
       onError: () => {
-        if (showingEdited) setEditedFailed(true);
+        if (showingEdited && !cropEditing) setEditedFailed(true);
       }
     }
-  ), sceneText !== "" && /* @__PURE__ */ h2("span", { className: "pp-stage-scenes", title: sceneText }, sceneText), showGrid && /* @__PURE__ */ h2("div", { className: "pp-guide pp-guide-grid", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "v", style: { left: "66.666%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "66.666%" } })), showCross && /* @__PURE__ */ h2("div", { className: "pp-guide pp-guide-cross", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "50%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "50%" } })), /* @__PURE__ */ h2("div", { className: "pp-stage-tools" }, /* @__PURE__ */ h2(
+  ), !cropEditing && sceneText !== "" && /* @__PURE__ */ h2("span", { className: "pp-stage-scenes", title: sceneText }, sceneText), cropEditing && /* @__PURE__ */ h2(
+    CropOverlay,
+    {
+      crop: draftRecipe.crop,
+      frameAspect,
+      aspect: cropAspect,
+      onChange: (crop) => {
+        setShowEdited(true);
+        setDraftRecipe((current) => ({ ...current, crop }));
+      }
+    }
+  ), !cropEditing && showGrid && /* @__PURE__ */ h2("div", { className: "pp-guide pp-guide-grid", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "v", style: { left: "66.666%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "66.666%" } })), !cropEditing && showCross && /* @__PURE__ */ h2("div", { className: "pp-guide pp-guide-cross", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "50%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "50%" } })), !cropEditing && /* @__PURE__ */ h2("div", { className: "pp-stage-tools" }, /* @__PURE__ */ h2(
     "button",
     {
       type: "button",
@@ -2275,7 +2640,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       }
     },
     t("crossGuide")
-  )), canCompare && /* @__PURE__ */ h2(
+  )), !cropEditing && canCompare && /* @__PURE__ */ h2(
     "button",
     {
       type: "button",
@@ -2303,7 +2668,16 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
         onChange: (event) => setRecipeField(control.key, Number(event.target.value))
       }
     ));
-  })), /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", draftRecipe.crop.width === 1 && draftRecipe.crop.height === 1 ? t("editCropNone") : `${Math.round(draftRecipe.crop.width * 100)}% \xD7 ${Math.round(draftRecipe.crop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(draftRecipe.crop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(draftRecipe.crop.top * 100)}%`), recipeError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: recipeError }), /* @__PURE__ */ h2("div", { className: "pp-recipe-actions" }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: recipeBusy, onClick: () => {
+  })), /* @__PURE__ */ h2("div", { className: "pp-crop-summary" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", draftCrop.width === 1 && draftCrop.height === 1 ? t("editCropNone") : `${Math.round(draftCrop.width * 100)}% \xD7 ${Math.round(draftCrop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(draftCrop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(draftCrop.top * 100)}%`), !cropEditing && /* @__PURE__ */ h2(Button, { size: "sm", onClick: enterCrop }, t("cropEdit"))), cropEditing && /* @__PURE__ */ h2("div", { className: "pp-crop-toolbar" }, /* @__PURE__ */ h2("div", { className: "pp-crop-ratios" }, CROP_RATIOS.map((preset) => /* @__PURE__ */ h2(
+    "button",
+    {
+      type: "button",
+      key: preset.id,
+      className: `pp-crop-ratio${cropRatio === preset.id ? " active" : ""}`,
+      onClick: () => applyCropRatio(preset.id)
+    },
+    preset.id === "free" ? t("cropFree") : cropRatioLabel(preset.id, frameAspect, cropSwapped)
+  ))), /* @__PURE__ */ h2("div", { className: "pp-crop-actions" }, /* @__PURE__ */ h2(Button, { size: "sm", disabled: cropRatio === "free" || cropRatio === "1:1", onClick: swapCropAspect }, t("cropSwap")), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: resetCrop }, t("cropReset")), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: cancelCrop }, t("cropCancel")), /* @__PURE__ */ h2(Button, { size: "sm", onClick: finishCrop }, t("cropFinish")))), recipeError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: recipeError }), /* @__PURE__ */ h2("div", { className: "pp-recipe-actions" }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: recipeBusy, onClick: () => {
     void resetRecipe();
   } }, t("editRecipeReset")), /* @__PURE__ */ h2(
     Button,

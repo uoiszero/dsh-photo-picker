@@ -562,7 +562,7 @@ export class PhotoPickerService extends Service {
     if (row === undefined) {
       throw stageError(`unknown photo: ${photoId}`, 'NOT_FOUND', 404)
     }
-    const recipe = normalizeRecipe(recipeInput)
+    const recipe = normalizeRecipe(recipeInput, { allowMicroCrop: true })
     if (recipe === null) throw stageError('draft recipe is empty', 'BAD_RECIPE', 400)
     const sourcePath = fromPortablePath(project.sourcePath, row.rel_path)
     return renderEditedBuffer({ sourcePath, recipe, maxWidth: 1200 })
@@ -572,7 +572,9 @@ export class PhotoPickerService extends Service {
   async editedFile(id, photoId) {
     const { db, project } = await this.store.open(id)
     const row = db.prepare(`
-      SELECT p.rel_path, COALESCE(ro.recipe_json, a.recipe_json) AS recipe_json
+      SELECT p.rel_path, COALESCE(ro.recipe_json, a.recipe_json) AS recipe_json,
+             CASE WHEN ro.photo_id IS NOT NULL THEN 'human'
+                  WHEN a.recipe_json IS NOT NULL THEN 'ai' ELSE NULL END AS edit_source
       FROM photos p
       LEFT JOIN assessments a ON a.target_id = p.id
         AND a.target_kind = 'photo' AND a.stage = 'single'
@@ -583,7 +585,7 @@ export class PhotoPickerService extends Service {
     if (row === undefined || row.recipe_json === null) return undefined
     let raw
     try { raw = JSON.parse(row.recipe_json) } catch { return undefined }
-    const recipe = normalizeRecipe(raw)
+    const recipe = normalizeRecipe(raw, { allowMicroCrop: row.edit_source === 'human' })
     if (recipe === null) return undefined
     const sourcePath = fromPortablePath(project.sourcePath, row.rel_path)
     const cachePath = path.join(
