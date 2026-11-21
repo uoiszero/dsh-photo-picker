@@ -189,11 +189,20 @@ var zh = {
   cropTitle: "\u88C1\u526A",
   cropHint: "\u62D6\u52A8\u8FB9\u6846\u88C1\u526A\uFF0C\u62D6\u52A8\u65F6\u663E\u793A\u4E95\u5B57\u683C",
   cropOriginal: "\u539F\u56FE",
+  cropArea: "\u88C1\u526A\u533A\u57DF",
+  cropHandleNw: "\u8C03\u6574\u5DE6\u4E0A\u89D2",
+  cropHandleN: "\u8C03\u6574\u4E0A\u8FB9",
+  cropHandleNe: "\u8C03\u6574\u53F3\u4E0A\u89D2",
+  cropHandleE: "\u8C03\u6574\u53F3\u8FB9",
+  cropHandleSe: "\u8C03\u6574\u53F3\u4E0B\u89D2",
+  cropHandleS: "\u8C03\u6574\u4E0B\u8FB9",
+  cropHandleSw: "\u8C03\u6574\u5DE6\u4E0B\u89D2",
+  cropHandleW: "\u8C03\u6574\u5DE6\u8FB9",
   cropFree: "\u81EA\u7531",
   cropSwap: "\u5207\u6362\u957F\u77ED\u8FB9",
   cropReset: "\u91CD\u7F6E\u88C1\u526A",
   cropCancel: "\u53D6\u6D88\u88C1\u526A",
-  cropFinish: "\u5B8C\u6210",
+  cropFinish: "\u4FDD\u5B58\u5E76\u5B8C\u6210",
   editBefore: "\u539F\u56FE",
   editAfter: "\u4FEE\u56FE",
   editToggleHint: "\u70B9\u51FB\u5207\u6362\u539F\u56FE/\u4FEE\u56FE",
@@ -466,11 +475,20 @@ var en = {
   cropTitle: "Crop",
   cropHint: "Drag the frame to crop; guides appear while dragging",
   cropOriginal: "Original",
+  cropArea: "Crop area",
+  cropHandleNw: "Resize top left",
+  cropHandleN: "Resize top",
+  cropHandleNe: "Resize top right",
+  cropHandleE: "Resize right",
+  cropHandleSe: "Resize bottom right",
+  cropHandleS: "Resize bottom",
+  cropHandleSw: "Resize bottom left",
+  cropHandleW: "Resize left",
   cropFree: "Free",
   cropSwap: "Swap sides",
   cropReset: "Reset crop",
   cropCancel: "Cancel crop",
-  cropFinish: "Done",
+  cropFinish: "Save & finish",
   editBefore: "Before",
   editAfter: "After",
   editToggleHint: "Click to switch original/edited",
@@ -1375,6 +1393,42 @@ var STYLES = `
 .pp-stage-cropping img { max-height: 52vh; }
 .pp-stage-cropping { min-height: 260px; padding: 10px; }
 
+.pp-focus-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  position: sticky; top: 8px; z-index: 20; margin-bottom: 10px;
+  padding: 8px 12px; border-radius: 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 92%, transparent);
+  backdrop-filter: blur(12px);
+}
+.pp-focus-name { font-size: 14px; font-weight: 650; }
+.pp-focus-bar .pp-muted { font-size: 11px; }
+.pp-detail-focused .pp-single { gap: 8px; }
+.pp-crop-panel { position: sticky; bottom: 10px; z-index: 9; box-shadow: 0 10px 30px rgba(0, 0, 0, .12); }
+
+.pp-crop-handle {
+  width: 28px; height: 28px; padding: 0; border: 0; background: transparent;
+}
+.pp-crop-handle::after {
+  content: ''; position: absolute; inset: 8px; width: 12px; height: 12px;
+  border-radius: 3px; border: 1.5px solid #fff; background: rgba(0, 0, 0, .52);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+}
+.pp-crop-handle-nw { left: -14px; top: -14px; cursor: nwse-resize; }
+.pp-crop-handle-n { left: calc(50% - 14px); top: -14px; cursor: ns-resize; }
+.pp-crop-handle-ne { right: -14px; top: -14px; cursor: nesw-resize; }
+.pp-crop-handle-e { right: -14px; top: calc(50% - 14px); cursor: ew-resize; }
+.pp-crop-handle-se { right: -14px; bottom: -14px; cursor: nwse-resize; }
+.pp-crop-handle-s { left: calc(50% - 14px); bottom: -14px; cursor: ns-resize; }
+.pp-crop-handle-sw { left: -14px; bottom: -14px; cursor: nesw-resize; }
+.pp-crop-handle-w { left: -14px; top: calc(50% - 14px); cursor: ew-resize; }
+.pp-crop-handle:focus-visible, .pp-crop-selection:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px;
+}
+.pp-crop-ratios { scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
+.pp-crop-ratio { scroll-snap-align: start; }
+.pp-crop-ratio:last-child { margin-right: 1px; }
+
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;
@@ -1876,7 +1930,7 @@ var DIMENSION_LABELS = {
   post_potential: "dimensionPostPotential",
   moment: "dimensionMoment"
 };
-function ReviewSection({ t, projectId, version, onChanged }) {
+function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
   const PAGE_SIZE = 200;
   const [items, setItems] = (0, import_react2.useState)([]);
   const [total, setTotal] = (0, import_react2.useState)(0);
@@ -1900,6 +1954,9 @@ function ReviewSection({ t, projectId, version, onChanged }) {
   const [visibleRange, setVisibleRange] = (0, import_react2.useState)({ start: 0, end: 20 });
   const filterKey = `${filter}|${scene}|${sort}`;
   const lastFilterKey = (0, import_react2.useRef)("");
+  (0, import_react2.useEffect)(() => {
+    onFocusChange?.(single !== null || groupView !== null);
+  }, [single, groupView, onFocusChange]);
   const fetchPage = async (offset) => {
     const params = new URLSearchParams({ scope: "review", sort, limit: String(PAGE_SIZE), offset: String(offset) });
     if (filter !== "all") params.set("verdict", filter);
@@ -2291,6 +2348,16 @@ function isIdentityDraft(recipe) {
   return Math.abs(crop.left) < 1e-6 && Math.abs(crop.top) < 1e-6 && Math.abs(crop.width - 1) < 1e-6 && Math.abs(crop.height - 1) < 1e-6 && Math.abs(recipe?.rotate ?? 0) < 1e-6 && Math.abs(recipe?.exposureEv ?? 0) < 1e-6 && Math.abs(recipe?.contrast ?? 0) < 1e-6 && Math.abs(recipe?.saturation ?? 0) < 1e-6 && Math.abs(recipe?.sharpen ?? 0) < 1e-6;
 }
 var CROP_HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+var CROP_HANDLE_KEYS = {
+  nw: "cropHandleNw",
+  n: "cropHandleN",
+  ne: "cropHandleNe",
+  e: "cropHandleE",
+  se: "cropHandleSe",
+  s: "cropHandleS",
+  sw: "cropHandleSw",
+  w: "cropHandleW"
+};
 function cropRatioLabel(id, frameAspect, swapped) {
   if (id === "free") return "";
   const [long, short] = id.split(/:/);
@@ -2303,7 +2370,7 @@ function CropRatioIcon({ id }) {
   }
   return /* @__PURE__ */ h2("span", { className: "pp-crop-ratio-icon", "data-ratio": id, "aria-hidden": "true" });
 }
-function CropOverlay({ crop, frameAspect, aspect, onChange }) {
+function CropOverlay({ t, crop, frameAspect, aspect, onChange }) {
   const layerRef = (0, import_react2.useRef)(null);
   const dragRef = (0, import_react2.useRef)(null);
   const [dragging, setDragging] = (0, import_react2.useState)(false);
@@ -2338,6 +2405,19 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }) {
     setDragging(false);
     layerRef.current?.releasePointerCapture?.(event.pointerId);
   };
+  const nudge = (event, handle) => {
+    const dx = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+    const dy = event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0;
+    if (dx === 0 && dy === 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const step = event.shiftKey ? 0.01 : 5e-3;
+    if (handle === "move" && !event.shiftKey) {
+      onChange(moveCrop(current, dx * step, dy * step));
+    } else {
+      onChange(resizeCrop(current, handle === "move" ? "se" : handle, dx * step, dy * step, frameAspect, aspect));
+    }
+  };
   return /* @__PURE__ */ h2(
     "div",
     {
@@ -2355,8 +2435,12 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }) {
       "div",
       {
         className: "pp-crop-selection",
+        role: "group",
+        tabIndex: 0,
+        "aria-label": t("cropArea"),
         style: { left: `${current.left * 100}%`, top: `${current.top * 100}%`, width: `${current.width * 100}%`, height: `${current.height * 100}%` },
-        onPointerDown: (event) => start("move", event)
+        onPointerDown: (event) => start("move", event),
+        onKeyDown: (event) => nudge(event, "move")
       },
       dragging && /* @__PURE__ */ h2("div", { className: "pp-crop-thirds", "aria-hidden": "true" }, /* @__PURE__ */ h2("span", { className: "v", style: { left: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "v", style: { left: "66.666%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "33.333%" } }), /* @__PURE__ */ h2("span", { className: "h", style: { top: "66.666%" } })),
       CROP_HANDLES.map((handle) => /* @__PURE__ */ h2(
@@ -2364,7 +2448,11 @@ function CropOverlay({ crop, frameAspect, aspect, onChange }) {
         {
           key: handle,
           className: `pp-crop-handle pp-crop-handle-${handle}`,
-          onPointerDown: (event) => start(handle, event)
+          role: "button",
+          tabIndex: 0,
+          "aria-label": t(CROP_HANDLE_KEYS[handle]),
+          onPointerDown: (event) => start(handle, event),
+          onKeyDown: (event) => nudge(event, handle)
         }
       ))
     )
@@ -2451,6 +2539,13 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setCropEditing(false);
     setCropFrame(null);
   };
+  const completeCrop = () => {
+    if (!draftDirty) {
+      finishCrop();
+      return;
+    }
+    void saveRecipe();
+  };
   const cancelCrop = () => {
     if (cropEntry !== null) {
       setDraftRecipe((current) => ({ ...current, crop: { ...cropEntry } }));
@@ -2478,11 +2573,6 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     if (!preset?.value) return;
     const aspect = orientedAspect(preset.value, frameAspect, next);
     setDraftRecipe((current) => ({ ...current, crop: fitAspect(current.crop, frameAspect, aspect) }));
-  };
-  const resetCrop = () => {
-    setCropRatio("original");
-    setCropSwapped(false);
-    setDraftRecipe((current) => ({ ...current, crop: { left: 0, top: 0, width: 1, height: 1 } }));
   };
   const onCropFrameLoad = (event) => {
     const image = event.currentTarget;
@@ -2548,6 +2638,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   };
   (0, import_react2.useEffect)(() => {
     const onKey = (event) => {
+      if (cropEditing) return;
       const target = event.target;
       if (target !== null && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
       if (event.key === "j" || event.key === "ArrowRight") void move(1);
@@ -2560,7 +2651,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [photoId, index, items, detail, deciding]);
+  }, [photoId, index, items, detail, deciding, cropEditing]);
   (0, import_react2.useEffect)(() => {
     if (cropEditing) cropPanelRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [cropEditing]);
@@ -2691,6 +2782,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   ), !cropEditing && sceneText !== "" && /* @__PURE__ */ h2("span", { className: "pp-stage-scenes", title: sceneText }, sceneText), cropEditing && /* @__PURE__ */ h2(
     CropOverlay,
     {
+      t,
       crop: draftRecipe.crop,
       frameAspect,
       aspect: cropAspect,
@@ -2756,9 +2848,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     },
     /* @__PURE__ */ h2(CropRatioIcon, { id: preset.id }),
     /* @__PURE__ */ h2("span", null, preset.id === "free" ? t("cropFree") : preset.id === "original" ? t("cropOriginal") : cropRatioLabel(preset.id, frameAspect, cropSwapped))
-  ))), /* @__PURE__ */ h2("div", { className: "pp-crop-actions" }, /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", onClick: cancelCrop }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m4 4 8 8M12 4l-8 8", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round" })), /* @__PURE__ */ h2("span", null, t("cropCancel"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", disabled: cropRatio === "free" || cropRatio === "original" || cropRatio === "1:1", onClick: swapCropAspect }, /* @__PURE__ */ h2("span", { className: "pp-crop-action-glyph" }, "\u21C4"), /* @__PURE__ */ h2("span", null, t("cropSwap"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", onClick: resetCrop }, /* @__PURE__ */ h2("span", { className: "pp-crop-action-glyph" }, "\u21BA"), /* @__PURE__ */ h2("span", null, t("cropReset"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action pp-crop-action-primary", onClick: () => {
-    void saveRecipe();
-  } }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m3.2 8.4 3 3 6.6-7", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round" })), /* @__PURE__ */ h2("span", null, t("cropFinish")))))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
+  ))), /* @__PURE__ */ h2("div", { className: "pp-crop-actions" }, /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", onClick: cancelCrop }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m4 4 8 8M12 4l-8 8", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round" })), /* @__PURE__ */ h2("span", null, t("cropCancel"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", disabled: cropRatio === "free" || cropRatio === "original" || cropRatio === "1:1", onClick: swapCropAspect }, /* @__PURE__ */ h2("span", { className: "pp-crop-action-glyph" }, "\u21C4"), /* @__PURE__ */ h2("span", null, t("cropSwap"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action pp-crop-action-primary", onClick: completeCrop }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m3.2 8.4 3 3 6.6-7", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round" })), /* @__PURE__ */ h2("span", null, t("cropFinish")))))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
     const value = dimensions[key];
     return /* @__PURE__ */ h2("div", { key, className: "pp-meter" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h2("div", { className: "pp-meter-track" }, /* @__PURE__ */ h2("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h2("span", null, value === null || value === void 0 ? "\u2014" : value));
   })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, postProcessingLabel(t, code))))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-recipe-card-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi"))), recipe === null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe")), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.filter((control) => !(cropEditing && control.key === "rotate")).map((control) => {
@@ -2778,7 +2868,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     ));
   })), /* @__PURE__ */ h2("div", { className: "pp-crop-summary" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", draftCrop.width === 1 && draftCrop.height === 1 ? t("editCropNone") : `${Math.round(draftCrop.width * 100)}% \xD7 ${Math.round(draftCrop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(draftCrop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(draftCrop.top * 100)}%`), !cropEditing && /* @__PURE__ */ h2(Button, { size: "sm", onClick: enterCrop }, t("cropEdit"))), recipeError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: recipeError }), /* @__PURE__ */ h2("div", { className: "pp-recipe-actions" }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: recipeBusy, onClick: () => {
     void resetRecipe();
-  } }, t("editRecipeReset")), /* @__PURE__ */ h2(
+  } }, t("editRecipeReset")), !cropEditing && /* @__PURE__ */ h2(
     Button,
     {
       variant: "primary",
@@ -3181,6 +3271,7 @@ function ProjectDetail({ t, id, onBack }) {
   const [noticeDismissed, setNoticeDismissed] = (0, import_react2.useState)(false);
   const [exporting, setExporting] = (0, import_react2.useState)(false);
   const [settingsOpen, setSettingsOpen] = (0, import_react2.useState)(false);
+  const [focusMode, setFocusMode] = (0, import_react2.useState)(false);
   const [error, setError] = (0, import_react2.useState)(null);
   const refresh = async () => {
     try {
@@ -3275,7 +3366,7 @@ function ProjectDetail({ t, id, onBack }) {
       }
     }
   }
-  return /* @__PURE__ */ h2("div", { className: "pp-detail" }, /* @__PURE__ */ h2("div", { className: "pp-page-nav" }, /* @__PURE__ */ h2(BackButton, { label: t("back"), onClick: onBack })), /* @__PURE__ */ h2(Card, { className: "pp-summary" }, /* @__PURE__ */ h2("div", { className: "pp-summary-top" }, /* @__PURE__ */ h2("strong", { className: "pp-project-title" }, detail.name), /* @__PURE__ */ h2("span", { className: "pp-pill" }, statusLabel(t, detail.status)), detail.sourceKind !== "local" && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.sourceOnline === false ? t("networkOffline") : t("smbConnected")), runningLabel !== null && /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": "live" }, t("running"), " \xB7 ", runningLabel), /* @__PURE__ */ h2("span", { className: "pp-path pp-summary-path", title: detail.sourcePath }, detail.sourcePath)), /* @__PURE__ */ h2("div", { className: "pp-stats" }, statItems.map((item) => /* @__PURE__ */ h2("div", { className: "pp-stat", key: item.key }, /* @__PURE__ */ h2("span", { className: "pp-stat-value" }, item.value), /* @__PURE__ */ h2("span", { className: "pp-stat-label" }, item.label, item.hint !== void 0 ? ` ${item.hint}` : "")))), /* @__PURE__ */ h2(ActionBar, null, /* @__PURE__ */ h2(Button, { variant: "primary", disabled: detail.running !== null, onClick: runAll }, t("autoRun")), detail.running !== null && /* @__PURE__ */ h2(Button, { onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h2("div", { style: { position: "relative" } }, /* @__PURE__ */ h2(Button, { onClick: () => setSingleStepsOpen((open) => !open) }, t("singleStep"), " ", singleStepsOpen ? "\u25B4" : "\u25BE"), singleStepsOpen && /* @__PURE__ */ h2("div", { className: "pp-menu" }, stages.map((stage) => /* @__PURE__ */ h2(
+  return /* @__PURE__ */ h2("div", { className: `pp-detail${focusMode ? " pp-detail-focused" : ""}` }, focusMode ? /* @__PURE__ */ h2("div", { className: "pp-focus-bar" }, /* @__PURE__ */ h2(BackButton, { label: t("back"), onClick: onBack }), /* @__PURE__ */ h2("strong", { className: "pp-focus-name" }, detail.name), /* @__PURE__ */ h2("span", { className: "pp-pill" }, statusLabel(t, detail.status)), runningLabel !== null && /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": "live" }, t("running"), " \xB7 ", runningLabel), /* @__PURE__ */ h2("span", { style: { flex: 1 } }), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("spent"), " \xA5", spent.toFixed(2)), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSettingsOpen(true) }, t("settings"))) : /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("div", { className: "pp-page-nav" }, /* @__PURE__ */ h2(BackButton, { label: t("back"), onClick: onBack })), /* @__PURE__ */ h2(Card, { className: "pp-summary" }, /* @__PURE__ */ h2("div", { className: "pp-summary-top" }, /* @__PURE__ */ h2("strong", { className: "pp-project-title" }, detail.name), /* @__PURE__ */ h2("span", { className: "pp-pill" }, statusLabel(t, detail.status)), detail.sourceKind !== "local" && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.sourceOnline === false ? t("networkOffline") : t("smbConnected")), runningLabel !== null && /* @__PURE__ */ h2("span", { className: "pp-pill", "data-tone": "live" }, t("running"), " \xB7 ", runningLabel), /* @__PURE__ */ h2("span", { className: "pp-path pp-summary-path", title: detail.sourcePath }, detail.sourcePath)), /* @__PURE__ */ h2("div", { className: "pp-stats" }, statItems.map((item) => /* @__PURE__ */ h2("div", { className: "pp-stat", key: item.key }, /* @__PURE__ */ h2("span", { className: "pp-stat-value" }, item.value), /* @__PURE__ */ h2("span", { className: "pp-stat-label" }, item.label, item.hint !== void 0 ? ` ${item.hint}` : "")))), /* @__PURE__ */ h2(ActionBar, null, /* @__PURE__ */ h2(Button, { variant: "primary", disabled: detail.running !== null, onClick: runAll }, t("autoRun")), detail.running !== null && /* @__PURE__ */ h2(Button, { onClick: () => run(detail.running, "pause") }, t("pause")), /* @__PURE__ */ h2("div", { style: { position: "relative" } }, /* @__PURE__ */ h2(Button, { onClick: () => setSingleStepsOpen((open) => !open) }, t("singleStep"), " ", singleStepsOpen ? "\u25B4" : "\u25BE"), singleStepsOpen && /* @__PURE__ */ h2("div", { className: "pp-menu" }, stages.map((stage) => /* @__PURE__ */ h2(
     Button,
     {
       key: stage,
@@ -3289,7 +3380,7 @@ function ProjectDetail({ t, id, onBack }) {
   )))), /* @__PURE__ */ h2("span", { style: { flex: 1 } }), /* @__PURE__ */ h2(Button, { onClick: () => setExporting(true) }, t("export")), /* @__PURE__ */ h2(Button, { onClick: () => setSettingsOpen(true) }, t("settings"))), /* @__PURE__ */ h2("div", { className: "pp-steps" }, stages.map((stage) => {
     const status = stage === activeStage ? "running" : stageStatus[stage] ?? "pending";
     return /* @__PURE__ */ h2("span", { className: "pp-step", key: stage, title: runStatusLabel(t, status) }, /* @__PURE__ */ h2("span", { className: "pp-dot", "data-status": status }), /* @__PURE__ */ h2("strong", null, stageLabel(t, stage)), /* @__PURE__ */ h2("span", null, runStatusLabel(t, status)));
-  })), detail.running !== null && /* @__PURE__ */ h2("div", { className: "pp-progress" }, /* @__PURE__ */ h2("div", { className: "pp-muted" }, activeStage !== void 0 && activeStage !== null ? stageLabel(t, activeStage) : t("running"), " ", progress?.done ?? 0, "/", progress?.total ?? "?", progress?.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : ""), /* @__PURE__ */ h2("div", { className: "pp-progress-track" }, /* @__PURE__ */ h2("div", { className: "pp-progress-fill", style: { width: `${percent}%` } }))), pipelineEvent !== null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).map((stage) => stageLabel(t, stage)).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), aiDisabled && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("aiDisabled"))), exporting && /* @__PURE__ */ h2(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && /* @__PURE__ */ h2(
+  })), detail.running !== null && /* @__PURE__ */ h2("div", { className: "pp-progress" }, /* @__PURE__ */ h2("div", { className: "pp-muted" }, activeStage !== void 0 && activeStage !== null ? stageLabel(t, activeStage) : t("running"), " ", progress?.done ?? 0, "/", progress?.total ?? "?", progress?.costCny !== void 0 ? ` \xB7 \xA5${Number(progress.costCny).toFixed(4)}` : ""), /* @__PURE__ */ h2("div", { className: "pp-progress-track" }, /* @__PURE__ */ h2("div", { className: "pp-progress-fill", style: { width: `${percent}%` } }))), pipelineEvent !== null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, pipelineEvent.error !== void 0 ? `${t("pipelineFailed")}: ${pipelineEvent.error}` : pipelineEvent.stage === "pipeline" && pipelineEvent.result !== void 0 ? `${pipelineEvent.result.reason === "paused" ? t("pipelinePaused") : t("pipelineDone")}: ${(pipelineEvent.result.completed ?? []).map((stage) => stageLabel(t, stage)).join(" \u2192 ")}${pipelineEvent.result.stoppedAt !== null && pipelineEvent.result.stoppedAt !== void 0 ? ` \xB7 ${t("nextStage")} ${stageLabel(t, pipelineEvent.result.stoppedAt)}` : ""}` : `${t("autoRun")}: ${stageLabel(t, pipelineEvent.stage)} \xB7 ${phaseLabel(t, pipelineEvent.phase)}`), aiDisabled && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("aiDisabled")))), exporting && /* @__PURE__ */ h2(ExportDialog, { t, projectId: id, onClose: () => setExporting(false) }), settingsOpen && /* @__PURE__ */ h2(
     SettingsDrawer,
     {
       t,
@@ -3306,7 +3397,7 @@ function ProjectDetail({ t, id, onBack }) {
       alt: pid,
       loading: "lazy"
     }
-  )))))))), /* @__PURE__ */ h2(ReviewSection, { t, projectId: id, version, onChanged: refresh }), /* @__PURE__ */ h2(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setNoticeDismissed(true) }, t("close"))));
+  )))))))), /* @__PURE__ */ h2(ReviewSection, { t, projectId: id, version, onChanged: refresh, onFocusChange: setFocusMode }), /* @__PURE__ */ h2(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setNoticeDismissed(true) }, t("close"))));
 }
 function Workbench({ t }) {
   (0, import_react2.useSyncExternalStore)(subscribeLanguage, getLanguage);
