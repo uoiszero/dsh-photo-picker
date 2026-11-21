@@ -307,3 +307,18 @@ test('recipe overrides take precedence over AI recipes and can be reset', () => 
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })
+
+test('manual recipe preserves a crop below the AI micro-crop threshold', () => {
+  const { db, dir, addPhoto, addAssessment } = setup()
+  addPhoto.run('m1', 'm1.jpg', 100, 1, null, 'thumbs/m1.webp', 'scored', 1)
+  addAssessment.run('ma', 'm1', 8, 'keep', '{}', '[]', '好', 1)
+  setRecipeOverride(db, 'p1', 'm1', {
+    version: 1,
+    crop: { left: 0.04, top: 0, width: 0.96, height: 1 },
+  })
+  const detail = getPhotoDetail(db, 'p1', 'm1')
+  assert.equal(detail.editSource, 'human')
+  assert.deepEqual(detail.editRecipe.crop, { left: 0.04, top: 0, width: 0.96, height: 1 })
+  db.close()
+  rmSync(dir, { recursive: true, force: true })
+})

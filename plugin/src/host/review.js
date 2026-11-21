@@ -52,7 +52,7 @@ function parseJson(text) {
 }
 
 function toReviewPhoto(row, projectId) {
-  const editRecipe = normalizeRecipe(parseJson(row.recipe_json))
+  const editRecipe = normalizeRecipe(parseJson(row.recipe_json), { allowMicroCrop: row.edit_source === 'human' })
   return {
     id: row.id,
     relPath: row.rel_path,
@@ -210,7 +210,7 @@ export function setRecipeOverride(db, projectId, photoId, input) {
     error.statusCode = 400
     throw error
   }
-  const recipe = normalizeRecipe(input)
+  const recipe = normalizeRecipe(input, { allowMicroCrop: true })
   if (recipe === null) {
     db.prepare('DELETE FROM photo_recipe_overrides WHERE photo_id = ?').run(photoId)
     return

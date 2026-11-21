@@ -95,3 +95,11 @@ test('isMicroCrop distinguishes meaningful and two-edge crops', () => {
   assert.equal(isMicroCrop({ left: 0.08, top: 0, width: 0.84, height: 1 }), true)
   assert.equal(isMicroCrop({ left: 0.08, top: 0.2, width: 0.92, height: 0.8 }), false)
 })
+
+test('normalizeRecipe can preserve a human micro-crop', () => {
+  const recipe = normalizeRecipe({
+    crop: { left: 0.04, top: 0, width: 0.96, height: 1 },
+  }, { allowMicroCrop: true })
+  assert.deepEqual(recipe.crop, { left: 0.04, top: 0, width: 0.96, height: 1 })
+  assert.equal(normalizeRecipe({ crop: { left: 0.04, top: 0, width: 0.96, height: 1 } }), null)
+})

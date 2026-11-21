@@ -15,7 +15,7 @@
   - `AI 建议` / `我的调整` badge
   - 滑杆直接放在「修图建议」下方，无弹窗
   - 曝光、对比度、饱和度、锐化、旋转滑杆；拖动改草稿并请求临时预览，点击保存才写库
-  - 裁剪只读（沿用 AI 建议）
+  - 裁剪只读（此限制已由 Plan 12 手动裁剪取代）
   - 保存 / 恢复 AI 建议
 - API：
   `PATCH /photo-picker/api/projects/:id/photos/:pid/recipe`
@@ -33,7 +33,7 @@
 - HTTP PATCH recipe
 - export manifest `editSource`
 - UI 冒烟：合成项目内微调曝光、保存、恢复 AI
-- `npm test` 123/123
+- `npm test` 132/132
 
 ## 非目标
 

@@ -10,6 +10,7 @@ const PANEL_ID = 'photo-picker'
 import { getLanguage, postProcessingLabel, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
 import { computeColumns, computeRowHeight, computeVisibleRows, TILE_GAP, TILE_MIN, TILE_MIN_NARROW } from './virtual.js'
+import { CROP_RATIOS, fitAspect, normalizeCrop, orientedAspect, resizeCrop } from './crop.js'
 import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, Select, StateCard, Tabs } from './ui'
 
 
@@ -823,6 +824,80 @@ function isIdentityDraft(recipe: any): boolean {
     && Math.abs(recipe?.sharpen ?? 0) < 1e-6
 }
 
+const CROP_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
+
+function cropRatioLabel(id: string, frameAspect: number, swapped: boolean): string {
+  if (id === 'free') return ''
+  const [long, short] = id.split(/:/)
+  const horizontal = frameAspect >= 1 ? !swapped : swapped
+  return horizontal ? `${long}:${short}` : `${short}:${long}`
+}
+
+function CropOverlay({ crop, frameAspect, aspect, onChange }: any) {
+  const layerRef = useRef<HTMLDivElement | null>(null)
+  const dragRef = useRef<any>(null)
+  const current = normalizeCrop(crop)
+
+  const start = (handle: string, event: React.PointerEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const layer = layerRef.current
+    if (layer === null) return
+    const rect = layer.getBoundingClientRect()
+    layer.setPointerCapture?.(event.pointerId)
+    dragRef.current = {
+      handle,
+      startX: event.clientX,
+      startY: event.clientY,
+      crop: current,
+      width: rect.width,
+      height: rect.height,
+    }
+  }
+
+  const move = (event: React.PointerEvent) => {
+    const drag = dragRef.current
+    if (drag === null) return
+    const dx = (event.clientX - drag.startX) / Math.max(1, drag.width)
+    const dy = (event.clientY - drag.startY) / Math.max(1, drag.height)
+    onChange(resizeCrop(drag.crop, drag.handle, dx, dy, frameAspect, aspect))
+  }
+
+  const end = (event: React.PointerEvent) => {
+    if (dragRef.current === null) return
+    dragRef.current = null
+    layerRef.current?.releasePointerCapture?.(event.pointerId)
+  }
+
+  return (
+    <div
+      className="pp-crop-layer"
+      ref={layerRef}
+      onPointerMove={move}
+      onPointerUp={end}
+      onPointerCancel={end}
+    >
+      <div className="pp-crop-mask" style={{ left: 0, right: 0, top: 0, height: `${current.top * 100}%` }} />
+      <div className="pp-crop-mask" style={{ left: 0, right: 0, top: `${(current.top + current.height) * 100}%`, bottom: 0 }} />
+      <div className="pp-crop-mask" style={{ left: 0, width: `${current.left * 100}%`, top: `${current.top * 100}%`, height: `${current.height * 100}%` }} />
+      <div className="pp-crop-mask" style={{ left: `${(current.left + current.width) * 100}%`, right: 0, top: `${current.top * 100}%`, height: `${current.height * 100}%` }} />
+      <div
+        className="pp-crop-selection"
+        style={{ left: `${current.left * 100}%`, top: `${current.top * 100}%`, width: `${current.width * 100}%`, height: `${current.height * 100}%` }}
+        onPointerDown={event => start('move', event)}
+      >
+        {CROP_HANDLES.map(handle => (
+          <span
+            key={handle}
+            className={`pp-crop-handle pp-crop-handle-${handle}`}
+            onPointerDown={event => start(handle, event)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -834,13 +909,30 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [sceneEditorOpen, setSceneEditorOpen] = useState(false)
   const [draftRecipe, setDraftRecipe] = useState<any>(() => defaultRecipe())
   const [draftPreviewUrl, setDraftPreviewUrl] = useState<string | null>(null)
+  const [cropEditing, setCropEditing] = useState(false)
+  const [cropFrameUrl, setCropFrameUrl] = useState<string | null>(null)
+  const [cropFrame, setCropFrame] = useState<{ width: number; height: number } | null>(null)
+  const [cropEntry, setCropEntry] = useState<any>(null)
+  const [cropRatio, setCropRatio] = useState('free')
+  const [cropSwapped, setCropSwapped] = useState(false)
   const [recipeBusy, setRecipeBusy] = useState(false)
   const [recipeError, setRecipeError] = useState<string | null>(null)
   const draftPreviewUrlRef = useRef<string | null>(null)
+  const cropFrameUrlRef = useRef<string | null>(null)
   const draftIsIdentity = isIdentityDraft(draftRecipe)
-  const draftDirty = detail === null ? false : RECIPE_CONTROLS.some(control => (
+  const draftCrop = normalizeCrop(draftRecipe?.crop)
+  const savedCrop = normalizeCrop(detail?.editRecipe?.crop)
+  const cropDirty = JSON.stringify(draftCrop) !== JSON.stringify(savedCrop)
+  const draftDirty = detail === null ? false : cropDirty || RECIPE_CONTROLS.some(control => (
     Number(draftRecipe?.[control.key] ?? 0) !== Number(detail?.editRecipe?.[control.key] ?? 0)
   ))
+  const frameAspect = cropFrame !== null
+    ? cropFrame.width / cropFrame.height
+    : (detail?.width && detail?.height ? detail.width / detail.height : 1)
+  const selectedRatio = CROP_RATIOS.find(item => item.id === cropRatio)
+  const cropAspect = selectedRatio?.value ? orientedAspect(selectedRatio.value, frameAspect, cropSwapped) : null
+  const cropBaseIdentity = isIdentityDraft({ ...draftRecipe, crop: { left: 0, top: 0, width: 1, height: 1 } })
+  const cropBaseKey = RECIPE_CONTROLS.map(control => Number(draftRecipe?.[control.key] ?? 0)).join('|')
 
   const needMoreRef = useRef(onNeedMore)
   useEffect(() => { needMoreRef.current = onNeedMore }, [onNeedMore])
@@ -855,6 +947,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setDetail(null)
     setShowEdited(false)
     setEditedFailed(false)
+    setCropEditing(false)
+    setCropFrame(null)
+    setCropEntry(null)
     loadDetail().catch(cause => setError(String(cause)))
   }, [photoId])
 
@@ -881,6 +976,71 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setDraftRecipe((current: any) => ({ ...current, [key]: value }))
   }
 
+  const enterCrop = () => {
+    setCropEntry({ ...normalizeCrop(draftRecipe.crop) })
+    setCropRatio('free')
+    setCropSwapped(false)
+    setCropFrame(null)
+    setCropEditing(true)
+  }
+
+  const finishCrop = () => {
+    setCropEditing(false)
+    setCropFrame(null)
+  }
+
+  const cancelCrop = () => {
+    if (cropEntry !== null) {
+      setDraftRecipe((current: any) => ({ ...current, crop: { ...cropEntry } }))
+    }
+    setCropEditing(false)
+    setCropFrame(null)
+    setCropRatio('free')
+    setCropSwapped(false)
+  }
+
+  const applyCropRatio = (id: string) => {
+    setCropRatio(id)
+    const preset = CROP_RATIOS.find(item => item.id === id)
+    if (!preset?.value) return
+    const aspect = orientedAspect(preset.value, frameAspect, cropSwapped)
+    setDraftRecipe((current: any) => ({ ...current, crop: fitAspect(current.crop, frameAspect, aspect) }))
+  }
+
+  const swapCropAspect = () => {
+    const next = !cropSwapped
+    setCropSwapped(next)
+    const preset = CROP_RATIOS.find(item => item.id === cropRatio)
+    if (!preset?.value) return
+    const aspect = orientedAspect(preset.value, frameAspect, next)
+    setDraftRecipe((current: any) => ({ ...current, crop: fitAspect(current.crop, frameAspect, aspect) }))
+  }
+
+  const resetCrop = () => {
+    setCropRatio('free')
+    setCropSwapped(false)
+    setDraftRecipe((current: any) => ({ ...current, crop: { left: 0, top: 0, width: 1, height: 1 } }))
+  }
+
+  const onCropFrameLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget
+    if (!image.naturalWidth || !image.naturalHeight) return
+    const nextFrame = { width: image.naturalWidth, height: image.naturalHeight }
+    setCropFrame(nextFrame)
+    if (!cropEditing) return
+    const nextAspect = selectedRatio?.value
+      ? orientedAspect(selectedRatio.value, nextFrame.width / nextFrame.height, cropSwapped)
+      : null
+    setDraftRecipe((current: any) => {
+      const crop = nextAspect === null
+        ? normalizeCrop(current.crop)
+        : fitAspect(current.crop, nextFrame.width / nextFrame.height, nextAspect)
+      return JSON.stringify(normalizeCrop(current.crop)) === JSON.stringify(crop)
+        ? current
+        : { ...current, crop }
+    })
+  }
+
   const saveRecipe = async () => {
     if (recipeBusy) return
     setRecipeBusy(true)
@@ -892,6 +1052,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       })
       await loadDetail()
       setShowEdited(true)
+      setCropEditing(false)
+      setCropFrame(null)
       await onScenesUpdated?.()
     } catch (cause) {
       setRecipeError(String(cause))
@@ -911,6 +1073,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       })
       await loadDetail()
       setShowEdited(true)
+      setCropEditing(false)
+      setCropFrame(null)
       await onScenesUpdated?.()
     } catch (cause) {
       setRecipeError(String(cause))
@@ -952,10 +1116,15 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
         URL.revokeObjectURL(draftPreviewUrlRef.current)
         draftPreviewUrlRef.current = null
       }
+      if (cropFrameUrlRef.current !== null) {
+        URL.revokeObjectURL(cropFrameUrlRef.current)
+        cropFrameUrlRef.current = null
+      }
     }
   }, [photoId])
 
   useEffect(() => {
+    if (cropEditing) return
     if (!detail || !draftDirty) {
       if (draftPreviewUrlRef.current !== null) {
         URL.revokeObjectURL(draftPreviewUrlRef.current)
@@ -1004,7 +1173,47 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       clearTimeout(timer)
       controller.abort()
     }
-  }, [draftRecipe, draftDirty, draftIsIdentity, detail?.editSignature, photoId])
+  }, [draftRecipe, draftDirty, draftIsIdentity, detail?.editSignature, photoId, cropEditing])
+
+  useEffect(() => {
+    if (!cropEditing || !detail || cropBaseIdentity) {
+      if (cropFrameUrlRef.current !== null) {
+        URL.revokeObjectURL(cropFrameUrlRef.current)
+        cropFrameUrlRef.current = null
+        setCropFrameUrl(null)
+      }
+      return
+    }
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/photo-picker/api/projects/${projectId}/photos/${photoId}/edit-preview`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ recipe: { ...draftRecipe, crop: { left: 0, top: 0, width: 1, height: 1 } } }),
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          const body = await response.json().catch(() => undefined)
+          throw new Error(body?.error?.message ?? response.statusText)
+        }
+        const blob = await response.blob()
+        if (controller.signal.aborted) return
+        const url = URL.createObjectURL(blob)
+        if (cropFrameUrlRef.current !== null) URL.revokeObjectURL(cropFrameUrlRef.current)
+        cropFrameUrlRef.current = url
+        setCropFrameUrl(url)
+      } catch (cause) {
+        if (!controller.signal.aborted && (cause as any)?.name !== 'AbortError') {
+          setRecipeError(String(cause))
+        }
+      }
+    }, 220)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [cropEditing, cropBaseIdentity, cropBaseKey, detail?.editSignature, photoId])
 
   if (error !== null) return <StateCard kind="error" title={t('errorTitle')} message={error} />
   if (detail === null) return <StateCard kind="loading" title={t('loading')} />
@@ -1018,6 +1227,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const imageSrc = showingEdited && draftPreviewing
     ? draftPreviewUrl
     : showingEdited ? editedUrl : `${detail.previewUrl}?v=${version}`
+  const cropSrc = cropFrameUrl ?? `${detail.previewUrl}?v=${version}`
+  const stageSrc = cropEditing ? cropSrc : imageSrc
   const sceneText = Array.isArray(detail.scenes)
     ? detail.scenes.map((scene: string) => sceneLabel(t, scene)).join(' · ')
     : ''
@@ -1038,12 +1249,21 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
         <div className="pp-stage">
           <div className="pp-stage-frame">
             <img
-              src={imageSrc}
+              src={stageSrc}
               alt={detail.relPath}
-              onError={() => { if (showingEdited) setEditedFailed(true) }}
+              onLoad={cropEditing ? onCropFrameLoad : undefined}
+              onError={() => { if (showingEdited && !cropEditing) setEditedFailed(true) }}
             />
-            {sceneText !== '' && <span className="pp-stage-scenes" title={sceneText}>{sceneText}</span>}
-            {showGrid && (
+            {!cropEditing && sceneText !== '' && <span className="pp-stage-scenes" title={sceneText}>{sceneText}</span>}
+            {cropEditing && (
+              <CropOverlay
+                crop={draftRecipe.crop}
+                frameAspect={frameAspect}
+                aspect={cropAspect}
+                onChange={(crop: any) => { setShowEdited(true); setDraftRecipe((current: any) => ({ ...current, crop })) }}
+              />
+            )}
+            {!cropEditing && showGrid && (
               <div className="pp-guide pp-guide-grid" aria-hidden="true">
                 <span className="v" style={{ left: '33.333%' }} />
                 <span className="v" style={{ left: '66.666%' }} />
@@ -1051,13 +1271,13 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
                 <span className="h" style={{ top: '66.666%' }} />
               </div>
             )}
-            {showCross && (
+            {!cropEditing && showCross && (
               <div className="pp-guide pp-guide-cross" aria-hidden="true">
                 <span className="v" style={{ left: '50%' }} />
                 <span className="h" style={{ top: '50%' }} />
               </div>
             )}
-            <div className="pp-stage-tools">
+            {!cropEditing && <div className="pp-stage-tools">
               <button
                 type="button"
                 className="pp-tool-btn"
@@ -1082,8 +1302,8 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
               >
                 {t('crossGuide')}
               </button>
-            </div>
-            {canCompare && (
+            </div>}
+            {!cropEditing && canCompare && (
               <button
                 type="button"
                 className="pp-photo-badge"
@@ -1163,11 +1383,36 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
                 )
               })}
             </div>
-            <div className="pp-muted">
-              {t('editRecipeCropReadonly')}：{draftRecipe.crop.width === 1 && draftRecipe.crop.height === 1
-                ? t('editCropNone')
-                : `${Math.round(draftRecipe.crop.width * 100)}% × ${Math.round(draftRecipe.crop.height * 100)}% · ${t('editCropLeft')} ${Math.round(draftRecipe.crop.left * 100)}% · ${t('editCropTop')} ${Math.round(draftRecipe.crop.top * 100)}%`}
+            <div className="pp-crop-summary">
+              <span className="pp-muted">
+                {t('editRecipeCropReadonly')}：{draftCrop.width === 1 && draftCrop.height === 1
+                  ? t('editCropNone')
+                  : `${Math.round(draftCrop.width * 100)}% × ${Math.round(draftCrop.height * 100)}% · ${t('editCropLeft')} ${Math.round(draftCrop.left * 100)}% · ${t('editCropTop')} ${Math.round(draftCrop.top * 100)}%`}
+              </span>
+              {!cropEditing && <Button size="sm" onClick={enterCrop}>{t('cropEdit')}</Button>}
             </div>
+            {cropEditing && (
+              <div className="pp-crop-toolbar">
+                <div className="pp-crop-ratios">
+                  {CROP_RATIOS.map(preset => (
+                    <button
+                      type="button"
+                      key={preset.id}
+                      className={`pp-crop-ratio${cropRatio === preset.id ? ' active' : ''}`}
+                      onClick={() => applyCropRatio(preset.id)}
+                    >
+                      {preset.id === 'free' ? t('cropFree') : cropRatioLabel(preset.id, frameAspect, cropSwapped)}
+                    </button>
+                  ))}
+                </div>
+                <div className="pp-crop-actions">
+                  <Button size="sm" disabled={cropRatio === 'free' || cropRatio === '1:1'} onClick={swapCropAspect}>{t('cropSwap')}</Button>
+                  <Button size="sm" variant="ghost" onClick={resetCrop}>{t('cropReset')}</Button>
+                  <Button size="sm" variant="ghost" onClick={cancelCrop}>{t('cropCancel')}</Button>
+                  <Button size="sm" onClick={finishCrop}>{t('cropFinish')}</Button>
+                </div>
+              </div>
+            )}
             {recipeError !== null && <StateCard kind="error" title={t('errorTitle')} message={recipeError} />}
             <div className="pp-recipe-actions">
               {detail.editSource === 'human' && (
