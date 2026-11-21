@@ -2748,20 +2748,32 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose, onDone }: any)
           ))}
         </div>
         <div className="pp-export-options">
-          <label className="pp-field">
-            <span>{t('exportLayout')}</span>
-            <select className="pp-select" value={layout} onChange={event => setLayout(event.target.value)}>
-              <option value="project">{t('exportLayoutProject')}</option>
-              <option value="flat">{t('exportLayoutFlat')}</option>
-            </select>
-          </label>
-          <label className="pp-field">
-            <span>{t('exportMode')}</span>
-            <select className="pp-select" value={mode} onChange={event => setMode(event.target.value)}>
-              <option value="hardlink">{t('exportHardlink')}</option>
-              <option value="copy">{t('exportCopy')}</option>
-            </select>
-          </label>
+          <fieldset className="pp-export-fieldset">
+            <legend>{t('exportLayout')}</legend>
+            <div className="pp-radio-group" role="radiogroup" aria-label={t('exportLayout')}>
+              <label className="pp-radio-option">
+                <input type="radio" name="global-export-layout" value="project" checked={layout === 'project'} onChange={() => setLayout('project')} />
+                {t('exportLayoutProject')}
+              </label>
+              <label className="pp-radio-option">
+                <input type="radio" name="global-export-layout" value="flat" checked={layout === 'flat'} onChange={() => setLayout('flat')} />
+                {t('exportLayoutFlat')}
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className="pp-export-fieldset">
+            <legend>{t('exportMode')}</legend>
+            <div className="pp-radio-group" role="radiogroup" aria-label={t('exportMode')}>
+              <label className="pp-radio-option">
+                <input type="radio" name="global-export-mode" value="hardlink" checked={mode === 'hardlink'} onChange={() => setMode('hardlink')} />
+                {t('exportHardlink')}
+              </label>
+              <label className="pp-radio-option">
+                <input type="radio" name="global-export-mode" value="copy" checked={mode === 'copy'} onChange={() => setMode('copy')} />
+                {t('exportCopy')}
+              </label>
+            </div>
+          </fieldset>
         </div>
         <div className="pp-row pp-export-edit">
           <label className="pp-chip" style={{ cursor: 'pointer', gap: 6 }}>

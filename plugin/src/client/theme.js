@@ -779,6 +779,13 @@ export const STYLES = `
 
 .pp-export-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: end; }
 .pp-export-options .pp-field { margin: 0; min-width: 0; }
+.pp-export-options > * { min-width: 0; }
+.pp-export-fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.pp-export-fieldset legend { padding: 0 0 5px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.pp-radio-option { display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); font-size: 12px; cursor: pointer; }
+.pp-radio-option:has(input:checked) { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, var(--dsw-alias-bg-layer-1)); }
+.pp-radio-option input { margin: 0; accent-color: var(--dsw-alias-brand-primary); }
 .pp-export-edit { margin-top: -2px; }
 .pp-run-tabs { display: inline-flex; gap: 3px; padding: 3px; margin-bottom: 3px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); }
 .pp-run-tabs button { border: 0; background: transparent; padding: 5px 10px; border-radius: 999px; color: var(--dsw-alias-label-secondary); font-size: 11px; cursor: pointer; }
