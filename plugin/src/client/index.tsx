@@ -2218,6 +2218,7 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
   const [aiRuns, setAiRuns] = useState<any[]>([])
   const [aiRunsTotal, setAiRunsTotal] = useState(0)
   const [aiRunsLoading, setAiRunsLoading] = useState(false)
+  const [runTab, setRunTab] = useState<'checkpoints' | 'ai'>('checkpoints')
   const [noticeDismissed, setNoticeDismissed] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -2473,8 +2474,8 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
 
       {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
 
-      {checkpoints.length > 0 && (
-        <details className="pp-card pp-history">
+      {(checkpoints.length > 0 || aiRuns.length > 0) && (
+        <details className="pp-card pp-history pp-run-history">
           <summary>
             <span>{t('history')}</span>
             <span className="pp-muted pp-history-count">
@@ -2482,65 +2483,63 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
             </span>
           </summary>
           <div className="pp-history-body">
-            {checkpoints.map(checkpoint => (
-              <div key={checkpoint.stage}>
-                <div className="pp-history-row">
-                  <strong>{stageLabel(t, checkpoint.stage)}</strong>
-                  <span className="pp-pill">{runStatusLabel(t, checkpoint.status)}</span>
-                  <span className="pp-muted">{summarizeStats(t, checkpoint.stats)}</span>
-                  <span className="pp-chip">¥{Number(checkpoint.costCny ?? 0).toFixed(4)}</span>
+            <div className="pp-run-tabs">
+              <button type="button" className={runTab === 'checkpoints' ? 'active' : ''} onClick={() => setRunTab('checkpoints')}>{t('runTabCheckpoints')}</button>
+              <button type="button" className={runTab === 'ai' ? 'active' : ''} onClick={() => setRunTab('ai')}>{t('runTabAi')}</button>
+            </div>
+            {runTab === 'checkpoints' ? (
+              checkpoints.length > 0 ? checkpoints.map(checkpoint => (
+                <div key={checkpoint.stage}>
+                  <div className="pp-history-row">
+                    <strong>{stageLabel(t, checkpoint.stage)}</strong>
+                    <span className="pp-pill">{runStatusLabel(t, checkpoint.status)}</span>
+                    <span className="pp-muted">{summarizeStats(t, checkpoint.stats)}</span>
+                    <span className="pp-chip">¥{Number(checkpoint.costCny ?? 0).toFixed(4)}</span>
+                  </div>
+                  {(checkpoint.sampleIds ?? []).length > 0 && (
+                    <details className="pp-history-samples">
+                      <summary>{t('samples')} · {checkpoint.sampleIds.length}</summary>
+                      <div>
+                        {checkpoint.sampleIds.map((pid: string) => (
+                          <img
+                            key={pid}
+                            src={`/photo-picker/media/thumb/${id}/${pid}?v=${version}`}
+                            alt={pid}
+                            loading="lazy"
+                          />
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </div>
-                {(checkpoint.sampleIds ?? []).length > 0 && (
-                  <details className="pp-history-samples">
-                    <summary>{t('samples')} · {checkpoint.sampleIds.length}</summary>
-                    <div>
-                      {checkpoint.sampleIds.map((pid: string) => (
-                        <img
-                          key={pid}
-                          src={`/photo-picker/media/thumb/${id}/${pid}?v=${version}`}
-                          alt={pid}
-                          loading="lazy"
-                        />
-                      ))}
+              )) : <div className="pp-muted">{t('runHistoryEmpty')}</div>
+            ) : aiRuns.length > 0 ? (
+              <>
+                {aiRuns.map(run => (
+                  <div className="pp-run-ai-row" key={run.id}>
+                    <div className="pp-history-row">
+                      <strong>{stageLabel(t, run.stage)}</strong>
+                      <span className="pp-pill">{runStatusLabel(t, run.status)}</span>
+                      <span className="pp-muted">{run.modelId ?? t('aiRunsLegacy')}</span>
+                      <span className="pp-muted">{run.startedAt ? new Date(run.startedAt).toLocaleString() : '—'}</span>
+                      <span className="pp-chip">¥{Number(run.costCny ?? 0).toFixed(4)}</span>
                     </div>
-                  </details>
+                    <div className="pp-run-meta">
+                      <span>{t('aiRunTokens')} {run.tokensIn ?? 0} / {run.tokensOut ?? 0}</span>
+                      <span>{t('aiRunCalls')} {run.callCount ?? 0}</span>
+                      <span>{t('aiRunDuration')} {run.durationMs === null || run.durationMs === undefined ? '—' : `${Math.round(run.durationMs / 1000)}${t('secondsShort')}`}</span>
+                      {run.errorCode !== null && run.errorCode !== undefined && <span>{run.errorCode}</span>}
+                      <span>{summarizeStats(t, run.stats)}</span>
+                    </div>
+                  </div>
+                ))}
+                {aiRuns.length < aiRunsTotal && (
+                  <Button size="sm" disabled={aiRunsLoading} onClick={() => { void loadMoreAiRuns() }}>
+                    {aiRunsLoading ? t('loading') : t('loadMore')}
+                  </Button>
                 )}
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
-
-      {aiRuns.length > 0 && (
-        <details className="pp-card pp-ai-runs">
-          <summary>
-            <span>{t('aiRuns')}</span>
-            <span className="pp-muted pp-history-count">{aiRuns.length} / {aiRunsTotal}</span>
-          </summary>
-          <div className="pp-ai-runs-body">
-            {aiRuns.map(run => (
-              <div className="pp-ai-run-row" key={run.id}>
-                <div className="pp-ai-run-main">
-                  <strong>{stageLabel(t, run.stage)}</strong>
-                  <span className="pp-pill">{runStatusLabel(t, run.status)}</span>
-                  <span className="pp-muted">{run.modelId ?? t('aiRunsLegacy')}</span>
-                  <span className="pp-muted">{run.startedAt ? new Date(run.startedAt).toLocaleString() : '—'}</span>
-                  <span className="pp-chip">¥{Number(run.costCny ?? 0).toFixed(4)}</span>
-                </div>
-                <div className="pp-ai-run-stats">
-                  <span>{t('aiRunTokens')} {run.tokensIn ?? 0} / {run.tokensOut ?? 0}</span>
-                  <span>{t('aiRunCalls')} {run.callCount ?? 0}</span>
-                  <span>{t('aiRunDuration')} {run.durationMs === null || run.durationMs === undefined ? '—' : `${Math.round(run.durationMs / 1000)}${t('secondsShort')}`}</span>
-                  {run.errorCode !== null && <span className="pp-muted">{run.errorCode}</span>}
-                  <span className="pp-muted">{summarizeStats(t, run.stats)}</span>
-                </div>
-              </div>
-            ))}
-            {aiRuns.length < aiRunsTotal && (
-              <Button size="sm" disabled={aiRunsLoading} onClick={() => { void loadMoreAiRuns() }}>
-                {aiRunsLoading ? t('loading') : t('loadMore')}
-              </Button>
-            )}
+              </>
+            ) : <div className="pp-muted">{t('aiRunsEmpty')}</div>}
           </div>
         </details>
       )}
@@ -2664,7 +2663,7 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }: any) {
             </label>
           ))}
         </div>
-        <div className="pp-row" style={{ alignItems: 'center' }}>
+        <div className="pp-export-options">
           <label className="pp-field">
             <span>{t('exportLayout')}</span>
             <select className="pp-select" value={layout} onChange={event => setLayout(event.target.value)}>
@@ -2679,6 +2678,8 @@ function GlobalExportDialog({ t, filters, selectedItems, onClose }: any) {
               <option value="copy">{t('exportCopy')}</option>
             </select>
           </label>
+        </div>
+        <div className="pp-row pp-export-edit">
           <label className="pp-chip" style={{ cursor: 'pointer', gap: 6 }}>
             <input type="checkbox" checked={applyEdits} onChange={event => { setApplyEdits(event.target.checked); setPreview(null) }} />
             {t('applyEdits')}
@@ -2810,9 +2811,9 @@ function GlobalPhotoWall({ t, projects }: any) {
                 {t('allProjects')}
               </label>
               {(projects ?? []).map((project: any) => (
-                <label key={project.id}>
+                <label key={project.id} title={project.name}>
                   <input type="checkbox" checked={projectIds.includes(project.id)} onChange={() => toggleProject(project.id)} />
-                  {project.name}
+                  <span className="pp-project-option">{project.name}</span>
                 </label>
               ))}
             </div>
