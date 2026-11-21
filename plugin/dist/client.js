@@ -139,6 +139,23 @@ var zh = {
   selectedCount: "\u5DF2\u9009",
   undoAction: "\u64A4\u9500",
   export: "\u5BFC\u51FA",
+  projectsTab: "\u9879\u76EE",
+  allPhotosTab: "\u5168\u90E8\u7167\u7247",
+  allProjects: "\u5168\u90E8\u9879\u76EE",
+  selectedProjects: "\u5DF2\u9009 {n} \u4E2A\u9879\u76EE",
+  verdictLabel: "\u5224\u5B9A",
+  sortProject: "\u6309\u9879\u76EE",
+  exportFiltered: "\u5BFC\u51FA\u7B5B\u9009\u7ED3\u679C",
+  exportSelected: "\u5BFC\u51FA\u9009\u4E2D {n} \u5F20",
+  globalExportTitle: "\u8DE8\u9879\u76EE\u5BFC\u51FA",
+  exportScopeSelected: "\u5C06\u5BFC\u51FA\u9009\u4E2D\u7684 {n} \u5F20\u7167\u7247\u3002",
+  exportScopeFiltered: "\u672A\u52FE\u9009\u7167\u7247\uFF1B\u5C06\u5BFC\u51FA\u5F53\u524D\u7B5B\u9009\u7ED3\u679C\u3002",
+  exportLayout: "\u76EE\u5F55\u7ED3\u6784",
+  exportLayoutProject: "\u6309\u9879\u76EE\u5206\u76EE\u5F55",
+  exportLayoutFlat: "\u5E73\u94FA",
+  globalWallEmpty: "\u6CA1\u6709\u7B26\u5408\u6761\u4EF6\u7684\u7167\u7247\uFF1B\u8C03\u6574\u9879\u76EE\u3001\u573A\u666F\u6216\u5224\u5B9A\u7B5B\u9009\u3002",
+  selectLoaded: "\u5168\u9009\u5F53\u524D",
+  applyEdits: "\u5E94\u7528\u4FEE\u56FE\u5EFA\u8BAE",
   exportTitle: "\u5BFC\u51FA\u7167\u7247",
   exportDest: "\u76EE\u6807\u76EE\u5F55",
   exportChoose: "\u9009\u62E9\u76EE\u5F55",
@@ -316,6 +333,11 @@ var zh = {
   languageAuto: "\u8DDF\u968F\u6D4F\u89C8\u5668",
   history: "\u8FD0\u884C\u8BB0\u5F55",
   samples: "\u62BD\u6837",
+  aiRuns: "AI \u8FD0\u884C\u8BB0\u5F55",
+  aiRunsLegacy: "\u65E7\u8BB0\u5F55\uFF08\u672A\u8BB0\u5F55\u6A21\u578B\uFF09",
+  aiRunTokens: "Token \u8F93\u5165/\u8F93\u51FA",
+  aiRunCalls: "\u8C03\u7528\u6B21\u6570",
+  aiRunDuration: "\u8017\u65F6",
   clearSelection: "\u6E05\u7A7A",
   reviewEmpty: "\u6CA1\u6709\u7B26\u5408\u5F53\u524D\u7B5B\u9009\u7684\u7167\u7247",
   namePlaceholder: "2024 \u5A5A\u793C",
@@ -425,6 +447,23 @@ var en = {
   selectedCount: "Selected",
   undoAction: "Undo",
   export: "Export",
+  projectsTab: "Projects",
+  allPhotosTab: "All photos",
+  allProjects: "All projects",
+  selectedProjects: "{n} projects selected",
+  verdictLabel: "Verdict",
+  sortProject: "By project",
+  exportFiltered: "Export filtered",
+  exportSelected: "Export selected ({n})",
+  globalExportTitle: "Cross-project export",
+  exportScopeSelected: "Exporting {n} selected photos.",
+  exportScopeFiltered: "No photos selected; exporting the current filter results.",
+  exportLayout: "Directory layout",
+  exportLayoutProject: "Project folders",
+  exportLayoutFlat: "Flat",
+  globalWallEmpty: "No photos match; adjust the project, scene, or verdict filters.",
+  selectLoaded: "Select loaded",
+  applyEdits: "Apply edit recipe",
   exportTitle: "Export photos",
   exportDest: "Destination",
   exportChoose: "Choose folder",
@@ -602,6 +641,11 @@ var en = {
   languageAuto: "Follow browser",
   history: "Run history",
   samples: "Samples",
+  aiRuns: "AI run history",
+  aiRunsLegacy: "Legacy run (no model recorded)",
+  aiRunTokens: "Tokens in/out",
+  aiRunCalls: "Calls",
+  aiRunDuration: "Duration",
   clearSelection: "Clear",
   reviewEmpty: "No photos match this filter",
   namePlaceholder: "2024 wedding",
@@ -1428,6 +1472,37 @@ var STYLES = `
 .pp-crop-ratios { scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
 .pp-crop-ratio { scroll-snap-align: start; }
 .pp-crop-ratio:last-child { margin-right: 1px; }
+
+
+.pp-view-tabs { display: flex; gap: 4px; margin: 10px 0 12px; padding: 3px; width: fit-content; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); }
+.pp-view-tabs button { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; cursor: pointer; color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.pp-view-tabs button.active { background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
+.pp-global-wall { display: grid; gap: 12px; }
+.pp-global-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pp-project-picker { position: relative; font-size: 12px; }
+.pp-project-picker > summary { cursor: pointer; padding: 5px 9px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); list-style: none; }
+.pp-project-picker > summary::-webkit-details-marker { display: none; }
+.pp-project-picker-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 220px; max-height: 280px; overflow: auto; padding: 7px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-overlay); box-shadow: 0 12px 30px rgba(0, 0, 0, .2); }
+.pp-project-picker-menu label { display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
+.pp-project-picker-menu label:hover { background: var(--dsw-alias-bg-layer-2); }
+.pp-project-picker-all { border-bottom: 1px solid var(--dsw-alias-border-l1); margin-bottom: 4px; font-weight: 600; }
+.pp-filter-chips { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.pp-filter-label { width: 42px; flex: none; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-filter-chip { border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); border-radius: 999px; padding: 4px 9px; font-size: 11px; cursor: pointer; }
+.pp-filter-chip:hover { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); }
+.pp-filter-chip.active { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 9%, var(--dsw-alias-bg-layer-1)); }
+.pp-global-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pp-global-project { position: absolute; right: 8px; top: 8px; max-width: calc(100% - 50px); padding: 2px 7px; border-radius: 999px; background: rgba(0, 0, 0, .62); color: #fff; font-size: 10px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; backdrop-filter: blur(4px); }
+.pp-global-lightbox { display: grid; gap: 10px; }
+.pp-global-lightbox img { display: block; max-width: 100%; max-height: 62vh; margin: 0 auto; object-fit: contain; border-radius: 8px; }
+.pp-ai-runs { padding: 0; }
+.pp-ai-runs > summary { padding: 10px 12px; cursor: pointer; }
+.pp-ai-runs-body { display: grid; gap: 7px; padding: 0 12px 12px; }
+.pp-ai-run-row { padding: 8px 9px; border-radius: 8px; background: var(--dsw-alias-bg-layer-2); }
+.pp-ai-run-main { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12px; }
+.pp-ai-run-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-export-projects { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.pp-export-summary { display: grid; gap: 4px; padding: 8px; border-radius: 8px; background: var(--dsw-alias-bg-layer-2); }
 
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
@@ -3268,6 +3343,9 @@ function ProjectDetail({ t, id, onBack }) {
   const [checkpoints, setCheckpoints] = (0, import_react2.useState)([]);
   const [pipelineEvent, setPipelineEvent] = (0, import_react2.useState)(null);
   const [singleStepsOpen, setSingleStepsOpen] = (0, import_react2.useState)(false);
+  const [aiRuns, setAiRuns] = (0, import_react2.useState)([]);
+  const [aiRunsTotal, setAiRunsTotal] = (0, import_react2.useState)(0);
+  const [aiRunsLoading, setAiRunsLoading] = (0, import_react2.useState)(false);
   const [noticeDismissed, setNoticeDismissed] = (0, import_react2.useState)(false);
   const [exporting, setExporting] = (0, import_react2.useState)(false);
   const [settingsOpen, setSettingsOpen] = (0, import_react2.useState)(false);
@@ -3275,14 +3353,17 @@ function ProjectDetail({ t, id, onBack }) {
   const [error, setError] = (0, import_react2.useState)(null);
   const refresh = async () => {
     try {
-      const [project, points, statistics] = await Promise.all([
+      const [project, points, statistics, runs] = await Promise.all([
         api(`/photo-picker/api/projects/${id}`),
         api(`/photo-picker/api/projects/${id}/checkpoints`),
-        api(`/photo-picker/api/projects/${id}/stats`)
+        api(`/photo-picker/api/projects/${id}/stats`),
+        api(`/photo-picker/api/projects/${id}/ai-runs?limit=20&offset=0`)
       ]);
       setDetail(project);
       setCheckpoints(points);
       setStats(statistics);
+      setAiRuns(runs.items ?? []);
+      setAiRunsTotal(Number(runs.total ?? 0));
       setError(null);
     } catch (cause) {
       setError(String(cause));
@@ -3323,6 +3404,19 @@ function ProjectDetail({ t, id, onBack }) {
       });
     } catch (cause) {
       setError(String(cause));
+    }
+  };
+  const loadMoreAiRuns = async () => {
+    if (aiRunsLoading || aiRuns.length >= aiRunsTotal) return;
+    setAiRunsLoading(true);
+    try {
+      const runs = await api(`/photo-picker/api/projects/${id}/ai-runs?limit=20&offset=${aiRuns.length}`);
+      setAiRuns((current) => [...current, ...runs.items ?? []]);
+      setAiRunsTotal(Number(runs.total ?? aiRunsTotal));
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setAiRunsLoading(false);
     }
   };
   if (detail === null) {
@@ -3397,12 +3491,235 @@ function ProjectDetail({ t, id, onBack }) {
       alt: pid,
       loading: "lazy"
     }
-  )))))))), /* @__PURE__ */ h2(ReviewSection, { t, projectId: id, version, onChanged: refresh, onFocusChange: setFocusMode }), /* @__PURE__ */ h2(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setNoticeDismissed(true) }, t("close"))));
+  )))))))), aiRuns.length > 0 && /* @__PURE__ */ h2("details", { className: "pp-card pp-ai-runs" }, /* @__PURE__ */ h2("summary", null, /* @__PURE__ */ h2("span", null, t("aiRuns")), /* @__PURE__ */ h2("span", { className: "pp-muted pp-history-count" }, aiRuns.length, " / ", aiRunsTotal)), /* @__PURE__ */ h2("div", { className: "pp-ai-runs-body" }, aiRuns.map((run2) => /* @__PURE__ */ h2("div", { className: "pp-ai-run-row", key: run2.id }, /* @__PURE__ */ h2("div", { className: "pp-ai-run-main" }, /* @__PURE__ */ h2("strong", null, stageLabel(t, run2.stage)), /* @__PURE__ */ h2("span", { className: "pp-pill" }, runStatusLabel(t, run2.status)), /* @__PURE__ */ h2("span", { className: "pp-muted" }, run2.modelId ?? t("aiRunsLegacy")), /* @__PURE__ */ h2("span", { className: "pp-muted" }, run2.startedAt ? new Date(run2.startedAt).toLocaleString() : "\u2014"), /* @__PURE__ */ h2("span", { className: "pp-chip" }, "\xA5", Number(run2.costCny ?? 0).toFixed(4))), /* @__PURE__ */ h2("div", { className: "pp-ai-run-stats" }, /* @__PURE__ */ h2("span", null, t("aiRunTokens"), " ", run2.tokensIn ?? 0, " / ", run2.tokensOut ?? 0), /* @__PURE__ */ h2("span", null, t("aiRunCalls"), " ", run2.callCount ?? 0), /* @__PURE__ */ h2("span", null, t("aiRunDuration"), " ", run2.durationMs === null || run2.durationMs === void 0 ? "\u2014" : `${Math.round(run2.durationMs / 1e3)}${t("secondsShort")}`), run2.errorCode !== null && /* @__PURE__ */ h2("span", { className: "pp-muted" }, run2.errorCode), /* @__PURE__ */ h2("span", { className: "pp-muted" }, summarizeStats(t, run2.stats))))), aiRuns.length < aiRunsTotal && /* @__PURE__ */ h2(Button, { size: "sm", disabled: aiRunsLoading, onClick: () => {
+    void loadMoreAiRuns();
+  } }, aiRunsLoading ? t("loading") : t("loadMore")))), /* @__PURE__ */ h2(ReviewSection, { t, projectId: id, version, onChanged: refresh, onFocusChange: setFocusMode }), /* @__PURE__ */ h2(CalibrationSection, { t, projectId: id, onApplied: refresh }), pipelineNotice !== null && !noticeDismissed && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": pipelineNotice.kind, "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, pipelineNotice.text), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setNoticeDismissed(true) }, t("close"))));
+}
+function GlobalExportDialog({ t, filters, selectedItems, onClose }) {
+  const [dest, setDest] = (0, import_react2.useState)("");
+  const [buckets, setBuckets] = (0, import_react2.useState)(["keep", "maybe"]);
+  const [layout, setLayout] = (0, import_react2.useState)("project");
+  const [mode, setMode] = (0, import_react2.useState)("hardlink");
+  const [applyEdits, setApplyEdits] = (0, import_react2.useState)(false);
+  const [preview, setPreview] = (0, import_react2.useState)(null);
+  const [result, setResult] = (0, import_react2.useState)(null);
+  const [busy, setBusy] = (0, import_react2.useState)(false);
+  const [choosing, setChoosing] = (0, import_react2.useState)(false);
+  const [error, setError] = (0, import_react2.useState)(null);
+  const selected = Array.isArray(selectedItems) ? selectedItems : [];
+  const choose = async () => {
+    if (choosing) return;
+    setChoosing(true);
+    try {
+      const picked = await api("/photo-picker/api/fs/choose", { method: "POST" });
+      setDest(picked.path);
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setChoosing(false);
+    }
+  };
+  const request = (action) => {
+    const body = {
+      dest,
+      buckets,
+      layout,
+      mode: applyEdits ? "copy" : mode,
+      edit: applyEdits ? "recipe" : "none"
+    };
+    if (selected.length > 0) {
+      body.items = selected.map((item) => ({ projectId: item.projectId, photoId: item.id }));
+    } else {
+      body.projectIds = filters.projectIds;
+      body.scenes = filters.scenes;
+      body.verdicts = filters.verdicts;
+    }
+    return api(`/photo-picker/api/photos/export/${action}`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+  };
+  const execute = async (action) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await request(action);
+      if (action === "preview") setPreview(data);
+      else {
+        setResult(data);
+        setPreview(null);
+      }
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const counts = preview?.counts ?? result?.counts ?? {};
+  const scope = selected.length > 0 ? t("exportScopeSelected").replace("{n}", String(selected.length)) : t("exportScopeFiltered");
+  return /* @__PURE__ */ h2(ModalShell, { title: t("globalExportTitle"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-form" }, /* @__PURE__ */ h2("div", { className: "pp-callout" }, scope), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("exportDest")), /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "stretch" } }, /* @__PURE__ */ h2(
+    "input",
+    {
+      value: dest,
+      onChange: (event) => setDest(event.target.value),
+      placeholder: t("destPlaceholder"),
+      className: "pp-input",
+      style: { flex: 1 }
+    }
+  ), /* @__PURE__ */ h2(Button, { disabled: choosing, onClick: choose }, choosing ? t("choosingFolder") : t("exportChoose")))), /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportBuckets")), ["keep", "maybe", "reject"].map((bucket) => /* @__PURE__ */ h2("label", { key: bucket, className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h2(
+    "input",
+    {
+      type: "checkbox",
+      disabled: selected.length > 0,
+      checked: buckets.includes(bucket),
+      onChange: () => setBuckets((current) => current.includes(bucket) ? current.filter((item) => item !== bucket) : [...current, bucket])
+    }
+  ), verdictLabel(t, bucket)))), /* @__PURE__ */ h2("div", { className: "pp-row", style: { alignItems: "center" } }, /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("exportLayout")), /* @__PURE__ */ h2("select", { className: "pp-select", value: layout, onChange: (event) => setLayout(event.target.value) }, /* @__PURE__ */ h2("option", { value: "project" }, t("exportLayoutProject")), /* @__PURE__ */ h2("option", { value: "flat" }, t("exportLayoutFlat")))), /* @__PURE__ */ h2("label", { className: "pp-field" }, /* @__PURE__ */ h2("span", null, t("exportMode")), /* @__PURE__ */ h2("select", { className: "pp-select", value: mode, onChange: (event) => setMode(event.target.value) }, /* @__PURE__ */ h2("option", { value: "hardlink" }, t("exportHardlink")), /* @__PURE__ */ h2("option", { value: "copy" }, t("exportCopy")))), /* @__PURE__ */ h2("label", { className: "pp-chip", style: { cursor: "pointer", gap: 6 } }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: applyEdits, onChange: (event) => {
+    setApplyEdits(event.target.checked);
+    setPreview(null);
+  } }), t("applyEdits"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), preview !== null && /* @__PURE__ */ h2("div", { className: "pp-export-summary" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { flexWrap: "wrap" } }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("exportPreview"), " ", preview.total ?? 0), Object.entries(counts).map(([bucket, count]) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: bucket }, verdictLabel(t, bucket), " ", String(count))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportSkipped"), " ", preview.skippedExisting ?? 0), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("exportConflict"), " ", preview.conflictCount ?? 0), preview.editedCount > 0 && /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("applyEdits"), " ", preview.editedCount)), Object.keys(preview.byProject ?? {}).length > 0 && /* @__PURE__ */ h2("div", { className: "pp-export-projects" }, Object.values(preview.byProject ?? {}).map((entry) => /* @__PURE__ */ h2("span", { className: "pp-chip", key: entry.projectId }, entry.projectName, " ", entry.total)))), result !== null && /* @__PURE__ */ h2("div", { className: "pp-callout" }, t("exportResult"), " ", result.total ?? 0, " \xB7 ", t("manifest"), " ", result.manifestPath), /* @__PURE__ */ h2("div", { className: "pp-actions" }, /* @__PURE__ */ h2(Button, { disabled: busy || dest.trim() === "", onClick: () => {
+    void execute("preview");
+  } }, busy ? t("loading") : t("exportPreview")), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy || dest.trim() === "", onClick: () => {
+    void execute("run");
+  } }, t("exportRun")))));
+}
+function GlobalPhotoWall({ t, projects }) {
+  const [projectIds, setProjectIds] = (0, import_react2.useState)([]);
+  const [scenes, setScenes] = (0, import_react2.useState)([]);
+  const [verdicts, setVerdicts] = (0, import_react2.useState)([]);
+  const [sort, setSort] = (0, import_react2.useState)("score");
+  const [items, setItems] = (0, import_react2.useState)([]);
+  const [total, setTotal] = (0, import_react2.useState)(0);
+  const [loading, setLoading] = (0, import_react2.useState)(true);
+  const [loadingMore, setLoadingMore] = (0, import_react2.useState)(false);
+  const [warnings, setWarnings] = (0, import_react2.useState)([]);
+  const [error, setError] = (0, import_react2.useState)(null);
+  const [selected, setSelected] = (0, import_react2.useState)([]);
+  const [active, setActive] = (0, import_react2.useState)(null);
+  const [exporting, setExporting] = (0, import_react2.useState)(false);
+  const requestRef = (0, import_react2.useRef)(0);
+  const filterKey = JSON.stringify({ projectIds, scenes, verdicts, sort });
+  const fetchPage = async (offset) => {
+    const params = new URLSearchParams({ limit: "120", offset: String(offset), sort });
+    if (projectIds.length > 0) params.set("projects", projectIds.join(","));
+    if (scenes.length > 0) params.set("scenes", scenes.join(","));
+    if (verdicts.length > 0) params.set("verdicts", verdicts.join(","));
+    return api(`/photo-picker/api/photos?${params.toString()}`);
+  };
+  const load = async (offset, append) => {
+    const generation = ++requestRef.current;
+    if (append) setLoadingMore(true);
+    else {
+      setLoading(true);
+      setSelected([]);
+      setActive(null);
+    }
+    try {
+      const data = await fetchPage(offset);
+      if (generation !== requestRef.current) return;
+      setItems((current) => {
+        const next = append ? [...current, ...data.items ?? []] : data.items ?? [];
+        const seen = /* @__PURE__ */ new Set();
+        return next.filter((item) => {
+          const key = `${item.projectId}:${item.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      });
+      setTotal(Number(data.total ?? 0));
+      setWarnings(Array.isArray(data.warnings) ? data.warnings : []);
+      setError(null);
+    } catch (cause) {
+      if (generation === requestRef.current) setError(String(cause));
+    } finally {
+      if (generation === requestRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    }
+  };
+  (0, import_react2.useEffect)(() => {
+    void load(0, false);
+  }, [filterKey]);
+  const keyOf = (item) => `${item.projectId}:${item.id}`;
+  const selectedItems = items.filter((item) => selected.includes(keyOf(item)));
+  const toggleSelected = (item) => {
+    const key = keyOf(item);
+    setSelected((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key]);
+  };
+  const toggleProject = (id) => setProjectIds((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  const toggleScene = (id) => setScenes((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  const toggleVerdict = (id) => setVerdicts((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  const projectSummary = projectIds.length === 0 ? t("allProjects") : t("selectedProjects").replace("{n}", String(projectIds.length));
+  return /* @__PURE__ */ h2("section", { className: "pp-global-wall" }, /* @__PURE__ */ h2("div", { className: "pp-global-toolbar" }, /* @__PURE__ */ h2("div", { className: "pp-toolbar-group" }, /* @__PURE__ */ h2("span", { className: "pp-section-title" }, t("allPhotosTab")), /* @__PURE__ */ h2("details", { className: "pp-project-picker" }, /* @__PURE__ */ h2("summary", null, projectSummary), /* @__PURE__ */ h2("div", { className: "pp-project-picker-menu" }, /* @__PURE__ */ h2("label", { className: "pp-project-picker-all" }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: projectIds.length === 0, onChange: () => setProjectIds([]) }), t("allProjects")), (projects ?? []).map((project) => /* @__PURE__ */ h2("label", { key: project.id }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: projectIds.includes(project.id), onChange: () => toggleProject(project.id) }), project.name)))), /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sortLabel")), /* @__PURE__ */ h2("select", { className: "pp-select pp-select-sm", value: sort, onChange: (event) => setSort(event.target.value) }, /* @__PURE__ */ h2("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h2("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h2("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h2("option", { value: "project" }, t("sortProject")))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, total, " ", t("photos"))), /* @__PURE__ */ h2("div", { className: "pp-toolbar-group pp-toolbar-end" }, /* @__PURE__ */ h2(Button, { disabled: total === 0, onClick: () => setExporting(true) }, selected.length > 0 ? t("exportSelected").replace("{n}", String(selected.length)) : t("exportFiltered")))), /* @__PURE__ */ h2("div", { className: "pp-filter-chips" }, /* @__PURE__ */ h2("span", { className: "pp-filter-label" }, t("sceneFilter")), /* @__PURE__ */ h2("button", { type: "button", className: `pp-filter-chip${scenes.length === 0 ? " active" : ""}`, onClick: () => setScenes([]) }, t("filterAll")), Object.keys(SCENE_KEYS).map((scene) => /* @__PURE__ */ h2(
+    "button",
+    {
+      type: "button",
+      key: scene,
+      className: `pp-filter-chip${scenes.includes(scene) ? " active" : ""}`,
+      onClick: () => toggleScene(scene)
+    },
+    sceneLabel(t, scene)
+  ))), /* @__PURE__ */ h2("div", { className: "pp-filter-chips" }, /* @__PURE__ */ h2("span", { className: "pp-filter-label" }, t("verdictLabel")), /* @__PURE__ */ h2("button", { type: "button", className: `pp-filter-chip${verdicts.length === 0 ? " active" : ""}`, onClick: () => setVerdicts([]) }, t("filterAll")), ["keep", "maybe", "reject"].map((verdict) => /* @__PURE__ */ h2(
+    "button",
+    {
+      type: "button",
+      key: verdict,
+      className: `pp-filter-chip${verdicts.includes(verdict) ? " active" : ""}`,
+      onClick: () => toggleVerdict(verdict)
+    },
+    verdictLabel(t, verdict)
+  ))), warnings.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-callout" }, warnings.map((warning) => `${warning.projectId}: ${warning.message}`).join(" \xB7 ")), error !== null && /* @__PURE__ */ h2("div", { className: "pp-error" }, error, " ", /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => {
+    void load(0, false);
+  } }, t("retry"))), loading && items.length === 0 ? /* @__PURE__ */ h2(StateCard, { kind: "loading", title: t("loading") }) : items.length === 0 ? /* @__PURE__ */ h2(StateCard, { kind: "empty", title: t("globalWallEmpty"), action: /* @__PURE__ */ h2(Button, { onClick: () => {
+    setProjectIds([]);
+    setScenes([]);
+    setVerdicts([]);
+  } }, t("clearFilters")) }) : /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("div", { className: "pp-global-grid" }, items.map((item) => {
+    const key = keyOf(item);
+    const sceneText = (item.scenes ?? []).map((scene) => sceneLabel(t, scene)).join(" \xB7 ");
+    return /* @__PURE__ */ h2("div", { className: "pp-tile-wrap", key }, /* @__PURE__ */ h2(
+      "button",
+      {
+        type: "button",
+        className: `pp-tile${selected.includes(key) ? " selected" : ""}`,
+        title: `${item.projectName} \xB7 ${item.relPath}`,
+        onClick: () => setActive(item)
+      },
+      /* @__PURE__ */ h2("img", { src: `${item.thumbUrl}?v=${item.projectUpdatedAt ?? 0}`, alt: item.relPath, loading: "lazy" }),
+      /* @__PURE__ */ h2("span", { className: "pp-tile-bar", style: { background: VERDICT_COLORS[item.verdict] ?? "var(--dsw-alias-border-l2)" } }),
+      item.score !== null && /* @__PURE__ */ h2("span", { className: "pp-tile-score" }, Number(item.score).toFixed(1)),
+      /* @__PURE__ */ h2("span", { className: "pp-global-project" }, item.projectName),
+      sceneText !== "" && /* @__PURE__ */ h2("span", { className: "pp-tile-scenes" }, sceneText)
+    ), /* @__PURE__ */ h2(
+      "input",
+      {
+        className: "pp-check",
+        type: "checkbox",
+        checked: selected.includes(key),
+        onChange: () => toggleSelected(item),
+        "aria-label": `${item.projectName} ${item.relPath}`
+      }
+    ));
+  })), /* @__PURE__ */ h2("div", { className: "pp-row", style: { justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, selected.length > 0 ? `${t("selectedCount")} ${selected.length}` : ""), /* @__PURE__ */ h2("div", { className: "pp-row" }, selected.length > 0 && /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection")), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setSelected(items.map(keyOf)) }, t("selectLoaded")), items.length < total && /* @__PURE__ */ h2(Button, { size: "sm", disabled: loadingMore, onClick: () => {
+    void load(items.length, true);
+  } }, loadingMore ? t("loading") : t("loadMore"))))), active !== null && /* @__PURE__ */ h2(ModalShell, { title: active.projectName, closeLabel: t("close"), onClose: () => setActive(null) }, /* @__PURE__ */ h2("div", { className: "pp-global-lightbox" }, /* @__PURE__ */ h2("img", { src: `${active.previewUrl}?v=${active.projectUpdatedAt ?? 0}`, alt: active.relPath }), /* @__PURE__ */ h2("div", { className: "pp-muted" }, active.relPath), /* @__PURE__ */ h2("div", { className: "pp-row", style: { flexWrap: "wrap" } }, /* @__PURE__ */ h2("span", { className: "pp-chip" }, active.projectName), /* @__PURE__ */ h2("span", { className: "pp-pill" }, verdictLabel(t, active.verdict)), active.score !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, t("scoreLabel"), " ", Number(active.score).toFixed(1)), (active.scenes ?? []).map((scene) => /* @__PURE__ */ h2("span", { key: scene, className: "pp-chip" }, sceneLabel(t, scene)))))), exporting && /* @__PURE__ */ h2(
+    GlobalExportDialog,
+    {
+      t,
+      filters: { projectIds, scenes, verdicts },
+      selectedItems,
+      onClose: () => setExporting(false)
+    }
+  ));
 }
 function Workbench({ t }) {
   (0, import_react2.useSyncExternalStore)(subscribeLanguage, getLanguage);
   const [projects, setProjects] = (0, import_react2.useState)(null);
   const [selected, setSelected] = (0, import_react2.useState)(null);
+  const [view, setView] = (0, import_react2.useState)("projects");
   const [creating, setCreating] = (0, import_react2.useState)(false);
   const [deleting, setDeleting] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
@@ -3441,10 +3758,18 @@ function Workbench({ t }) {
       onClick: () => setLanguage(getLanguage() === "zh" ? "en" : "zh")
     },
     getLanguage() === "zh" ? "EN" : "\u4E2D"
-  ), /* @__PURE__ */ h2(Button, { variant: "primary", onClick: () => {
+  ), view === "projects" && /* @__PURE__ */ h2(Button, { variant: "primary", onClick: () => {
     setCreating(true);
     setSelected(null);
-  } }, t("newProject")))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), selected !== null ? /* @__PURE__ */ h2(ProjectDetail, { t, id: selected, onBack: () => setSelected(null) }) : creating ? /* @__PURE__ */ h2(
+  } }, t("newProject")))), /* @__PURE__ */ h2("div", { className: "pp-view-tabs" }, /* @__PURE__ */ h2("button", { type: "button", className: view === "projects" && selected === null ? "active" : "", onClick: () => {
+    setView("projects");
+    setSelected(null);
+    setCreating(false);
+  } }, t("projectsTab")), /* @__PURE__ */ h2("button", { type: "button", className: view === "global" ? "active" : "", onClick: () => {
+    setView("global");
+    setSelected(null);
+    setCreating(false);
+  } }, t("allPhotosTab"))), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), selected !== null ? /* @__PURE__ */ h2(ProjectDetail, { t, id: selected, onBack: () => setSelected(null) }) : view === "global" ? /* @__PURE__ */ h2(GlobalPhotoWall, { t, projects: list }) : creating ? /* @__PURE__ */ h2(
     CreateForm,
     {
       t,

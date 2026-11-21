@@ -30,17 +30,27 @@ export async function mapLimit(items, limit, fn) {
   return results
 }
 
-function startStageRun(db, projectId, stage) {
+function startStageRun(db, projectId, stage, project) {
   const id = nanoid()
-  db.prepare(`INSERT INTO stage_runs (id, project_id, stage, status, started_at)
-              VALUES (?, ?, ?, 'running', ?)`).run(id, projectId, stage, Date.now())
+  db.prepare(`INSERT INTO stage_runs (
+      id, project_id, stage, status, model_route, model_id, prompt_version, started_at
+    ) VALUES (?, ?, ?, 'running', ?, ?, ?, ?)`).run(
+    id, projectId, stage, project?.modelRoute ?? null, project?.modelId ?? null,
+    PROMPT_VERSION, Date.now(),
+  )
   return id
 }
 
-function finishStageRun(db, projectId, stageRunId, { status, stats, costCny, cursor, projectStatus }) {
+function finishStageRun(db, projectId, stageRunId, {
+  status, stats, costCny, cursor, projectStatus, tokensIn = 0, tokensOut = 0, callCount = 0, errorCode = null,
+}) {
   const finishedAt = Date.now()
-  db.prepare(`UPDATE stage_runs SET status = ?, cursor = ?, stats_json = ?, cost_cny = ?, finished_at = ?
-              WHERE id = ?`).run(status, cursor ?? null, JSON.stringify(stats), costCny, finishedAt, stageRunId)
+  db.prepare(`UPDATE stage_runs SET status = ?, cursor = ?, stats_json = ?, cost_cny = ?, finished_at = ?,
+              tokens_in = ?, tokens_out = ?, call_count = ?, error_code = ?
+              WHERE id = ?`).run(
+    status, cursor ?? null, JSON.stringify(stats), costCny, finishedAt,
+    tokensIn, tokensOut, callCount, errorCode, stageRunId,
+  )
   db.prepare('UPDATE projects SET status = ?, updated_at = ? WHERE id = ?')
     .run(projectStatus, finishedAt, projectId)
 }
@@ -104,7 +114,7 @@ export async function runGridStage({
   thumbFor, onEvent = () => {}, signal, now = () => new Date(),
   budgetCny = project.budgetCny,
 }) {
-  const stageRunId = startStageRun(db, projectId, 'grid')
+  const stageRunId = startStageRun(db, projectId, 'grid', project)
   const startedAt = Date.now()
   const peak = isPeakHour(now())
   const cols = project.gridCols ?? 4
@@ -119,6 +129,8 @@ export async function runGridStage({
   const packed = packCells(candidates, { cols, rows })
 
   let spentCny = 0
+  let totalUsage = { inputTokens: 0, outputTokens: 0 }
+  let totalCalls = 0
   let selected = 0
   let rejected = 0
   let failed = 0
@@ -157,6 +169,8 @@ export async function runGridStage({
         system: GRID_SYSTEM, prompt, image, reasoningEffort: 'off',
         maxTokens: 256, temperature: 0, signal,
       })
+      totalUsage = sumUsage(totalUsage, first.usage)
+      totalCalls += first.attempts ?? 1
       usage = sumUsage(usage, first.usage)
       cost += usageCost(first.usage, peak)
       rawReply = first.text
@@ -167,6 +181,8 @@ export async function runGridStage({
           system: GRID_SYSTEM, prompt: `${prompt}\n\n${GRID_RETRY_USER}`, image,
           reasoningEffort: 'off', maxTokens: 256, temperature: 0, signal,
         })
+        totalUsage = sumUsage(totalUsage, retry.usage)
+        totalCalls += retry.attempts ?? 1
         usage = sumUsage(usage, retry.usage)
         cost += usageCost(retry.usage, peak)
         rawReply = retry.text
@@ -233,6 +249,9 @@ export async function runGridStage({
     stats,
     costCny: round6(spentCny),
     cursor,
+    tokensIn: totalUsage.inputTokens,
+    tokensOut: totalUsage.outputTokens,
+    callCount: totalCalls,
     projectStatus: stopped ? 'paused' : 'gridded',
   })
   return { paused: stopped, spentCny: round6(spentCny), selected, rejected, failed, grids: packed.length, errors }
@@ -246,7 +265,7 @@ export async function runRankStage({
   db, projectId, project, llm, onEvent = () => {}, signal,
   now = () => new Date(), budgetCny = project.budgetCny,
 }) {
-  const stageRunId = startStageRun(db, projectId, 'rank')
+  const stageRunId = startStageRun(db, projectId, 'rank', project)
   const startedAt = Date.now()
   const peak = isPeakHour(now())
   const concurrency = Math.max(1, project.concurrency ?? 8)
@@ -262,6 +281,8 @@ export async function runRankStage({
   `).all(projectId)
 
   let spentCny = 0
+  let totalUsage = { inputTokens: 0, outputTokens: 0 }
+  let totalCalls = 0
   let kept = 0
   let done = 0
   let paused = false
@@ -277,6 +298,7 @@ export async function runRankStage({
 
     let usage = { inputTokens: 0, outputTokens: 0 }
     let cost = 0
+    let calls = 0
     try {
       const chunks = chunk(members, 6)
       const chunkWinners = []
@@ -285,6 +307,7 @@ export async function runRankStage({
         const ranked = await rankOnce({ llm, project, items, signal })
         usage = sumUsage(usage, ranked.usage)
         cost += ranked.cost
+        calls += ranked.attempts
         chunkWinners.push(ranked.members[0])
         firstOrder ??= ranked.members
       }
@@ -294,6 +317,7 @@ export async function runRankStage({
         const final = await rankOnce({ llm, project, items: chunkWinners, signal })
         usage = sumUsage(usage, final.usage)
         cost += final.cost
+        calls += final.attempts
         winner = final.members[0]
         order = [...final.members, ...firstOrder.filter(member => !final.members.includes(member))]
       }
@@ -317,6 +341,8 @@ export async function runRankStage({
       if (signal?.aborted === true) return
       recordError(db, projectId, 'rank', error?.code ?? 'RANK_FAILED', String(error?.message ?? error))
     }
+    totalUsage = sumUsage(totalUsage, usage)
+    totalCalls += calls
     done += 1
     onEvent({ stage: 'rank', done, total: groups.length, kept, costCny: round6(spentCny) })
     if (budgetCny !== undefined && budgetCny > 0 && spentCny >= budgetCny) paused = true
@@ -328,6 +354,9 @@ export async function runRankStage({
     status: stopped ? 'paused' : 'done',
     stats,
     costCny: round6(spentCny),
+    tokensIn: totalUsage.inputTokens,
+    tokensOut: totalUsage.outputTokens,
+    callCount: totalCalls,
     projectStatus: stopped ? 'paused' : 'scored',
   })
   return { paused: stopped, spentCny: round6(spentCny), groups: groups.length, kept }
@@ -347,6 +376,7 @@ async function rankOnce({ llm, project, items, signal }) {
     parsed,
     usage: response.usage,
     cost: costOfUsage(response.usage, { peak: isPeakHour(new Date()) }),
+    attempts: response.attempts ?? 1,
   }
 }
 
@@ -358,7 +388,7 @@ export async function runScoreStage({
   db, projectId, project, llm, attachments, loadPhoto,
   onEvent = () => {}, signal, now = () => new Date(), budgetCny = project.budgetCny,
 }) {
-  const stageRunId = startStageRun(db, projectId, 'score')
+  const stageRunId = startStageRun(db, projectId, 'score', project)
   const startedAt = Date.now()
   const peak = isPeakHour(now())
   const concurrency = Math.max(1, project.concurrency ?? 8)
@@ -388,6 +418,8 @@ export async function runScoreStage({
   `).all(projectId, project.modelId, PROMPT_VERSION, project.modelId, PROMPT_VERSION)
 
   let spentCny = 0
+  let totalUsage = { inputTokens: 0, outputTokens: 0 }
+  let totalCalls = 0
   let scored = 0
   let failed = 0
   let done = 0
@@ -409,6 +441,8 @@ export async function runScoreStage({
         llm, provider: project.modelRoute, model: project.modelId,
         system: SCORE_SYSTEM, prompt, image, reasoningEffort: 'off', maxTokens: 1200, temperature: 0, signal,
       })
+      totalUsage = sumUsage(totalUsage, first.usage)
+      totalCalls += first.attempts ?? 1
       usage = sumUsage(usage, first.usage)
       cost += usageCost(first.usage, peak)
       rawReply = first.text
@@ -421,6 +455,8 @@ export async function runScoreStage({
           system: SCORE_SYSTEM, prompt: `${prompt}\n\n上一次返回不是合法 JSON，请只返回合法 JSON。`,
           image, reasoningEffort: 'off', maxTokens: 1200, temperature: 0, signal,
         })
+        totalUsage = sumUsage(totalUsage, retry.usage)
+        totalCalls += retry.attempts ?? 1
         usage = sumUsage(usage, retry.usage)
         cost += usageCost(retry.usage, peak)
         rawReply = retry.text
@@ -473,6 +509,9 @@ export async function runScoreStage({
     status: stopped ? 'paused' : 'done',
     stats,
     costCny: round6(spentCny),
+    tokensIn: totalUsage.inputTokens,
+    tokensOut: totalUsage.outputTokens,
+    callCount: totalCalls,
     projectStatus: stopped ? 'paused' : 'scored',
   })
   return { paused: stopped, spentCny: round6(spentCny), scored, failed }

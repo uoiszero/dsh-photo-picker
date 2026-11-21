@@ -2215,6 +2215,9 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
   const [checkpoints, setCheckpoints] = useState<any[]>([])
   const [pipelineEvent, setPipelineEvent] = useState<any>(null)
   const [singleStepsOpen, setSingleStepsOpen] = useState(false)
+  const [aiRuns, setAiRuns] = useState<any[]>([])
+  const [aiRunsTotal, setAiRunsTotal] = useState(0)
+  const [aiRunsLoading, setAiRunsLoading] = useState(false)
   const [noticeDismissed, setNoticeDismissed] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -2223,14 +2226,17 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
 
   const refresh = async () => {
     try {
-      const [project, points, statistics] = await Promise.all([
+      const [project, points, statistics, runs] = await Promise.all([
         api(`/photo-picker/api/projects/${id}`),
         api(`/photo-picker/api/projects/${id}/checkpoints`),
         api(`/photo-picker/api/projects/${id}/stats`),
+        api(`/photo-picker/api/projects/${id}/ai-runs?limit=20&offset=0`),
       ])
       setDetail(project)
       setCheckpoints(points)
       setStats(statistics)
+      setAiRuns(runs.items ?? [])
+      setAiRunsTotal(Number(runs.total ?? 0))
       setError(null)
     } catch (cause) {
       setError(String(cause))
@@ -2276,6 +2282,20 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
       })
     } catch (cause) {
       setError(String(cause))
+    }
+  }
+
+  const loadMoreAiRuns = async () => {
+    if (aiRunsLoading || aiRuns.length >= aiRunsTotal) return
+    setAiRunsLoading(true)
+    try {
+      const runs = await api(`/photo-picker/api/projects/${id}/ai-runs?limit=20&offset=${aiRuns.length}`)
+      setAiRuns(current => [...current, ...(runs.items ?? [])])
+      setAiRunsTotal(Number(runs.total ?? aiRunsTotal))
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setAiRunsLoading(false)
     }
   }
 
@@ -2491,6 +2511,40 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
         </details>
       )}
 
+      {aiRuns.length > 0 && (
+        <details className="pp-card pp-ai-runs">
+          <summary>
+            <span>{t('aiRuns')}</span>
+            <span className="pp-muted pp-history-count">{aiRuns.length} / {aiRunsTotal}</span>
+          </summary>
+          <div className="pp-ai-runs-body">
+            {aiRuns.map(run => (
+              <div className="pp-ai-run-row" key={run.id}>
+                <div className="pp-ai-run-main">
+                  <strong>{stageLabel(t, run.stage)}</strong>
+                  <span className="pp-pill">{runStatusLabel(t, run.status)}</span>
+                  <span className="pp-muted">{run.modelId ?? t('aiRunsLegacy')}</span>
+                  <span className="pp-muted">{run.startedAt ? new Date(run.startedAt).toLocaleString() : '—'}</span>
+                  <span className="pp-chip">¥{Number(run.costCny ?? 0).toFixed(4)}</span>
+                </div>
+                <div className="pp-ai-run-stats">
+                  <span>{t('aiRunTokens')} {run.tokensIn ?? 0} / {run.tokensOut ?? 0}</span>
+                  <span>{t('aiRunCalls')} {run.callCount ?? 0}</span>
+                  <span>{t('aiRunDuration')} {run.durationMs === null || run.durationMs === undefined ? '—' : `${Math.round(run.durationMs / 1000)}${t('secondsShort')}`}</span>
+                  {run.errorCode !== null && <span className="pp-muted">{run.errorCode}</span>}
+                  <span className="pp-muted">{summarizeStats(t, run.stats)}</span>
+                </div>
+              </div>
+            ))}
+            {aiRuns.length < aiRunsTotal && (
+              <Button size="sm" disabled={aiRunsLoading} onClick={() => { void loadMoreAiRuns() }}>
+                {aiRunsLoading ? t('loading') : t('loadMore')}
+              </Button>
+            )}
+          </div>
+        </details>
+      )}
+
       <ReviewSection t={t} projectId={id} version={version} onChanged={refresh} onFocusChange={setFocusMode} />
       <CalibrationSection t={t} projectId={id} onApplied={refresh} />
 
@@ -2506,11 +2560,399 @@ function ProjectDetail({ t, id, onBack }: { t: (key: string) => string; id: stri
   )
 }
 
+
+function GlobalExportDialog({ t, filters, selectedItems, onClose }: any) {
+  const [dest, setDest] = useState('')
+  const [buckets, setBuckets] = useState(['keep', 'maybe'])
+  const [layout, setLayout] = useState('project')
+  const [mode, setMode] = useState('hardlink')
+  const [applyEdits, setApplyEdits] = useState(false)
+  const [preview, setPreview] = useState<any>(null)
+  const [result, setResult] = useState<any>(null)
+  const [busy, setBusy] = useState(false)
+  const [choosing, setChoosing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const selected = Array.isArray(selectedItems) ? selectedItems : []
+
+  const choose = async () => {
+    if (choosing) return
+    setChoosing(true)
+    try {
+      const picked = await api('/photo-picker/api/fs/choose', { method: 'POST' })
+      setDest(picked.path)
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setChoosing(false)
+    }
+  }
+
+  const request = (action: 'preview' | 'run') => {
+    const body: any = {
+      dest,
+      buckets,
+      layout,
+      mode: applyEdits ? 'copy' : mode,
+      edit: applyEdits ? 'recipe' : 'none',
+    }
+    if (selected.length > 0) {
+      body.items = selected.map((item: any) => ({ projectId: item.projectId, photoId: item.id }))
+    } else {
+      body.projectIds = filters.projectIds
+      body.scenes = filters.scenes
+      body.verdicts = filters.verdicts
+    }
+    return api(`/photo-picker/api/photos/export/${action}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  const execute = async (action: 'preview' | 'run') => {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const data = await request(action)
+      if (action === 'preview') setPreview(data)
+      else {
+        setResult(data)
+        setPreview(null)
+      }
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const counts = preview?.counts ?? result?.counts ?? {}
+  const scope = selected.length > 0
+    ? t('exportScopeSelected').replace('{n}', String(selected.length))
+    : t('exportScopeFiltered')
+
+  return (
+    <ModalShell title={t('globalExportTitle')} closeLabel={t('close')} onClose={onClose}>
+      <div className="pp-form">
+        <div className="pp-callout">{scope}</div>
+        <label className="pp-field">
+          <span>{t('exportDest')}</span>
+          <div className="pp-row" style={{ alignItems: 'stretch' }}>
+            <input
+              value={dest}
+              onChange={event => setDest(event.target.value)}
+              placeholder={t('destPlaceholder')}
+              className="pp-input"
+              style={{ flex: 1 }}
+            />
+            <Button disabled={choosing} onClick={choose}>
+              {choosing ? t('choosingFolder') : t('exportChoose')}
+            </Button>
+          </div>
+        </label>
+        <div className="pp-row" style={{ alignItems: 'center' }}>
+          <span className="pp-muted">{t('exportBuckets')}</span>
+          {['keep', 'maybe', 'reject'].map(bucket => (
+            <label key={bucket} className="pp-chip" style={{ cursor: 'pointer', gap: 6 }}>
+              <input
+                type="checkbox"
+                disabled={selected.length > 0}
+                checked={buckets.includes(bucket)}
+                onChange={() => setBuckets(current => current.includes(bucket) ? current.filter(item => item !== bucket) : [...current, bucket])}
+              />
+              {verdictLabel(t, bucket)}
+            </label>
+          ))}
+        </div>
+        <div className="pp-row" style={{ alignItems: 'center' }}>
+          <label className="pp-field">
+            <span>{t('exportLayout')}</span>
+            <select className="pp-select" value={layout} onChange={event => setLayout(event.target.value)}>
+              <option value="project">{t('exportLayoutProject')}</option>
+              <option value="flat">{t('exportLayoutFlat')}</option>
+            </select>
+          </label>
+          <label className="pp-field">
+            <span>{t('exportMode')}</span>
+            <select className="pp-select" value={mode} onChange={event => setMode(event.target.value)}>
+              <option value="hardlink">{t('exportHardlink')}</option>
+              <option value="copy">{t('exportCopy')}</option>
+            </select>
+          </label>
+          <label className="pp-chip" style={{ cursor: 'pointer', gap: 6 }}>
+            <input type="checkbox" checked={applyEdits} onChange={event => { setApplyEdits(event.target.checked); setPreview(null) }} />
+            {t('applyEdits')}
+          </label>
+        </div>
+        {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
+        {preview !== null && (
+          <div className="pp-export-summary">
+            <div className="pp-row" style={{ flexWrap: 'wrap' }}>
+              <span className="pp-chip">{t('exportPreview')} {preview.total ?? 0}</span>
+              {Object.entries(counts).map(([bucket, count]) => (
+                <span className="pp-chip" key={bucket}>{verdictLabel(t, bucket)} {String(count)}</span>
+              ))}
+              <span className="pp-muted">{t('exportSkipped')} {preview.skippedExisting ?? 0}</span>
+              <span className="pp-muted">{t('exportConflict')} {preview.conflictCount ?? 0}</span>
+              {preview.editedCount > 0 && <span className="pp-muted">{t('applyEdits')} {preview.editedCount}</span>}
+            </div>
+            {Object.keys(preview.byProject ?? {}).length > 0 && (
+              <div className="pp-export-projects">
+                {Object.values(preview.byProject ?? {}).map((entry: any) => (
+                  <span className="pp-chip" key={entry.projectId}>{entry.projectName} {entry.total}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {result !== null && (
+          <div className="pp-callout">
+            {t('exportResult')} {result.total ?? 0} · {t('manifest')} {result.manifestPath}
+          </div>
+        )}
+        <div className="pp-actions">
+          <Button disabled={busy || dest.trim() === ''} onClick={() => { void execute('preview') }}>
+            {busy ? t('loading') : t('exportPreview')}
+          </Button>
+          <Button variant="primary" disabled={busy || dest.trim() === ''} onClick={() => { void execute('run') }}>
+            {t('exportRun')}
+          </Button>
+        </div>
+      </div>
+    </ModalShell>
+  )
+}
+
+function GlobalPhotoWall({ t, projects }: any) {
+  const [projectIds, setProjectIds] = useState<string[]>([])
+  const [scenes, setScenes] = useState<string[]>([])
+  const [verdicts, setVerdicts] = useState<string[]>([])
+  const [sort, setSort] = useState('score')
+  const [items, setItems] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [warnings, setWarnings] = useState<any[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string[]>([])
+  const [active, setActive] = useState<any>(null)
+  const [exporting, setExporting] = useState(false)
+  const requestRef = useRef(0)
+  const filterKey = JSON.stringify({ projectIds, scenes, verdicts, sort })
+
+  const fetchPage = async (offset: number) => {
+    const params = new URLSearchParams({ limit: '120', offset: String(offset), sort })
+    if (projectIds.length > 0) params.set('projects', projectIds.join(','))
+    if (scenes.length > 0) params.set('scenes', scenes.join(','))
+    if (verdicts.length > 0) params.set('verdicts', verdicts.join(','))
+    return api(`/photo-picker/api/photos?${params.toString()}`)
+  }
+
+  const load = async (offset: number, append: boolean) => {
+    const generation = ++requestRef.current
+    if (append) setLoadingMore(true)
+    else {
+      setLoading(true)
+      setSelected([])
+      setActive(null)
+    }
+    try {
+      const data = await fetchPage(offset)
+      if (generation !== requestRef.current) return
+      setItems(current => {
+        const next = append ? [...current, ...(data.items ?? [])] : (data.items ?? [])
+        const seen = new Set<string>()
+        return next.filter((item: any) => {
+          const key = `${item.projectId}:${item.id}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+      })
+      setTotal(Number(data.total ?? 0))
+      setWarnings(Array.isArray(data.warnings) ? data.warnings : [])
+      setError(null)
+    } catch (cause) {
+      if (generation === requestRef.current) setError(String(cause))
+    } finally {
+      if (generation === requestRef.current) {
+        setLoading(false)
+        setLoadingMore(false)
+      }
+    }
+  }
+
+  useEffect(() => { void load(0, false) }, [filterKey])
+
+  const keyOf = (item: any) => `${item.projectId}:${item.id}`
+  const selectedItems = items.filter(item => selected.includes(keyOf(item)))
+  const toggleSelected = (item: any) => {
+    const key = keyOf(item)
+    setSelected(current => current.includes(key) ? current.filter(value => value !== key) : [...current, key])
+  }
+  const toggleProject = (id: string) => setProjectIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id])
+  const toggleScene = (id: string) => setScenes(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id])
+  const toggleVerdict = (id: string) => setVerdicts(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id])
+  const projectSummary = projectIds.length === 0
+    ? t('allProjects')
+    : t('selectedProjects').replace('{n}', String(projectIds.length))
+
+  return (
+    <section className="pp-global-wall">
+      <div className="pp-global-toolbar">
+        <div className="pp-toolbar-group">
+          <span className="pp-section-title">{t('allPhotosTab')}</span>
+          <details className="pp-project-picker">
+            <summary>{projectSummary}</summary>
+            <div className="pp-project-picker-menu">
+              <label className="pp-project-picker-all">
+                <input type="checkbox" checked={projectIds.length === 0} onChange={() => setProjectIds([])} />
+                {t('allProjects')}
+              </label>
+              {(projects ?? []).map((project: any) => (
+                <label key={project.id}>
+                  <input type="checkbox" checked={projectIds.includes(project.id)} onChange={() => toggleProject(project.id)} />
+                  {project.name}
+                </label>
+              ))}
+            </div>
+          </details>
+          <label className="pp-toolbar-field">
+            <span>{t('sortLabel')}</span>
+            <select className="pp-select pp-select-sm" value={sort} onChange={event => setSort(event.target.value)}>
+              <option value="score">{t('sortScore')}</option>
+              <option value="score_asc">{t('sortScoreAsc')}</option>
+              <option value="taken_at">{t('sortTaken')}</option>
+              <option value="project">{t('sortProject')}</option>
+            </select>
+          </label>
+          <span className="pp-muted">{total} {t('photos')}</span>
+        </div>
+        <div className="pp-toolbar-group pp-toolbar-end">
+          <Button disabled={total === 0} onClick={() => setExporting(true)}>
+            {selected.length > 0 ? t('exportSelected').replace('{n}', String(selected.length)) : t('exportFiltered')}
+          </Button>
+        </div>
+      </div>
+
+      <div className="pp-filter-chips">
+        <span className="pp-filter-label">{t('sceneFilter')}</span>
+        <button type="button" className={`pp-filter-chip${scenes.length === 0 ? ' active' : ''}`} onClick={() => setScenes([])}>{t('filterAll')}</button>
+        {Object.keys(SCENE_KEYS).map(scene => (
+          <button
+            type="button"
+            key={scene}
+            className={`pp-filter-chip${scenes.includes(scene) ? ' active' : ''}`}
+            onClick={() => toggleScene(scene)}
+          >
+            {sceneLabel(t, scene)}
+          </button>
+        ))}
+      </div>
+      <div className="pp-filter-chips">
+        <span className="pp-filter-label">{t('verdictLabel')}</span>
+        <button type="button" className={`pp-filter-chip${verdicts.length === 0 ? ' active' : ''}`} onClick={() => setVerdicts([])}>{t('filterAll')}</button>
+        {['keep', 'maybe', 'reject'].map(verdict => (
+          <button
+            type="button"
+            key={verdict}
+            className={`pp-filter-chip${verdicts.includes(verdict) ? ' active' : ''}`}
+            onClick={() => toggleVerdict(verdict)}
+          >
+            {verdictLabel(t, verdict)}
+          </button>
+        ))}
+      </div>
+
+      {warnings.length > 0 && (
+        <div className="pp-callout">
+          {warnings.map((warning: any) => `${warning.projectId}: ${warning.message}`).join(' · ')}
+        </div>
+      )}
+      {error !== null && <div className="pp-error">{error} <Button size="sm" onClick={() => { void load(0, false) }}>{t('retry')}</Button></div>}
+
+      {loading && items.length === 0 ? (
+        <StateCard kind="loading" title={t('loading')} />
+      ) : items.length === 0 ? (
+        <StateCard kind="empty" title={t('globalWallEmpty')} action={<Button onClick={() => { setProjectIds([]); setScenes([]); setVerdicts([]) }}>{t('clearFilters')}</Button>} />
+      ) : (
+        <>
+          <div className="pp-global-grid">
+            {items.map(item => {
+              const key = keyOf(item)
+              const sceneText = (item.scenes ?? []).map((scene: string) => sceneLabel(t, scene)).join(' · ')
+              return (
+                <div className="pp-tile-wrap" key={key}>
+                  <button
+                    type="button"
+                    className={`pp-tile${selected.includes(key) ? ' selected' : ''}`}
+                    title={`${item.projectName} · ${item.relPath}`}
+                    onClick={() => setActive(item)}
+                  >
+                    <img src={`${item.thumbUrl}?v=${item.projectUpdatedAt ?? 0}`} alt={item.relPath} loading="lazy" />
+                    <span className="pp-tile-bar" style={{ background: VERDICT_COLORS[item.verdict] ?? 'var(--dsw-alias-border-l2)' }} />
+                    {item.score !== null && <span className="pp-tile-score">{Number(item.score).toFixed(1)}</span>}
+                    <span className="pp-global-project">{item.projectName}</span>
+                    {sceneText !== '' && <span className="pp-tile-scenes">{sceneText}</span>}
+                  </button>
+                  <input
+                    className="pp-check"
+                    type="checkbox"
+                    checked={selected.includes(key)}
+                    onChange={() => toggleSelected(item)}
+                    aria-label={`${item.projectName} ${item.relPath}`}
+                  />
+                </div>
+              )
+            })}
+          </div>
+          <div className="pp-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="pp-muted">{selected.length > 0 ? `${t('selectedCount')} ${selected.length}` : ''}</span>
+            <div className="pp-row">
+              {selected.length > 0 && <Button size="sm" variant="ghost" onClick={() => setSelected([])}>{t('clearSelection')}</Button>}
+              <Button size="sm" variant="ghost" onClick={() => setSelected(items.map(keyOf))}>{t('selectLoaded')}</Button>
+              {items.length < total && (
+                <Button size="sm" disabled={loadingMore} onClick={() => { void load(items.length, true) }}>
+                  {loadingMore ? t('loading') : t('loadMore')}
+                </Button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {active !== null && (
+        <ModalShell title={active.projectName} closeLabel={t('close')} onClose={() => setActive(null)}>
+          <div className="pp-global-lightbox">
+            <img src={`${active.previewUrl}?v=${active.projectUpdatedAt ?? 0}`} alt={active.relPath} />
+            <div className="pp-muted">{active.relPath}</div>
+            <div className="pp-row" style={{ flexWrap: 'wrap' }}>
+              <span className="pp-chip">{active.projectName}</span>
+              <span className="pp-pill">{verdictLabel(t, active.verdict)}</span>
+              {active.score !== null && <span className="pp-chip">{t('scoreLabel')} {Number(active.score).toFixed(1)}</span>}
+              {(active.scenes ?? []).map((scene: string) => <span key={scene} className="pp-chip">{sceneLabel(t, scene)}</span>)}
+            </div>
+          </div>
+        </ModalShell>
+      )}
+      {exporting && (
+        <GlobalExportDialog
+          t={t}
+          filters={{ projectIds, scenes, verdicts }}
+          selectedItems={selectedItems}
+          onClose={() => setExporting(false)}
+        />
+      )}
+    </section>
+  )
+}
+
 function Workbench({ t }: { t: (key: string) => string }) {
   // 订阅语言变化：切换语言后立即重渲染整棵面板。
   useSyncExternalStore(subscribeLanguage, getLanguage)
   const [projects, setProjects] = useState<any[] | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
+  const [view, setView] = useState<'projects' | 'global'>('projects')
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -2569,16 +3011,25 @@ function Workbench({ t }: { t: (key: string) => string }) {
             >
               {getLanguage() === 'zh' ? 'EN' : '中'}
             </button>
-            <Button variant="primary" onClick={() => { setCreating(true); setSelected(null) }}>
-              {t('newProject')}
-            </Button>
+            {view === 'projects' && (
+              <Button variant="primary" onClick={() => { setCreating(true); setSelected(null) }}>
+                {t('newProject')}
+              </Button>
+            )}
           </div>
         </header>
+
+        <div className="pp-view-tabs">
+          <button type="button" className={view === 'projects' && selected === null ? 'active' : ''} onClick={() => { setView('projects'); setSelected(null); setCreating(false) }}>{t('projectsTab')}</button>
+          <button type="button" className={view === 'global' ? 'active' : ''} onClick={() => { setView('global'); setSelected(null); setCreating(false) }}>{t('allPhotosTab')}</button>
+        </div>
 
         {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
 
         {selected !== null ? (
           <ProjectDetail t={t} id={selected} onBack={() => setSelected(null)} />
+        ) : view === 'global' ? (
+          <GlobalPhotoWall t={t} projects={list} />
         ) : creating ? (
           <CreateForm
             t={t}

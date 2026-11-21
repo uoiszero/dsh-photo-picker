@@ -63,6 +63,29 @@ export function createHttpHandler(service) {
         return send(res, 200, await service.models(url.searchParams.get('route') ?? 'deepseek-official'))
       }
 
+      if (pathname === '/photo-picker/api/photos' && req.method === 'GET') {
+        const query = url.searchParams
+        const list = name => {
+          const value = query.get(name)
+          return value === null || value === '' ? undefined : value.split(',').filter(Boolean)
+        }
+        return send(res, 200, await service.globalPhotos({
+          projectIds: list('projects'),
+          scenes: list('scenes'),
+          verdicts: list('verdicts'),
+          sort: query.get('sort') ?? undefined,
+          limit: Number(query.get('limit') ?? 120),
+          offset: Number(query.get('offset') ?? 0),
+        }))
+      }
+
+      if (pathname === '/photo-picker/api/photos/export/preview' && req.method === 'POST') {
+        return send(res, 200, await service.globalExportPreview(await readJson(req)))
+      }
+      if (pathname === '/photo-picker/api/photos/export/run' && req.method === 'POST') {
+        return send(res, 200, await service.globalExportRun(await readJson(req)))
+      }
+
       if (pathname === '/photo-picker/api/projects' && req.method === 'GET') {
         return send(res, 200, await service.listProjects())
       }
@@ -79,6 +102,14 @@ export function createHttpHandler(service) {
       }
       if (projectMatch !== null && req.method === 'PATCH') {
         return send(res, 200, await service.updateSettings(projectMatch[1], await readJson(req)))
+      }
+
+      const aiRunsMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/ai-runs$/)
+      if (aiRunsMatch !== null && req.method === 'GET') {
+        return send(res, 200, await service.aiRuns(aiRunsMatch[1], {
+          limit: Number(url.searchParams.get('limit') ?? 20),
+          offset: Number(url.searchParams.get('offset') ?? 0),
+        }))
       }
 
       const photosMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos$/)
