@@ -56,6 +56,9 @@ export function createHttpHandler(service) {
       if (pathname === '/photo-picker/api/prompt' && req.method === 'GET') {
         return send(res, 200, await service.promptInfo(url.searchParams.get('project') ?? undefined))
       }
+      if (pathname === '/photo-picker/api/model-routes' && req.method === 'GET') {
+        return send(res, 200, await service.modelRoutes())
+      }
       if (pathname === '/photo-picker/api/models' && req.method === 'GET') {
         return send(res, 200, await service.models(url.searchParams.get('route') ?? 'deepseek-official'))
       }

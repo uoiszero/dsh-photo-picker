@@ -114,14 +114,31 @@ export async function completeText({
 }) {
   const startedAt = Date.now()
   let lastError
+  let effort = reasoningEffort
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const result = await attemptOnce({
-        llm, provider, model, system, prompt, image, reasoningEffort, temperature, maxTokens, timeoutMs, signal,
+        llm, provider, model, system, prompt, image, reasoningEffort: effort, temperature, maxTokens, timeoutMs, signal,
       })
       return { ...result, attempts: attempt, durationMs: Date.now() - startedAt }
     } catch (error) {
-      lastError = error
+      // 部分 OpenAI-compatible 模型（例如 Qwen3-VL）不支持 reasoningEffort: off；
+      // 这是能力差异，不是调用失败，去掉该参数重试一次。
+      if (effort !== undefined && error instanceof LlmCallError
+        && /does not support reasoning effort/i.test(error.message)) {
+        effort = undefined
+        try {
+          const result = await attemptOnce({
+            llm, provider, model, system, prompt, image, temperature, maxTokens, timeoutMs, signal,
+          })
+          return { ...result, attempts: attempt, durationMs: Date.now() - startedAt }
+        } catch (retryError) {
+          lastError = retryError
+          error = retryError
+        }
+      } else {
+        lastError = error
+      }
       if (!(error instanceof LlmCallError) || error.retryable !== true || attempt === maxAttempts) {
         if (error instanceof LlmCallError) error.attempts = attempt
         throw error

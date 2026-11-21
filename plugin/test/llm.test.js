@@ -76,3 +76,18 @@ test('completeText attaches an image block when given one', async () => {
   assert.equal(content[1].type, 'image')
   assert.deepEqual(content[1].attachment, attachment)
 })
+
+test('completeText omits reasoning effort when the provider rejects it', async () => {
+  const llm = fakeLlm([
+    { failure: { message: 'provider "qwen" model "qwen3-vl-plus" does not support reasoning effort "off"', code: 'BAD_REQUEST', status: 400 } },
+    { text: 'ok' },
+  ])
+  const result = await completeText({
+    llm, provider: 'qwen', model: 'qwen3-vl-plus', prompt: 'u',
+    reasoningEffort: 'off', sleep: async () => {},
+  })
+  assert.equal(result.text, 'ok')
+  assert.equal(llm.calls.length, 2)
+  assert.equal(llm.calls[0].reasoningEffort, 'off')
+  assert.equal(llm.calls[1].reasoningEffort, undefined)
+})

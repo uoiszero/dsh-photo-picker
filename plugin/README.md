@@ -31,6 +31,7 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 
 ## Features
 
+- **Model routes**: choose a provider route and image-capable model per project; the default is DeepSeek Flash, with other routes available as alternatives.
 - **Local first**: scanning, dedupe, technical filters, burst/scene grouping and thumbnails run on your machine.
 - **Layered AI**: grid triage → group ranking → single-photo scoring. Single-photo scoring detects the scene (portrait / landscape / architecture / street / event / other) and adapts its criteria; human decisions always override AI.
 - **Budget and stability**: live USD/CNY usage, budget pause, concurrency/retry/backoff, off-peak mode, resumable stages.

@@ -487,9 +487,20 @@ export class PhotoPickerService extends Service {
 
   async updateSettings(id, patch = {}) {
     const { db, project } = await this.store.open(id)
-    if (patch.modelId !== undefined) {
-      const capable = await this.imageCapable({ modelRoute: project.modelRoute, modelId: String(patch.modelId) })
-      if (!capable) throw stageError(`model ${patch.modelId} does not accept image input`, 'BAD_SETTING', 400)
+    const nextRoute = patch.modelRoute === undefined ? project.modelRoute : String(patch.modelRoute)
+    const nextModel = patch.modelId === undefined ? project.modelId : String(patch.modelId)
+    if (patch.modelRoute !== undefined || patch.modelId !== undefined) {
+      let models
+      try {
+        models = await this.ctx.llm.listModels(nextRoute)
+      } catch (cause) {
+        throw stageError(`model route is unavailable: ${nextRoute}: ${String(cause?.message ?? cause)}`, 'BAD_SETTING', 400)
+      }
+      const model = models.find(entry => entry.id === nextModel)
+      if (model === undefined) throw stageError(`model ${nextModel} is not available on route ${nextRoute}`, 'BAD_SETTING', 400)
+      if (Array.isArray(model.inputModalities) && !model.inputModalities.includes('image')) {
+        throw stageError(`model ${nextModel} does not accept image input`, 'BAD_SETTING', 400)
+      }
     }
     const fields = {
       theme: ['theme', value => typeof value === 'string'],
@@ -507,6 +518,7 @@ export class PhotoPickerService extends Service {
       groupSceneHamming: ['group_scene_hamming', value => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 64],
       promptVersion: ['prompt_version', value => typeof value === 'string' && /^v\d+$/.test(value)],
       modelId: ['model_id', value => typeof value === 'string' && value.length > 0],
+      modelRoute: ['model_route', value => typeof value === 'string' && value.length > 0],
     }
     const sets = []
     const params = []
@@ -615,6 +627,22 @@ export class PhotoPickerService extends Service {
         scoreUser: scoreUserPrompt(),
       },
     }
+  }
+
+  async modelRoutes() {
+    const routes = []
+    for (const provider of this.ctx.llm.listProviders()) {
+      try {
+        const models = await this.ctx.llm.listModels(provider.id)
+        const imageModels = models.filter(model => !Array.isArray(model.inputModalities) || model.inputModalities.includes('image'))
+        if (imageModels.length > 0) {
+          routes.push({ id: provider.id, name: provider.name ?? provider.id, models: imageModels })
+        }
+      } catch {
+        // Route may be unavailable temporarily; keep it out of the selector.
+      }
+    }
+    return routes
   }
 
   async models(route = 'deepseek-official') {

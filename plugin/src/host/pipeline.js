@@ -407,7 +407,7 @@ export async function runScoreStage({
       const prompt = scoreUserPrompt()
       const first = await completeText({
         llm, provider: project.modelRoute, model: project.modelId,
-        system: SCORE_SYSTEM, prompt, image, reasoningEffort: 'off', maxTokens: 400, temperature: 0, signal,
+        system: SCORE_SYSTEM, prompt, image, reasoningEffort: 'off', maxTokens: 1200, temperature: 0, signal,
       })
       usage = sumUsage(usage, first.usage)
       cost += usageCost(first.usage, peak)
@@ -419,7 +419,7 @@ export async function runScoreStage({
         const retry = await completeText({
           llm, provider: project.modelRoute, model: project.modelId,
           system: SCORE_SYSTEM, prompt: `${prompt}\n\n上一次返回不是合法 JSON，请只返回合法 JSON。`,
-          image, reasoningEffort: 'off', maxTokens: 400, temperature: 0, signal,
+          image, reasoningEffort: 'off', maxTokens: 1200, temperature: 0, signal,
         })
         usage = sumUsage(usage, retry.usage)
         cost += usageCost(retry.usage, peak)

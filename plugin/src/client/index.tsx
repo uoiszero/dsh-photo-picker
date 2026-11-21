@@ -1649,6 +1649,7 @@ function CalibrationSection({ t, projectId, onApplied }: { t: any; projectId: st
 
 function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
   const [form, setForm] = useState<any>(() => ({
+    modelRoute: detail.modelRoute ?? 'deepseek-official',
     modelId: detail.modelId ?? 'deepseek-flash',
     concurrency: String(detail.concurrency ?? 8),
     budgetCny: String(detail.budgetCny ?? 30),
@@ -1664,6 +1665,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
     offpeakOnly: detail.offpeakOnly === true,
   }))
   const [prompt, setPrompt] = useState<any>(null)
+  const [routes, setRoutes] = useState<any[]>([])
   const [models, setModels] = useState<any[]>([])
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -1671,10 +1673,40 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
 
   useEffect(() => {
     api(`/photo-picker/api/prompt?project=${detail.id}`).then(setPrompt).catch(() => {})
-    api(`/photo-picker/api/models?route=${encodeURIComponent(detail.modelRoute ?? 'deepseek-official')}`)
-      .then(data => setModels(data.models ?? []))
-      .catch(() => {})
+    api('/photo-picker/api/model-routes')
+      .then(data => {
+        const nextRoutes = Array.isArray(data) ? data : []
+        setRoutes(nextRoutes)
+        const current = nextRoutes.find(route => route.id === (detail.modelRoute ?? 'deepseek-official'))
+        if (current !== undefined) setModels(current.models ?? [])
+        else {
+          api(`/photo-picker/api/models?route=${encodeURIComponent(detail.modelRoute ?? 'deepseek-official')}`)
+            .then(result => setModels(result.models ?? []))
+            .catch(() => {})
+        }
+      })
+      .catch(() => {
+        api(`/photo-picker/api/models?route=${encodeURIComponent(detail.modelRoute ?? 'deepseek-official')}`)
+          .then(data => setModels(data.models ?? []))
+          .catch(() => {})
+      })
   }, [detail.id])
+
+  const changeRoute = async (routeId: string) => {
+    set('modelRoute', routeId)
+    try {
+      const data = await api(`/photo-picker/api/models?route=${encodeURIComponent(routeId)}`)
+      const nextModels = (data.models ?? []).filter((model: any) => (
+        !Array.isArray(model.inputModalities) || model.inputModalities.includes('image')
+      ))
+      setModels(nextModels)
+      if (!nextModels.some((model: any) => model.id === form.modelId)) {
+        set('modelId', nextModels[0]?.id ?? '')
+      }
+    } catch (cause) {
+      setError(String(cause))
+    }
+  }
 
   const set = (key: string, value: any) => {
     setForm((current: any) => ({ ...current, [key]: value }))
@@ -1688,6 +1720,7 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
       await api(`/photo-picker/api/projects/${detail.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
+          modelRoute: form.modelRoute,
           modelId: form.modelId,
           concurrency: Number(form.concurrency),
           budgetCny: Number(form.budgetCny),
@@ -1716,6 +1749,14 @@ function SettingsDrawer({ t, detail, onClose, onSaved, onRunStage }: any) {
     <DrawerShell title={t('settingsTitle')} closeLabel={t('close')} onClose={onClose}>
         <div className="pp-form">
           <div className="pp-section-title">{t('settingsBasic')}</div>
+          <label className="pp-field">
+            <span>{t('modelRoute')}</span>
+            <select value={form.modelRoute} onChange={event => { void changeRoute(event.target.value) }} className="pp-select">
+              {(routes.length === 0 ? [{ id: form.modelRoute, name: form.modelRoute }] : routes).map((route: any) => (
+                <option key={route.id} value={route.id}>{route.name ?? route.id} ({route.id})</option>
+              ))}
+            </select>
+          </label>
           <label className="pp-field">
             <span>{t('model')}</span>
             <select value={form.modelId} onChange={event => set('modelId', event.target.value)} className="pp-select">
