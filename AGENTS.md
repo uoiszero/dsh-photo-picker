@@ -6,7 +6,7 @@
 
 `photo-picker` 是一个 DSH（DeepSeek Harness）插件 bundle：Host 侧（ESM JavaScript，Cordis 服务）负责照片扫描、本地预处理、AI 分层筛选、复核数据、校准与导出；Client 侧（React + TSX，esbuild 打包）是左侧栏「照片工作台」页面。所有状态在一个项目 SQLite 里，agent 工具 `photo_picker` / `photo_picker_export` 与面板共享同一个服务。
 
-- 版本：`0.6.0`（npm 由维护者手动发布）
+- 版本：`0.7.0`（npm 由维护者手动发布）
 - 许可证：MIT
 - 平台：macOS 与 Windows（Windows 11 ARM64 已真机跑通完整流程；x64 由 `windows-latest` CI 覆盖）；已验证 DSH `0.2.2-rc.1` / `0.2.2-rc.2`（macOS）与 `0.2.1-rc.3`（Windows）；Node 22.23+（`node:sqlite`）
 - 文档：`docs/superpowers/specs/`（设计）、`docs/superpowers/plans/`（执行计划与状态）
@@ -111,28 +111,35 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 ## 发布
 
 - 版本号在两处：根 `package.json` 与 `plugin/package.json`（以及 `package-lock.json` 的根 packages 条目）。
-- 发布前：`npm run verify`（测试 / 类型检查 / 版本与卫生检查 / 构建 / 四个验收脚本，已含 `acceptance:5`），确认 `git status` 干净。
-- 发布走 tag：`chore: release X.Y.Z` 提交后打 `vX.Y.Z` 推上去，`release.yml` 会重跑门禁并生成带 bundle 的 Release。
+- 发布前：`npm run verify`（测试 / 类型检查 / 版本与卫生检查 / 构建 / 四个验收脚本，已含 `acceptance:5`），确认除用户本地临时文件外工作区干净。
+- 发布顺序：
+  1. 用 PR 合并 `chore: release X.Y.Z` 版本提交。
+  2. 在合并后的 `main` 打并推送 `vX.Y.Z` tag；`release.yml` 会重跑门禁并生成带 bundle 的 GitHub Release。
+  3. **npm 发布由维护者手动完成**。Agent 不要自行 `npm publish`；准备好命令并等维护者完成。
+  4. 维护者确认 `npm view dsh-photo-picker version` 为目标版本后，再处理插件市场条目。
 - npm 发布只从 `plugin/` 目录：`npm run publish:npm`（根仓库 `package.json` 是 private 工作区，不要发布根目录）。
 - 仓库默认分支 `main`；推送到 GitHub 前确认 remote 与可见性，不要在公开仓库里放个人照片/路径清单。
 - 设计文档与计划随代码一起维护；实现偏离 spec 时在对应 plan 里写「实现状态/偏差」。
 
 ### 插件市场（awesome-dsh-plugin）
 
-发布 GitHub Release 后，还要同步插件市场条目；不要只在 README 里记录版本。
+**不要向 `dsh-market/dsh-market` 提插件条目 PR。** 它只是市场 App，不是目录；插件目录来自 `awesome-dsh-plugin`，市场会读取生成的 catalog，通常一天内自动生效。
+
+发布 GitHub Release 和 npm 完成后：
 
 - 市场仓库：<https://github.com/awesome-dsh-plugin/awesome-dsh-plugin>
-- 投稿规范（固定版本）：<https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/28c08a968dba78f674201dde91b47ec4df009715/contributing.md>
+- 投稿规范：<https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md>
 - 本插件条目：`data/plugins/uoiszero__dsh-photo-picker--plugin.yml`
 - 本插件是 monorepo 子包：`url` 指向 `https://github.com/uoiszero/dsh-photo-picker/tree/main/plugin`，名称是 `uoiszero/dsh-photo-picker#dsh-photo-picker`。
 
 流程：
 
 1. 先确认 GitHub Release 和 npm `latest` 都已更新。
-2. 同步 fork `uoiszero/awesome-dsh-plugin` 到 upstream `main`，只在 fork 上开分支。
-3. **只改自己的** `data/plugins/uoiszero__dsh-photo-picker--plugin.yml`；需要更新时改 `description.en` / `description.zh`、分类或图标。不要手改生成的 README，也不要改别人的条目。
-4. 一个 PR 最多 3 条市场条目；只提本插件这一条。向 upstream `main` 开 PR，等待 CI 与维护者合并。
-5. 合并后市场站点自动重建，不需要再改别的文件。
+2. 只有**描述/分类/图标/安装源**发生变化时才需要改 YAML；纯版本号变化由市场从 npm/GitHub 自动发现，不要为了版本号单独开 PR。
+3. 同步 fork `uoiszero/awesome-dsh-plugin` 到 upstream `main`，只在 fork 上开分支。
+4. **只改自己的** `data/plugins/uoiszero__dsh-photo-picker--plugin.yml`；不要手改生成的 README，也不要改别人的条目。
+5. 一个 PR 最多 3 条市场条目；只提本插件这一条。向 upstream `main` 开 PR，等待 CI 与维护者合并。
+6. 合并后市场站点自动重建，不需要再改别的文件；不要向 dsh-market 重复提交条目。
 
 市场元数据的要点：
 
