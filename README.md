@@ -1,6 +1,6 @@
 # 照片工作台 · dsh-photo-picker
 
-> 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
+> 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录；支持跨项目照片墙、AI 运行记录和可追溯导出。
 
 **版本 0.7.1** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
 
@@ -105,9 +105,13 @@
 
 *导出：分桶、硬链接或复制、修图副本；先 dry-run 预览数量与体积，再执行。*
 
+![跨项目照片墙](plugin/assets/screenshots/workbench-global-2026-11.png)
+
+*跨项目照片墙：项目多选、场景/判定筛选、排序、勾选或按筛选结果导出。*
+
 完整响应式/主题截图见 [界面截图矩阵](docs/assets/screenshots/README.md)。
 
-> 截图使用本地生成的合成测试素材与模拟评分，仅用于展示界面，**不含真实照片、个人路径或账号信息**。截图已按当前 UI 重新生成，文件名带 `2026-11` 以避免旧缓存。
+> 截图使用本地生成的合成测试素材与模拟评分，仅用于展示界面，**不含真实照片、个人路径或账号信息**。项目详情与跨项目照片墙已更新为 0.7 UI；其余截图保留作流程示意。
 
 ## 功能
 
@@ -118,6 +122,10 @@
 - **AI 精评**：组内排序（>6 张分块）→ 单张六维评分 → 阈值收敛；单张精评先判断人像/风光/建筑/街拍/活动/花植物/动物/雕塑展品等场景，再按主场景选择评分重点。坏 JSON 自动重试，人工判定永远覆盖 AI。
 - **预算与稳定性**：按 usage 实时计费、预算触顶暂停、并发/重试/退避、离峰开关、自动跑串联阶段、阶段间暂停、断点续跑。
 - **复核**：图墙筛选/排序/按场景筛选/多选改判/撤销最近 20 步；单图可手动编辑 1–3 个场景标签并指定主场景，人工标签优先；图墙按 200 张/页无限滚动并只渲染可视行；图墙缩略图显示 AI 场景标签；单图 1600px 预览、维度条、理由、后期建议、场景 chips；组对比 6 张/页；`J/K/P/M/X/Space` 快捷键。
+- **跨项目照片墙**：「项目 / 全部照片」切换；项目多选，按场景标签、判定筛选，按分数/拍摄时间/项目排序；支持勾选或按当前筛选结果跨项目导出，写单一 aggregate manifest。
+- **AI 运行记录**：每个项目记录 grid / rank / score 的模型、状态、耗时、token、调用次数、费用、处理数量和错误码；运行记录统一为「阶段检查点 / AI 历史」两个标签页。
+- **导出体验**：虚拟进度条（有预览时按张数/字节/修图数估算，否则在后段减速），完成后自动关闭对话框并显示右下角提示；跨项目导出支持按项目分目录或平铺。
+- **滚动位置保持**：项目列表和项目照片墙在进入/退出详情后保持位置，刷新页面后允许回到顶部。
 - **修图配方**：单张精评可输出与软件无关的结构化配方（裁剪/旋转/曝光/对比/饱和度/锐化），用内置 sharp 引擎生成编辑预览；单图页点击右上角「原图/修图」标签切换，支持九宫格/十字线辅助线；「修图建议」下方直接显示曝光/对比/饱和/锐化/旋转滑杆和手动裁剪：支持自由裁剪、4:3 / 5:4 / 1:1 / 16:9 / 16:10 / 3:2 比例与长短边切换；拖动时实时生成临时预览、不写库，点击保存才写入人工配方，可恢复 AI。导出时可选择“应用修图建议”，输出 JPEG 编辑副本并写进 manifest，源文件保持只读。
 - **校准**：按拍摄时间分层抽 80 张盲评，输出 keep 精确率/召回率/F1、三分类一致率、阈值曲线，可一键应用建议阈值。
 - **导出**：keep / maybe / reject 分桶，硬链接（跨盘自动回退复制）或复制，保留目录结构或平铺，`manifest.csv` + `manifest.json`（含 `scenes` / `primary_scene`；JSON 还有 `editSource`），导出前后抽样校验源文件未被修改。勾选“应用修图建议”时按配方重新渲染 JPEG（强制复制，不做硬链接）。
@@ -198,9 +206,11 @@ dsh web
 2. 点 **自动跑（扫描→精评）**，整个流程会自动执行；结束会弹出完成/暂停提示，右侧检查点保留每阶段统计与抽样。
 3. 需要单独控制时用 **单步运行** 菜单：扫描 / 预处理 / 网格粗筛 / 组内排序 / 单张精评。
 4. 在「复核」区筛选 keep/maybe/reject，多选后批量判定；双击/点缩略图进入单图，`G` 进入组对比；单图内可点「编辑场景」修正 AI 标签。
-5. 觉得阈值不准时点 **开始校准**：盲评若干张后看报告，一键应用建议阈值。
-6. 点 **导出**：选目标目录、分桶与硬链接/复制，先看 dry-run 汇总，再执行；完成后可直接在 Finder / 资源管理器中显示。
-7. 项目卡片右上角的垃圾桶图标（悬停/聚焦显示）会移除本地工作区、数据库和缩略图；源照片不会被删除。
+5. 打开 **全部照片**：跨项目按项目/场景/判定筛选，点缩略图看大图；可直接导出当前筛选或勾选照片。
+6. 项目详情展开 **运行记录**：在「阶段检查点」和「AI 历史」间切换，查看模型、token、费用和失败信息。
+7. 觉得阈值不准时点 **开始校准**：盲评若干张后看报告，一键应用建议阈值。
+8. 点 **导出**：选目标目录、分桶与硬链接/复制，先看 dry-run 汇总，再执行；跨项目导出使用「全部照片」页面。
+9. 项目卡片右上角的垃圾桶图标（悬停/聚焦显示）会移除本地工作区、数据库和缩略图；源照片不会被删除。
 
 ### 快捷键
 
@@ -247,7 +257,9 @@ Harness Web UI
 | `GET/POST /photo-picker/api/projects` | 列表 / 建项目 |
 | `GET/PATCH/DELETE /photo-picker/api/projects/:id` | 详情 / 改设置 / 删除项目及本地工作区 |
 | `POST /photo-picker/api/projects/:id/actions` | 单阶段、`pause`、`cancel`、`run_all` |
-| `GET /photo-picker/api/projects/:id/photos` | 图墙（筛选/排序/分页） |
+| `GET /photo-picker/api/projects/:id/photos` | 项目图墙（筛选/排序/分页） |
+| `GET /photo-picker/api/photos` | 跨项目照片墙（项目/场景/判定筛选、分页） |
+| `POST /photo-picker/api/photos/export/preview\|run` | 跨项目导出 dry-run / 执行 |
 | `GET /photo-picker/api/projects/:id/photos/:pid` | 单张详情（含组内排名） |
 | `PATCH /photo-picker/api/projects/:id/photos/:pid/scenes` | 人工修正场景标签 / 主场景 |
 | `PATCH /photo-picker/api/projects/:id/photos/:pid/recipe` | 保存 / 恢复人工修图配方 |
@@ -257,6 +269,7 @@ Harness Web UI
 | `GET /photo-picker/api/projects/:id/stats` | 判定计数 + 分数直方图 |
 | `GET /photo-picker/api/projects/:id/checkpoints` | 阶段检查点 |
 | `GET/POST /photo-picker/api/projects/:id/calibration[/sample]` | 校准样本 / 报告 |
+| `GET /photo-picker/api/projects/:id/ai-runs` | AI 阶段历史（分页） |
 | `POST /photo-picker/api/projects/:id/export/preview\|run` | dry-run / 导出 |
 | `GET /photo-picker/api/prompt`、`/models` | 提示词全文 / 模型目录 |
 | `GET /photo-picker/media/thumb\|preview\|edit/...` | 缩略图 / 预览图 / 编辑预览 |
@@ -347,6 +360,8 @@ docs/superpowers/           # 设计 spec 与执行计划
 - 修图配方 v1 只做全局调整（裁剪/旋转/曝光/对比/饱和度/锐化）；人工微调覆盖全局参数，支持自由裁剪与比例预设。不做局部蒙版、污点修复或 RAW 显影。
 - HEIC/RAW 的编辑副本走平台解码回退，最长边为 1200px，不保留原始分辨率；需要更大余量时先用其他工具转成 JPEG 再导入。
 - 插件面向单用户本机，没有多人协作/权限体系。
+- 跨项目导出只写目标目录的 aggregate manifest，不写入各项目级 `exports` 历史。
+- Node 22.23+ 为基准；Node 26 的扫描路径已单独回归验证。
 
 ## 文档
 
