@@ -33,18 +33,20 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 
 - **Model routes**: choose a provider route and image-capable model per project; the default is DeepSeek Flash, with other routes available as alternatives.
 - **Local first**: scanning, dedupe, technical filters, burst/scene grouping and thumbnails run on your machine.
-- **Layered AI**: grid triage → group ranking → single-photo scoring. Single-photo scoring detects the scene (portrait / landscape / architecture / street / event / other) and adapts its criteria; human decisions always override AI.
-- **Budget and stability**: live USD/CNY usage, budget pause, concurrency/retry/backoff, off-peak mode, resumable stages.
+- **Layered AI**: grid triage → group ranking → single-photo scoring. Single-photo scoring detects the scene (portrait / landscape / architecture / street / event / flower / wildlife / sculpture / other) and adapts its criteria; human decisions always override AI.
+- **Budget and stability**: live CNY usage, budget pause, concurrency/retry/backoff, off-peak mode, resumable stages.
 - **Project management**: delete a project and its local workspace without touching source photos.
 - **Review workbench**: filterable wall with AI scene tags and scene filters, 1600px single view, group compare, bulk decisions, undo.
-- **Cross-project wall**: filter reviewable photos from multiple projects by scene label, verdict and project; export the filtered set or a selection with a single manifest.
-- **AI run history**: per-project stage-level model/token/cost history for grid, rank and score.
-- **Portable edit recipes**: manual crop with freeform, 4:3 / 5:4 / 1:1 / 16:9 / 16:10 / 3:2 presets, orientation swap, and draggable handles. Tune exposure/contrast/saturation/sharpen/rotate, save a per-photo human recipe, or restore the AI recipe. The plugin renders previews with the bundled sharp engine and exports JPEG copies while keeping sources untouched. the scoring model can suggest crop/straighten/exposure/contrast/saturation/sharpen. Tune exposure/contrast/saturation/sharpen/rotate in the single view, save a per-photo human recipe, or restore the AI recipe. The plugin renders previews with the bundled sharp engine and exports JPEG copies while keeping sources untouched. Crop stays from the AI suggestion.
+- **Cross-project wall**: filter reviewable photos from multiple projects by scene label, verdict and project; sort by score/time/project; export the filtered set or a selection with a single manifest.
+- **AI run history**: per-project stage-level model/token/cost/call/error history for grid, rank and score, with a unified checkpoint/AI-history card.
+- **Portable edit recipes**: manual crop with freeform, 4:3 / 5:4 / 1:1 / 16:9 / 16:10 / 3:2 presets, orientation swap, and draggable handles. Tune exposure/contrast/saturation/sharpen/rotate, save a per-photo human recipe, or restore the AI recipe. The plugin renders previews with the bundled sharp engine and exports JPEG copies while keeping sources untouched.
 - **No black corners**: straightening auto-crops the largest inscribed rectangle.
-- **No micro-crops**: recipes whose trimmed edges are all below 18% are treated as uncropped; the UI shows retained size and offsets.
+- **No AI micro-crops**: AI recipes whose trimmed edges are all below 18% are treated as uncropped; manual crops are preserved. The UI shows retained size and offsets.
 - **Calibration and export**: blind-sample calibration, bucket export, hardlink/copy, `manifest.csv` + `manifest.json` with scene columns and `editSource`, source-integrity checks.
 - **Unified UI**: shared buttons/forms/tabs/state cards, consistent back/close and primary-action placement, responsive layouts, dark-theme-aware status colors, and a `check:ui` guard against inline visual styles.
 - **Scene-aware review**: per-photo scene tags (portrait / landscape / architecture / street / event / flower / wildlife / sculpture / other), manual tag correction, scene filters, and a virtualized page-200 review wall that can reach every photo.
+- **Export progress and persistence**: estimated virtual export progress, a completion toast, and in-memory project/photo-wall scroll restoration.
+- **Node compatibility**: Node 22.23+ is the baseline; the scan path is also verified on Node 26 (avoids the exifr FileHandle leak).
 
 ## Requirements
 
@@ -63,7 +65,9 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 
 ![Export](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-export-2026-11.png)
 
-Screenshots use synthetic fixture images and simulated scores; no real photos or account data are included. The image filenames include 2026-11 so GitHub/npm caches pick up the current UI.
+![Cross-project wall](https://raw.githubusercontent.com/uoiszero/dsh-photo-picker/main/plugin/assets/screenshots/workbench-global-2026-11.png)
+
+Screenshots use synthetic fixture images and simulated scores; no real photos or account data are included. Project detail and cross-project wall show the 0.7 UI; the other images illustrate the same flows.
 
 ## Links
 
