@@ -50,7 +50,13 @@ export async function scanProject({ db, projectId, source, onProgress = () => {}
       const info = await source.stat(item.relPath)
       let exif = {}
       try {
-        exif = await exifr.parse(source.absolute(item.relPath), { pick: EXIF_FIELDS }) ?? {}
+        // Node 26 + exifr 7.1.3: chunked reader opens a FileHandle and calls
+        // fh.stat(string), which throws before close; GC then aborts the host.
+        // Non-chunked mode uses readFile and avoids the FileHandle entirely.
+        exif = await exifr.parse(source.absolute(item.relPath), {
+          pick: EXIF_FIELDS,
+          chunked: false,
+        }) ?? {}
       } catch {
         exif = {}
       }
