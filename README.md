@@ -2,7 +2,11 @@
 
 > 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录。
 
-**版本 0.7.0** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+**版本 0.7.1** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
+
+### 0.7.1 修复
+
+- 修复 Node 26 下扫描阶段 `exifr` 打开源文件 `FileHandle` 后未关闭、GC 时导致 DSH 进程退出的问题。扫描读取 EXIF 改为非 chunked 模式，不再依赖 FileHandle。
 
 ### 0.7.0 新增
 
@@ -363,6 +367,8 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 13：AI 运行记录与跨项目照片墙](docs/superpowers/plans/2026-11-21-photo-picker-13-ai-runs-global-wall.md)
 
 ## 版本
+
+0.7.1（Node 26 扫描修复）：修复 exifr 在 Node 26 下的 FileHandle 泄漏，扫描/自动跑不再因 GC 退出。
 
 0.7.0（跨项目照片墙 + AI 历史 + 跨项目导出）：项目多选照片墙、场景/判定筛选、跨项目导出与唯一 manifest；项目 AI 运行记录和统一运行记录 UI；导出进度/完成提示；列表与图墙滚动位置保持。
 
