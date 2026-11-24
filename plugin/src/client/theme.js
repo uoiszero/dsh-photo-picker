@@ -833,6 +833,59 @@ export const STYLES = `
 .pp-export-progress .pp-progress-track { height: 7px; }
 .pp-export-progress .pp-progress-fill { transition: width .12s linear; }
 
+.pp-curve-section { display: grid; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.pp-curve-editor { display: grid; gap: 7px; }
+.pp-curve-head { display: flex; align-items: center; gap: 8px; }
+.pp-curve-reset-row { display: flex; justify-content: flex-end; gap: 2px; margin-top: -4px; }
+.pp-curve-graph { width: min(100%, 220px); max-width: 220px; margin: 0 auto; aspect-ratio: 1 / 1; height: auto; display: block; touch-action: none; cursor: crosshair; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; touch-action: none; }
+.pp-curve-bg { fill: transparent; }
+.pp-curve-grid { stroke: var(--dsw-alias-label-secondary); stroke-opacity: .45; stroke-width: .45; stroke-dasharray: 2.2 2.2; }
+.pp-curve-diagonal { stroke: var(--dsw-alias-border-l2); stroke-width: .35; }
+.pp-curve-line { fill: none; stroke: var(--pp-curve-accent, var(--dsw-alias-brand-primary)); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.pp-curve-point { fill: var(--dsw-alias-bg-layer-1); stroke: var(--pp-curve-accent, var(--dsw-alias-brand-primary)); stroke-width: 1.4; vector-effect: non-scaling-stroke; cursor: grab; }
+.pp-curve-point:active { cursor: grabbing; }
+.pp-curve-hint { font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-curve-preset-block { display: grid; gap: 5px; }
+.pp-chip-button { cursor: pointer; }
+.pp-style-preset-list { display: grid; gap: 4px; }
+.pp-style-preset-row { display: flex; align-items: center; gap: 6px; }
+.pp-style-preset-apply { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 7px; padding: 6px 8px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); text-align: left; cursor: pointer; }
+.pp-style-preset-apply:hover { border-color: var(--dsw-alias-brand-primary); }
+.pp-style-preset-apply strong { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-style-preset-apply span { margin-left: auto; font-size: 10px; color: var(--dsw-alias-label-secondary); white-space: nowrap; }
+.pp-style-dialog { display: grid; gap: 10px; }
+.pp-check-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dsw-alias-label-primary); cursor: pointer; }
+.pp-check-line input { accent-color: var(--dsw-alias-brand-primary); }
+.pp-preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.pp-preset-card { display: grid; gap: 3px; min-width: 0; padding: 4px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); text-align: left; cursor: pointer; }
+.pp-preset-card:hover { border-color: var(--dsw-alias-brand-primary); }
+.pp-preset-thumb { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 4px; background: var(--dsw-alias-bg-layer-2); }
+.pp-preset-thumb-empty { background: linear-gradient(135deg, var(--dsw-alias-bg-layer-2), var(--dsw-alias-bg-layer-3)); }
+.pp-preset-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 1.4; }
+.pp-preset-badge { font-size: 9px; color: var(--dsw-alias-label-secondary); }
+.pp-preset-card-wrap { display: grid; gap: 2px; }
+.pp-preset-card-wrap .pp-button { min-height: 0; padding: 2px 4px; font-size: 10px; }
+.pp-single-panel { align-content: start; }
+.pp-edit-group { display: grid; gap: 12px; min-height: 0; }
+.pp-edit-group .pp-recipe-editor-grid { margin-top: 0; }
+.pp-edit-group .pp-curve-section { margin-top: 0; padding-top: 0; border-top: 0; }
+.pp-edit-footer { position: sticky; bottom: -16px; z-index: 2; display: grid; gap: 8px; margin: 4px -16px -16px; padding: 10px 16px 16px; background: var(--dsw-alias-bg-overlay); border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-edit-footer .pp-recipe-actions { margin-top: 0; }
+.pp-curve-channels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 3px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 9px; background: var(--dsw-alias-bg-layer-2); }
+.pp-curve-channel { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 7px 3px; border: 0; border-radius: 7px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 11px; line-height: 1.2; white-space: nowrap; cursor: pointer; }
+.pp-curve-channel:hover { color: var(--dsw-alias-label-primary); }
+.pp-curve-channel[aria-selected="true"] { background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.pp-channel-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-border-l2) 65%, transparent); }
+.pp-channel-dot-rgb { background: conic-gradient(var(--pp-status-reject), var(--dsw-alias-brand-primary), var(--pp-status-keep), var(--pp-status-reject)); }
+.pp-channel-dot-red { background: var(--pp-status-reject); }
+.pp-channel-dot-green { background: var(--pp-status-keep); }
+.pp-channel-dot-blue { background: var(--dsw-alias-brand-primary); }
+.pp-channel-dot-luma { background: linear-gradient(135deg, var(--dsw-alias-label-primary), var(--dsw-alias-label-secondary)); }
+.pp-score-notice { padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--pp-status-keep) 9%, var(--dsw-alias-bg-layer-1)); color: var(--dsw-alias-label-primary); font-size: 12px; }
+.pp-subject { font-size: 15px; font-weight: 650; line-height: 1.4; color: var(--dsw-alias-label-primary); }
+.pp-caption { font-size: 12px; line-height: 1.65; color: var(--dsw-alias-label-secondary); }
+
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;

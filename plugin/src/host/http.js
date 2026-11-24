@@ -73,6 +73,7 @@ export function createHttpHandler(service) {
           projectIds: list('projects'),
           scenes: list('scenes'),
           verdicts: list('verdicts'),
+          includeAiRejected: query.get('includeAiRejected') === '1',
           sort: query.get('sort') ?? undefined,
           limit: Number(query.get('limit') ?? 120),
           offset: Number(query.get('offset') ?? 0),
@@ -84,6 +85,18 @@ export function createHttpHandler(service) {
       }
       if (pathname === '/photo-picker/api/photos/export/run' && req.method === 'POST') {
         return send(res, 200, await service.globalExportRun(await readJson(req)))
+      }
+
+      if (pathname === '/photo-picker/api/style-presets' && req.method === 'GET') {
+        return send(res, 200, await service.stylePresets())
+      }
+      if (pathname === '/photo-picker/api/style-presets' && req.method === 'POST') {
+        return send(res, 201, await service.createStylePreset(await readJson(req)))
+      }
+
+      const stylePresetMatch = pathname.match(/^\/photo-picker\/api\/style-presets\/([^/]+)$/)
+      if (stylePresetMatch !== null && req.method === 'DELETE') {
+        return send(res, 200, await service.removeStylePreset(stylePresetMatch[1]))
       }
 
       if (pathname === '/photo-picker/api/projects' && req.method === 'GET') {
@@ -119,6 +132,7 @@ export function createHttpHandler(service) {
           scope: query.get('scope') ?? undefined,
           state: query.get('state') ?? undefined,
           verdict: query.get('verdict') ?? undefined,
+          includeAiRejected: query.get('includeAiRejected') === '1',
           scene: query.get('scene') ?? undefined,
           groupId: query.get('group') ?? undefined,
           sort: query.get('sort') ?? undefined,
@@ -127,6 +141,15 @@ export function createHttpHandler(service) {
           limit: Number(query.get('limit') ?? 60),
           offset: Number(query.get('offset') ?? 0),
         }))
+      }
+
+      const editThumbMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)\/edit-thumb$/)
+      if (editThumbMatch !== null && req.method === 'POST') {
+        const body = await readJson(req)
+        const buffer = await service.renderRecipeThumbnail(editThumbMatch[1], editThumbMatch[2], body.recipe)
+        res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'no-store' })
+        res.end(buffer)
+        return
       }
 
       const editPreviewMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)\/edit-preview$/)
@@ -148,6 +171,11 @@ export function createHttpHandler(service) {
       if (scenesMatch !== null && req.method === 'PATCH') {
         const body = await readJson(req)
         return send(res, 200, await service.setPhotoScenes(scenesMatch[1], scenesMatch[2], body))
+      }
+
+      const scorePhotoMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)\/score$/)
+      if (scorePhotoMatch !== null && req.method === 'POST') {
+        return send(res, 200, await service.scorePhoto(scorePhotoMatch[1], scorePhotoMatch[2]))
       }
 
       const photoMatch = pathname.match(/^\/photo-picker\/api\/projects\/([^/]+)\/photos\/([^/]+)$/)

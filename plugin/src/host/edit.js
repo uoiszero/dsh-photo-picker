@@ -4,8 +4,66 @@ import { nanoid } from 'nanoid'
 import sharp from 'sharp'
 import { decodeToJpeg } from './images.js'
 import { RECIPE_ENGINE, cropPixels, maxInscribedRect } from './recipe.js'
+import { curveLut, isIdentityCurve, isIdentityCurves } from '../shared/curves.js'
 
 export { RECIPE_ENGINE as EDIT_ENGINE }
+
+async function applyCurveLuts(image, curves) {
+  const { data, info } = await image.raw().toBuffer({ resolveWithObject: true })
+  const channels = info.channels
+  const master = curveLut(curves.master)
+  const red = curveLut(curves.r)
+  const green = curveLut(curves.g)
+  const blue = curveLut(curves.b)
+  const luma = curveLut(curves.luma)
+  const useMaster = !isIdentityCurve(curves.master)
+  const useRed = !isIdentityCurve(curves.r)
+  const useGreen = !isIdentityCurve(curves.g)
+  const useBlue = !isIdentityCurve(curves.b)
+  const useLuma = !isIdentityCurve(curves.luma)
+
+  for (let index = 0; index < data.length; index += channels) {
+    if (channels === 1 || channels === 2) {
+      let value = data[index]
+      if (useMaster) value = master[value]
+      if (useLuma) value = luma[value]
+      data[index] = value
+      continue
+    }
+    let r = data[index]
+    let g = data[index + 1]
+    let b = data[index + 2]
+    if (useMaster) {
+      r = master[r]
+      g = master[g]
+      b = master[b]
+    }
+    if (useRed) r = red[r]
+    if (useGreen) g = green[g]
+    if (useBlue) b = blue[b]
+    if (useLuma) {
+      const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+      const mapped = luma[Math.max(0, Math.min(255, Math.round(luminance)))]
+      if (luminance < 0.5) {
+        r = mapped
+        g = mapped
+        b = mapped
+      } else {
+        const scale = mapped / luminance
+        r = Math.max(0, Math.min(255, Math.round(r * scale)))
+        g = Math.max(0, Math.min(255, Math.round(g * scale)))
+        b = Math.max(0, Math.min(255, Math.round(b * scale)))
+      }
+    }
+    data[index] = r
+    data[index + 1] = g
+    data[index + 2] = b
+  }
+
+  return sharp(data, {
+    raw: { width: info.width, height: info.height, channels },
+  })
+}
 
 async function readableInput(sourcePath) {
   try {
@@ -57,10 +115,16 @@ export async function renderEditedBuffer({ sourcePath, recipe, maxWidth = null }
   if (Math.abs(recipe.saturation) > 1e-6) {
     output = output.modulate({ saturation: Math.max(0, 1 + recipe.saturation) })
   }
+
+  const hasCurves = !isIdentityCurves(recipe.curves)
+  if (hasCurves && maxWidth !== null && maxWidth > 0) {
+    output = output.resize({ width: maxWidth, withoutEnlargement: true })
+  }
+  if (hasCurves) output = await applyCurveLuts(output, recipe.curves)
   if (recipe.sharpen > 0.01) {
     output = output.sharpen({ sigma: 0.5 + recipe.sharpen })
   }
-  if (maxWidth !== null && maxWidth > 0) {
+  if (!hasCurves && maxWidth !== null && maxWidth > 0) {
     output = output.resize({ width: maxWidth, withoutEnlargement: true })
   }
   return output.jpeg({ quality: 92 }).toBuffer()

@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { openDb, ensureAssessmentRecipeColumn, ensureAssessmentSceneColumns } from '../src/host/db.js'
+import { openDb, ensureAssessmentRecipeColumn, ensureAssessmentSceneColumns, ensureAssessmentTextColumns } from '../src/host/db.js'
 
 test('openDb creates the full schema in WAL mode', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'pp-db-'))
@@ -22,6 +22,8 @@ test('openDb creates the full schema in WAL mode', () => {
   const assessmentColumns = db.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
   assert.ok(assessmentColumns.includes('scenes_json'))
   assert.ok(assessmentColumns.includes('primary_scene'))
+  assert.ok(assessmentColumns.includes('subject'))
+  assert.ok(assessmentColumns.includes('caption'))
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })
@@ -46,6 +48,19 @@ test('ensureAssessmentSceneColumns migrates old and repeated schemas', () => {
   const columns = database.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
   assert.ok(columns.includes('scenes_json'))
   assert.ok(columns.includes('primary_scene'))
+  database.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('ensureAssessmentTextColumns migrates subject/caption', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pp-db-text-'))
+  const database = new DatabaseSync(path.join(dir, 'old.sqlite'))
+  database.exec('CREATE TABLE assessments (id TEXT PRIMARY KEY)')
+  ensureAssessmentTextColumns(database)
+  ensureAssessmentTextColumns(database)
+  const columns = database.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
+  assert.ok(columns.includes('subject'))
+  assert.ok(columns.includes('caption'))
   database.close()
   rmSync(dir, { recursive: true, force: true })
 })

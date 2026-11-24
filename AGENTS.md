@@ -15,7 +15,7 @@
 
 ```bash
 npm install              # 依赖（sharp/exifr/nanoid/esbuild；类型检查用 tsc）
-npm test                 # 全部 node:test（137 个）
+npm test                 # 全部 node:test（162 个）
 npm run typecheck        # tsc --noEmit（TSX 只转译、esbuild 不做类型检查）
 npm run build:client     # plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # /tmp/pp-fixtures（120 张测试图）
@@ -92,6 +92,13 @@ npm run verify           # 以上全串一遍，与 CI 同一套门禁
 - Windows 路径比较用 `isSameOrInside`（盘符/UNC/大小写），相对路径入库用 `toPortablePath`，拼回绝对路径用 `fromPortablePath`；不要用字符串前缀比较。
 - Windows 原生目录选择：UTM + Win11 ARM 上 `FolderBrowserDialog` 仍可能出现在 DSH 下层；`platform.js` 已用 TopMost owner + 单飞，仍以 `Alt+Tab` / 最小化 DSH 为兜底。不要为这个问题再叠加新的选择器实现。
 - Windows 原生验收已通过：扫描、预处理、AI 粗筛/精评、复核、导出；HEIC/RAW 仍依赖系统 HEIF/HEVC 与 Raw Image Extension，缺扩展时按 `unreadable` 处理。
+- **曲线**：控制点数学集中在 `plugin/src/shared/curves.js`，Host 用 256 级 LUT，Client 用 SVG；不要在两个端各写一套插值。`recipeSignature` 必须包含非恒等 curves，否则编辑预览会命中旧缓存。曲线在 `edit.js` 里于曝光/对比/饱和度之后、锐化之前应用；有曲线且 `maxWidth` 时先缩放再 LUT，避免预览对整张大图做逐像素处理。
+- **风格模板**：全局文件 `$DSH_HOME/storages/photo-picker/style-presets.json`；只存曲线/饱和度/分析元数据，不存样片路径或原图。AI 提取把 1–5 张样片拼成一张 contact sheet，一次调用；失败或无图片模型必须回退本地 CDF，不能让模板提取整体失败。应用模板不调用模型。
+- **EXIF 方向**：数据库里的 `photos.orientation` 可能是数字 `1–8`，也可能是 exifr 文案（如 `Rotate 270 CW`）；判断画面是否旋转必须用 `frameAspectOf()`/`isRotatedOrientation()`，不要直接做 `orientation >= 5`。裁剪比例和 cropFrame 要以旋转后的预览尺寸为准。
+- **精评字段**：`assessments` 新增 `subject`/`caption`；旧库通过 `ensureAssessmentTextColumns` 迁移。提示词版本已升到 `v8`，旧 v7 assessment 保留，重新评分才会写入新字段；caption 是事实性描述，不得推断人物身份/地点/事件。
+- **单图精评**：`POST /projects/:id/photos/:pid/score` 调用 `runScoreStage` 的定向模式（`targetPhotoIds` + `force`）；定向查询绕过批量评分的 AI reject 和已有 assessment 过滤，但仍排除 `filtered_*`/`unreadable`。评分只更新 AI decision，人工 decision 永远优先；每次点击都会新增 assessment 和 score stage run。
+- **复核范围**：默认 `scope=review` 排除 `grid_rejected` 和技术过滤照片；项目/跨项目查看「弃用」时必须传 `includeAiRejected=1`，把有 AI reject 的 `grid_rejected` 纳入，但仍排除技术过滤。不要直接把 `grid_rejected` 加进默认 `REVIEW_STATES`。
+- **复核长列表分页**：项目照片墙不能只依赖 `IntersectionObserver`；`ReviewSection` 同时有「滚动距离兜底 + 可点击的加载更多按钮」，并用 `loadingMoreRef` 防重复请求。弃用列表可能有数百张 `grid_rejected`，必须保留这些兜底。
 - `check:hygiene` 会扫 `/Users/<name>/` 和 `C:\Users\<name>\`：测试 fixture 用 `/photos/...`、`C:\photos\...` 这类中性路径。
 - esbuild 会自动读根 `tsconfig.json`：`scripts/build-client.mjs` 已传 `tsconfigRaw: {}` 隔离。否则调整 `strict` / `module` 等选项会悄悄改变 bundle 字节（例如多出 `"use strict"`），让 CI 的产物同步校验误报。
 

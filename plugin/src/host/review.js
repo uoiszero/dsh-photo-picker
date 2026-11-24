@@ -70,6 +70,8 @@ function toReviewPhoto(row, projectId) {
     postProcessing: parseJson(row.post_processing_json) ?? [],
     scenes: parseJson(row.scenes_json) ?? [],
     primaryScene: row.primary_scene ?? null,
+    subject: row.subject ?? null,
+    caption: row.caption ?? null,
     sceneSource: row.scene_source ?? null,
     editSource: row.edit_source ?? null,
     editRecipe,
@@ -84,7 +86,14 @@ function buildWhere(projectId, opts = {}) {
   const params = [projectId]
   const scope = opts.scope ?? 'review'
   if (scope === 'review') {
-    clauses.push(`p.state IN (${REVIEW_STATES.map(() => '?').join(', ')})`)
+    const statePlaceholders = REVIEW_STATES.map(() => '?').join(', ')
+    if (opts.includeAiRejected === true) {
+      // 网格落选的照片不在默认复核队列里，但它们的最终判定是 reject；
+      // 查看「弃用」时要把这些照片一起列出来（仍排除技术过滤/不可读）。
+      clauses.push(`(p.state IN (${statePlaceholders}) OR (p.state = 'grid_rejected' AND ${VERDICT_SQL} = 'reject'))`)
+    } else {
+      clauses.push(`p.state IN (${statePlaceholders})`)
+    }
     params.push(...REVIEW_STATES)
   }
   if (opts.state !== undefined) {
@@ -140,6 +149,7 @@ export function listReviewPhotos(db, projectId, opts = {}) {
     SELECT p.id, p.rel_path, p.state, p.width, p.height, p.taken_at, p.group_id,
            d.verdict AS human_verdict,
            a.score, a.verdict AS ai_verdict, a.reason, a.dimensions_json, a.post_processing_json,
+           a.subject, a.caption,
            COALESCE(so.scenes_json, a.scenes_json) AS scenes_json,
            COALESCE(so.primary_scene, a.primary_scene) AS primary_scene,
            CASE WHEN so.photo_id IS NULL THEN 'ai' ELSE 'human' END AS scene_source,
@@ -153,9 +163,10 @@ export function listReviewPhotos(db, projectId, opts = {}) {
 
 export function getPhotoDetail(db, projectId, photoId) {
   const row = db.prepare(`
-    SELECT p.id, p.rel_path, p.state, p.width, p.height, p.taken_at, p.group_id, p.camera, p.lens,
+    SELECT p.id, p.rel_path, p.state, p.width, p.height, p.orientation, p.taken_at, p.group_id, p.camera, p.lens,
            d.verdict AS human_verdict,
            a.score, a.verdict AS ai_verdict, a.reason, a.dimensions_json, a.post_processing_json,
+           a.subject, a.caption,
            COALESCE(so.scenes_json, a.scenes_json) AS scenes_json,
            COALESCE(so.primary_scene, a.primary_scene) AS primary_scene,
            CASE WHEN so.photo_id IS NULL THEN 'ai' ELSE 'human' END AS scene_source,
@@ -173,6 +184,7 @@ export function getPhotoDetail(db, projectId, photoId) {
   }
   const photo = {
     ...toReviewPhoto(row, projectId),
+    orientation: row.orientation ?? null,
     camera: row.camera ?? null,
     lens: row.lens ?? null,
   }

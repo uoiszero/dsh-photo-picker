@@ -208,10 +208,14 @@ export function parseScore(text) {
     pickObject(value.edit_recipe, value.editRecipe, value['修图配方'], value['修图建议参数']),
   )
   const { scenes, primaryScene } = parseScenes(value)
+  const subjectRaw = pickString(value.subject, value['主体'], value['主要主体'])
+  const captionRaw = pickString(value.caption, value['描述'], value['画面描述'], value['图片描述'])
   return {
     score: Math.min(10, Math.max(0, Math.round(score * 10) / 10)),
     scenes,
     primaryScene,
+    subject: subjectRaw === undefined ? null : normalizeReason(subjectRaw, 60),
+    caption: captionRaw === undefined ? null : normalizeReason(captionRaw, 200),
     verdict,
     dimensions,
     postProcessing,

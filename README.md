@@ -1,6 +1,6 @@
 # 照片工作台 · dsh-photo-picker
 
-> 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录；支持跨项目照片墙、AI 运行记录和可追溯导出。
+> 一个长在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）里照片挑选工作台：扫描本机照片，本地预处理去重/过滤/分组，AI 分层粗筛与精评，人工复核后把 keep / maybe 导出成可直接使用的目录；支持跨项目照片墙、AI 运行记录、曲线调整、样片风格模板和可追溯导出。
 
 **版本 0.7.1** · [npm](https://www.npmjs.com/package/dsh-photo-picker) · macOS / Windows · 本机优先 · 源目录只读
 
@@ -121,11 +121,18 @@
 - **模型路由**：项目设置可切换 provider route 与模型；默认仍是 `deepseek-official / deepseek-flash`，Qwen 等作为备选。
 - **AI 精评**：组内排序（>6 张分块）→ 单张六维评分 → 阈值收敛；单张精评先判断人像/风光/建筑/街拍/活动/花植物/动物/雕塑展品等场景，再按主场景选择评分重点。坏 JSON 自动重试，人工判定永远覆盖 AI。
 - **预算与稳定性**：按 usage 实时计费、预算触顶暂停、并发/重试/退避、离峰开关、自动跑串联阶段、阶段间暂停、断点续跑。
+- **弃用筛选**：「弃用」会同时列出精评 reject 和网格粗筛落选（`grid_rejected`）的照片，与项目统计一致；「全部」仍默认隐藏网格落选，避免复核队列被淹没。
 - **复核**：图墙筛选/排序/按场景筛选/多选改判/撤销最近 20 步；单图可手动编辑 1–3 个场景标签并指定主场景，人工标签优先；图墙按 200 张/页无限滚动并只渲染可视行；图墙缩略图显示 AI 场景标签；单图 1600px 预览、维度条、理由、后期建议、场景 chips；组对比 6 张/页；`J/K/P/M/X/Space` 快捷键。
 - **跨项目照片墙**：「项目 / 全部照片」切换；项目多选，按场景标签、判定筛选，按分数/拍摄时间/项目排序；支持勾选或按当前筛选结果跨项目导出，写单一 aggregate manifest。
 - **AI 运行记录**：每个项目记录 grid / rank / score 的模型、状态、耗时、token、调用次数、费用、处理数量和错误码；运行记录统一为「阶段检查点 / AI 历史」两个标签页。
 - **导出体验**：虚拟进度条（有预览时按张数/字节/修图数估算，否则在后段减速），完成后自动关闭对话框并显示右下角提示；跨项目导出支持按项目分目录或平铺。
 - **滚动位置保持**：项目列表和项目照片墙在进入/退出详情后保持位置，刷新页面后允许回到顶部。
+- **精评语义字段**：单图精评除 scenes/score/reason 外，还返回具体的 `subject`（如“黄玫瑰”）和一句事实性 `caption`，在「信息」分组展示；scenes 仍保持固定枚举。
+- **单图 AI 精评**：单图右栏可对当前照片单独发起一次精评；`grid_rejected`/弃用照片也可用，已有评分可重新精评。人工判定优先，永不覆盖；结果会更新评分、理由、场景、配方并写入 AI 历史。
+- **单图工具分组**：右侧修图栏改为「基础 / 曲线 / 预设 / 信息」四组，一次只显示当前组；图片留在左侧，保存/恢复固定在底部，不再把所有评分、说明和控件堆在一列。
+- **曲线调整**：单图「曲线」是正方形编辑框，支持 RGB 主曲线、红/绿/蓝通道曲线和亮度曲线；鼠标空白处按下即新建并拖动控制点，拖动时显示 4×4 网格，双击删除，端点为纯黑/纯白。曲线在曝光/对比/饱和度之后、锐化之前应用。
+- **内置曲线预设**：柔和对比、强对比、提亮阴影、压暗高光、哑光褪色、暖色胶片、冷青电影，开箱即用；每张预设卡用当前图片和当前裁剪实时渲染效果缩略图。
+- **样片风格模板**：在「全部照片」或项目照片墙选中 1–5 张样片，提取全局色调/色彩曲线并保存为跨项目模板；可选一次图片模型分析，生成名称、描述和初始色彩参数，模型失败自动回退本地统计。模板应用不调用模型；预设卡同样使用当前图片渲染缩略效果。
 - **修图配方**：单张精评可输出与软件无关的结构化配方（裁剪/旋转/曝光/对比/饱和度/锐化），用内置 sharp 引擎生成编辑预览；单图页点击右上角「原图/修图」标签切换，支持九宫格/十字线辅助线；「修图建议」下方直接显示曝光/对比/饱和/锐化/旋转滑杆和手动裁剪：支持自由裁剪、4:3 / 5:4 / 1:1 / 16:9 / 16:10 / 3:2 比例与长短边切换；拖动时实时生成临时预览、不写库，点击保存才写入人工配方，可恢复 AI。导出时可选择“应用修图建议”，输出 JPEG 编辑副本并写进 manifest，源文件保持只读。
 - **校准**：按拍摄时间分层抽 80 张盲评，输出 keep 精确率/召回率/F1、三分类一致率、阈值曲线，可一键应用建议阈值。
 - **导出**：keep / maybe / reject 分桶，硬链接（跨盘自动回退复制）或复制，保留目录结构或平铺，`manifest.csv` + `manifest.json`（含 `scenes` / `primary_scene`；JSON 还有 `editSource`），导出前后抽样校验源文件未被修改。勾选“应用修图建议”时按配方重新渲染 JPEG（强制复制，不做硬链接）。
@@ -208,9 +215,10 @@ dsh web
 4. 在「复核」区筛选 keep/maybe/reject，多选后批量判定；双击/点缩略图进入单图，`G` 进入组对比；单图内可点「编辑场景」修正 AI 标签。
 5. 打开 **全部照片**：跨项目按项目/场景/判定筛选，点缩略图看大图；可直接导出当前筛选或勾选照片。
 6. 项目详情展开 **运行记录**：在「阶段检查点」和「AI 历史」间切换，查看模型、token、费用和失败信息。
-7. 觉得阈值不准时点 **开始校准**：盲评若干张后看报告，一键应用建议阈值。
-8. 点 **导出**：选目标目录、分桶与硬链接/复制，先看 dry-run 汇总，再执行；跨项目导出使用「全部照片」页面。
-9. 项目卡片右上角的垃圾桶图标（悬停/聚焦显示）会移除本地工作区、数据库和缩略图；源照片不会被删除。
+7. 单图「修图建议」里展开 **曲线**：试内置预设，或手动画 RGB/红/绿/蓝/亮度曲线；「全部照片」或项目照片墙选 1–5 张样片可提取自己的风格模板。
+8. 觉得阈值不准时点 **开始校准**：盲评若干张后看报告，一键应用建议阈值。
+9. 点 **导出**：选目标目录、分桶与硬链接/复制，先看 dry-run 汇总，再执行；跨项目导出使用「全部照片」页面。
+10. 项目卡片右上角的垃圾桶图标（悬停/聚焦显示）会移除本地工作区、数据库和缩略图；源照片不会被删除。
 
 ### 快捷键
 
@@ -270,6 +278,9 @@ Harness Web UI
 | `GET /photo-picker/api/projects/:id/checkpoints` | 阶段检查点 |
 | `GET/POST /photo-picker/api/projects/:id/calibration[/sample]` | 校准样本 / 报告 |
 | `GET /photo-picker/api/projects/:id/ai-runs` | AI 阶段历史（分页） |
+| `POST /photo-picker/api/projects/:id/photos/:pid/score` | 单张精评（含弃用/网格落选，人工判定优先） |
+| `GET/POST /photo-picker/api/style-presets` | 全局风格模板列表 / 从样片提取 |
+| `DELETE /photo-picker/api/style-presets/:id` | 删除自定义风格模板 |
 | `POST /photo-picker/api/projects/:id/export/preview\|run` | dry-run / 导出 |
 | `GET /photo-picker/api/prompt`、`/models` | 提示词全文 / 模型目录 |
 | `GET /photo-picker/media/thumb\|preview\|edit/...` | 缩略图 / 预览图 / 编辑预览 |
@@ -293,7 +304,7 @@ Harness Web UI
 
 ```bash
 npm install              # 安装依赖
-npm test                 # 137 个单元/集成测试（node:test）
+npm test                 # 162 个单元/集成测试（node:test）
 npm run typecheck        # TSX 类型检查（tsc --noEmit）
 npm run build:client     # 打包 plugin/src/client -> plugin/dist/client.js
 npm run fixtures         # 生成 120 张测试夹具到 /tmp/pp-fixtures
@@ -380,6 +391,7 @@ docs/superpowers/           # 设计 spec 与执行计划
   - [Plan 11：模型路由选择](docs/superpowers/plans/2026-11-21-photo-picker-11-model-route.md)
   - [Plan 12：手动裁剪](docs/superpowers/plans/2026-11-21-photo-picker-12-manual-crop.md)
   - [Plan 13：AI 运行记录与跨项目照片墙](docs/superpowers/plans/2026-11-21-photo-picker-13-ai-runs-global-wall.md)
+  - [Plan 14：曲线调整与样片风格模板](docs/superpowers/plans/2026-11-23-photo-picker-14-curves-style-presets.md)
 
 ## 版本
 

@@ -42,6 +42,9 @@ function stub() {
     async promptInfo(projectId) { return { version: 'v1', project: projectId ?? null, prompts: { gridUser: 'x' } } },
     async models(route) { return { route, models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }] } },
     async modelRoutes() { return [{ id: 'deepseek-official', name: 'DeepSeek', models: [{ id: 'deepseek-flash', inputModalities: ['text', 'image'] }] }] },
+    async stylePresets() { return [{ id: 's1', name: 'Warm' }] },
+    async createStylePreset(body) { return { preset: { id: 's2', name: body.name }, warning: null } },
+    async removeStylePreset(id) { return { removed: id === 's1' } },
     async previewFile() { return undefined },
     async exportPreview(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
     async exportRun(id, options) { return { total: 2, dest: options.dest, edit: options.edit, counts: { keep: 2 } } },
@@ -52,6 +55,8 @@ function stub() {
     async thumbFile() { return undefined },
     async editedFile() { return undefined },
     async renderRecipePreview() { return Buffer.from([0xff, 0xd8, 0xff, 0xd9]) },
+    async renderRecipeThumbnail() { return Buffer.from([0xff, 0xd8, 0xff, 0xd9]) },
+    async scorePhoto(id, photoId) { return { result: { scored: 1, failed: 0 }, detail: { id: photoId, score: 8.2 } } },
   }
 }
 
@@ -111,6 +116,37 @@ test('health and project routes answer JSON', async () => {
 
     const deleted = await fetch(`${origin}/photo-picker/api/projects/p1`, { method: 'DELETE' })
     assert.deepEqual(await deleted.json(), { deleted: 'p1' })
+  })
+})
+
+test('style preset routes list, create and delete', async () => {
+  await withServer(async origin => {
+    const list = await fetch(`${origin}/photo-picker/api/style-presets`)
+    assert.equal(list.status, 200)
+    assert.deepEqual(await list.json(), [{ id: 's1', name: 'Warm' }])
+
+    const created = await fetch(`${origin}/photo-picker/api/style-presets`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Cool', useAi: false, items: [{ projectId: 'p1', photoId: 'ph1' }] }),
+    })
+    assert.equal(created.status, 201)
+    assert.deepEqual(await created.json(), { preset: { id: 's2', name: 'Cool' }, warning: null })
+
+    const removed = await fetch(`${origin}/photo-picker/api/style-presets/s1`, { method: 'DELETE' })
+    assert.deepEqual(await removed.json(), { removed: true })
+  })
+})
+
+test('single-photo score route returns result and detail', async () => {
+  await withServer(async origin => {
+    const response = await fetch(`${origin}/photo-picker/api/projects/p1/photos/ph1/score`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    })
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), { result: { scored: 1, failed: 0 }, detail: { id: 'ph1', score: 8.2 } })
   })
 })
 
@@ -294,6 +330,15 @@ test('edit preview route streams JPEG and returns structured 404', async () => {
       assert.equal(draft.status, 200)
       assert.equal(draft.headers.get('content-type'), 'image/jpeg')
       assert.deepEqual(Buffer.from(await draft.arrayBuffer()), Buffer.from([0xff, 0xd8, 0xff, 0xd9]))
+
+      const thumb = await fetch(`${origin}/photo-picker/api/projects/p1/photos/m1/edit-thumb`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ recipe: { version: 1, exposureEv: 0.2 } }),
+      })
+      assert.equal(thumb.status, 200)
+      assert.equal(thumb.headers.get('content-type'), 'image/jpeg')
+      assert.deepEqual(Buffer.from(await thumb.arrayBuffer()), Buffer.from([0xff, 0xd8, 0xff, 0xd9]))
     }, service)
   } finally {
     rmSync(dir, { recursive: true, force: true })

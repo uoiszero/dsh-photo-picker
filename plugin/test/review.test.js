@@ -26,14 +26,14 @@ function setup() {
     VALUES (?, 'p1', ?, 10, ?, 'jpeg', ?, ?, ?, ?, ?)`)
   const insertAssessment = db.prepare(`INSERT INTO assessments (id, project_id, target_kind, target_id,
       stage, model_id, prompt_version, score, verdict, dimensions_json, post_processing_json,
-      recipe_json, scenes_json, primary_scene, reason, created_at)
-    VALUES (?, 'p1', 'photo', ?, 'single', 'deepseek-flash', 'v1', ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      recipe_json, scenes_json, primary_scene, subject, caption, reason, created_at)
+    VALUES (?, 'p1', 'photo', ?, 'single', 'deepseek-flash', 'v1', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
   const addAssessment = {
     run(id, targetId, score, verdict, dimensions, postProcessing, reason, createdAt, recipe = null, scenes = [], primaryScene = null) {
       insertAssessment.run(
         id, targetId, score, verdict, dimensions, postProcessing,
         recipe === null || recipe === undefined ? null : JSON.stringify(recipe),
-        JSON.stringify(scenes), primaryScene,
+        JSON.stringify(scenes), primaryScene, null, null,
         reason, createdAt,
       )
     },
@@ -71,11 +71,17 @@ test('listReviewPhotos resolves human > ai > maybe and hides filtered states by 
   assert.deepEqual(byId.a.postProcessing, ['crop_right'])
   assert.deepEqual(byId.a.scenes, ['architecture'])
   assert.equal(byId.a.primaryScene, 'architecture')
+  assert.equal(byId.a.subject, null)
+  assert.equal(byId.a.caption, null)
   assert.equal(items[0].id, 'a') // 默认按分数降序
   assert.equal(items[items.length - 1].id, 'd') // 无分数排最后
 
   const keepOnly = listReviewPhotos(db, 'p1', { verdict: 'keep' })
   assert.deepEqual(keepOnly.items.map(item => item.id).sort(), ['a', 'c'])
+
+  const rejectedOnly = listReviewPhotos(db, 'p1', { verdict: 'reject', includeAiRejected: true })
+  assert.deepEqual(rejectedOnly.items.map(item => item.id), ['e'])
+  assert.equal(rejectedOnly.total, 1)
 
   const all = listReviewPhotos(db, 'p1', { scope: 'all' })
   assert.equal(all.total, 5) // 加上 grid_rejected（f 无缩略图仍排除）
@@ -231,16 +237,18 @@ test('listGroups returns sizes and member thumbnails', () => {
 test('getPhotoDetail uses the latest single assessment', () => {
   const { db, dir, addPhoto } = setup()
   addPhoto.run('m1', 'm1.jpg', 100, 1, null, 'thumbs/m1.webp', 'scored', 1)
-  const insert = (id, promptVersion, createdAt, recipe, score) => db.prepare(`
+  const insert = (id, promptVersion, createdAt, recipe, score, subject = null, caption = null) => db.prepare(`
     INSERT INTO assessments (id, project_id, target_kind, target_id, stage,
-      prompt_version, score, verdict, recipe_json, created_at)
-    VALUES (?, 'p1', 'photo', 'm1', 'single', ?, ?, 'maybe', ?, ?)
-  `).run(id, promptVersion, score, recipe === null ? null : JSON.stringify(recipe), createdAt)
+      prompt_version, score, verdict, recipe_json, subject, caption, created_at)
+    VALUES (?, 'p1', 'photo', 'm1', 'single', ?, ?, 'maybe', ?, ?, ?, ?)
+  `).run(id, promptVersion, score, recipe === null ? null : JSON.stringify(recipe), subject, caption, createdAt)
   insert('a-v1', 'v1', 1, null, 6)
-  insert('a-v2', 'v2', 2, { crop: { left: 0.2, top: 0, width: 0.5, height: 1 } }, 8)
+  insert('a-v2', 'v2', 2, { crop: { left: 0.2, top: 0, width: 0.5, height: 1 } }, 8, '人物肖像', '人物站在浅色背景前。')
   const detail = getPhotoDetail(db, 'p1', 'm1')
   assert.equal(detail.score, 8)
   assert.equal(detail.editRecipe.crop.left, 0.2)
+  assert.equal(detail.subject, '人物肖像')
+  assert.equal(detail.caption, '人物站在浅色背景前。')
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })

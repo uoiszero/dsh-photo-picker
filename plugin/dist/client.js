@@ -204,6 +204,60 @@ var zh = {
   editRecipeHuman: "\u6211\u7684\u8C03\u6574",
   editRecipeReset: "\u6062\u590D AI \u5EFA\u8BAE",
   editRecipeSave: "\u4FDD\u5B58",
+  aiScore: "AI \u7CBE\u8BC4",
+  aiRescore: "\u91CD\u65B0\u7CBE\u8BC4",
+  aiScoring: "\u7CBE\u8BC4\u4E2D\u2026",
+  scoreDone: "\u7CBE\u8BC4\u5B8C\u6210\uFF1A{score} \xB7 {verdict}",
+  scoreFailed: "\u7CBE\u8BC4\u5931\u8D25\uFF0C\u8BF7\u67E5\u770B\u9519\u8BEF\u4FE1\u606F",
+  scoreSaveFirst: "\u8BF7\u5148\u4FDD\u5B58\u5F53\u524D\u4FEE\u56FE\uFF0C\u518D\u8FDB\u884C\u7CBE\u8BC4",
+  editTools: "\u4FEE\u56FE\u5DE5\u5177",
+  editToolBasic: "\u57FA\u7840",
+  editToolCurves: "\u66F2\u7EBF",
+  editToolPresets: "\u9884\u8BBE",
+  editToolInfo: "\u4FE1\u606F",
+  editPresetsHint: "\u4ECE\u300C\u5168\u90E8\u7167\u7247\u300D\u6216\u9879\u76EE\u7167\u7247\u5899\u9009 1\u20135 \u5F20\u6837\u7247\uFF0C\u53EF\u63D0\u53D6\u81EA\u5B9A\u4E49\u98CE\u683C\u6A21\u677F\u3002",
+  curveTitle: "\u66F2\u7EBF",
+  curveHint: "\u62D6\u52A8\u63A7\u5236\u70B9\uFF1B\u70B9\u51FB\u7A7A\u767D\u52A0\u70B9\uFF0C\u53CC\u51FB\u5220\u70B9",
+  curveChannels: "\u66F2\u7EBF\u901A\u9053",
+  curveMaster: "RGB",
+  curveLuma: "\u4EAE\u5EA6",
+  curveRed: "\u7EA2",
+  curveGreen: "\u7EFF",
+  curveBlue: "\u84DD",
+  curveGraphLabel: "\u66F2\u7EBF\u7F16\u8F91\u5668",
+  curveResetChannel: "\u91CD\u7F6E\u901A\u9053",
+  curveResetAll: "\u5168\u90E8\u91CD\u7F6E",
+  curveEditHint: "RGB \u4E3A\u4E3B\u66F2\u7EBF\uFF0C\u7EA2/\u7EFF/\u84DD\u5206\u522B\u4FEE\u6B63\u901A\u9053\uFF0C\u4EAE\u5EA6\u4FDD\u7559\u8272\u76F8\u8C03\u6574\u660E\u6697\u3002",
+  curveBuiltinPresets: "\u5185\u7F6E\u66F2\u7EBF",
+  curveMyPresets: "\u6211\u7684\u98CE\u683C\u6A21\u677F",
+  curvePresetSoftContrast: "\u67D4\u548C\u5BF9\u6BD4",
+  curvePresetSoftContrastHint: "\u8F7B\u5FAE S \u66F2\u7EBF\uFF0C\u4FDD\u7559\u6697\u90E8\u548C\u9AD8\u5149\u7EC6\u8282",
+  curvePresetStrongContrast: "\u5F3A\u5BF9\u6BD4",
+  curvePresetStrongContrastHint: "\u66F4\u660E\u663E\u7684\u660E\u6697\u5206\u79BB",
+  curvePresetShadowLift: "\u63D0\u4EAE\u9634\u5F71",
+  curvePresetShadowLiftHint: "\u6253\u5F00\u6697\u90E8\uFF0C\u9002\u5408\u9006\u5149\u6216\u4F4E\u8C03\u7167\u7247",
+  curvePresetHighlightRolloff: "\u538B\u6697\u9AD8\u5149",
+  curvePresetHighlightRolloffHint: "\u67D4\u5316\u9AD8\u5149\u8FC7\u6E21",
+  curvePresetMatteFade: "\u54D1\u5149\u892A\u8272",
+  curvePresetMatteFadeHint: "\u4F4E\u9ED1\u4F4D\u3001\u4F4E\u767D\u4F4D\u7684\u80F6\u7247\u611F",
+  curvePresetWarmFilm: "\u6696\u8272\u80F6\u7247",
+  curvePresetWarmFilmHint: "\u6696\u9AD8\u5149/\u6696\u4E2D\u95F4\u8C03\uFF0C\u8F7B\u5FAE\u51B7\u9634\u5F71",
+  curvePresetCoolCinema: "\u51B7\u9752\u7535\u5F71",
+  curvePresetCoolCinemaHint: "\u51B7\u9634\u5F71\u4E0E\u9752\u84DD\u8272\u8C03",
+  styleExtractAction: "\u63D0\u53D6\u98CE\u683C",
+  styleExtractTitle: "\u4ECE\u6837\u7247\u63D0\u53D6\u98CE\u683C",
+  styleSampleCount: "\u5DF2\u9009 {n} \u5F20\u6837\u7247",
+  styleName: "\u6A21\u677F\u540D",
+  styleNameHint: "\u7559\u7A7A\u5219\u4F7F\u7528 AI \u5EFA\u8BAE\u7684\u540D\u79F0",
+  styleNameAiPlaceholder: "AI \u81EA\u52A8\u547D\u540D",
+  styleUseAi: "\u8BA9 AI \u5206\u6790\u6837\u7247",
+  styleAiHint: "\u4F1A\u628A 1\u20135 \u5F20\u6837\u7247\u62FC\u6210\u4E00\u5F20\u8054\u7CFB\u8868\u53D1\u9001\u7ED9\u5F53\u524D\u9879\u76EE\u7684\u56FE\u7247\u6A21\u578B\uFF1B\u53EA\u63D0\u53D6\u4E00\u6B21\u3002",
+  styleLocalHint: "\u4E0D\u8C03\u7528\u6A21\u578B\uFF0C\u53EA\u4F7F\u7528\u672C\u5730\u4EAE\u5EA6\u4E0E RGB \u7EDF\u8BA1\u3002",
+  styleExtracting: "\u63D0\u53D6\u4E2D\u2026",
+  styleExtracted: "\u5DF2\u4FDD\u5B58\u98CE\u683C\u6A21\u677F\u201C{name}\u201D",
+  styleSourceAi: "AI \u5206\u6790",
+  styleSourceLocal: "\u672C\u5730\u7EDF\u8BA1",
+  deleteTemplate: "\u5220\u9664",
   editRecipeCropReadonly: "\u88C1\u526A",
   cropEdit: "\u88C1\u526A\u56FE\u7247",
   cropTitle: "\u88C1\u526A",
@@ -240,6 +294,8 @@ var zh = {
   editSharpen: "\u9510\u5316",
   editExport: "\u5E94\u7528\u4FEE\u56FE\u5EFA\u8BAE\uFF08\u8F93\u51FA JPEG \u526F\u672C\uFF09",
   editExportHint: "\u5E94\u7528\u4FEE\u56FE\u65F6\u5F3A\u5236\u590D\u5236\uFF0C\u6E90\u6587\u4EF6\u4E0D\u4F1A\u4FEE\u6539\uFF1B\u6CA1\u6709\u914D\u65B9\u7684\u7167\u7247\u4FDD\u6301\u539F\u6837\u590D\u5236\u3002",
+  subject: "\u4E3B\u4F53",
+  caption: "\u753B\u9762\u63CF\u8FF0",
   reason: "\u7406\u7531",
   scoreLabel: "\u5206\u6570",
   backToWall: "\u8FD4\u56DE\u56FE\u5899",
@@ -520,6 +576,60 @@ var en = {
   editRecipeHuman: "My edit",
   editRecipeReset: "Restore AI",
   editRecipeSave: "Save",
+  aiScore: "AI score",
+  aiRescore: "Re-score",
+  aiScoring: "Scoring\u2026",
+  scoreDone: "Scored: {score} \xB7 {verdict}",
+  scoreFailed: "Scoring failed; see the error details",
+  scoreSaveFirst: "Save the current edit before scoring",
+  editTools: "Edit tools",
+  editToolBasic: "Basic",
+  editToolCurves: "Curves",
+  editToolPresets: "Presets",
+  editToolInfo: "Info",
+  editPresetsHint: "Select 1\u20135 photos on the All Photos or a project wall to extract a custom style preset.",
+  curveTitle: "Curves",
+  curveHint: "Drag points; click to add, double-click to remove",
+  curveChannels: "Curve channels",
+  curveMaster: "RGB",
+  curveLuma: "Brightness",
+  curveRed: "Red",
+  curveGreen: "Green",
+  curveBlue: "Blue",
+  curveGraphLabel: "Curve editor",
+  curveResetChannel: "Reset channel",
+  curveResetAll: "Reset all",
+  curveEditHint: "RGB is the master curve; R/G/B correct channels, and Brightness adjusts luminance while preserving hue.",
+  curveBuiltinPresets: "Built-in curves",
+  curveMyPresets: "My style presets",
+  curvePresetSoftContrast: "Soft contrast",
+  curvePresetSoftContrastHint: "Gentle S-curve that preserves shadow and highlight detail",
+  curvePresetStrongContrast: "Strong contrast",
+  curvePresetStrongContrastHint: "More pronounced separation of light and dark",
+  curvePresetShadowLift: "Lift shadows",
+  curvePresetShadowLiftHint: "Opens up dark areas for backlit or low-key photos",
+  curvePresetHighlightRolloff: "Roll off highlights",
+  curvePresetHighlightRolloffHint: "Softens the highlight transition",
+  curvePresetMatteFade: "Matte fade",
+  curvePresetMatteFadeHint: "Film-like lifted blacks and lowered whites",
+  curvePresetWarmFilm: "Warm film",
+  curvePresetWarmFilmHint: "Warm highlights/midtones with slightly cool shadows",
+  curvePresetCoolCinema: "Cool cinema",
+  curvePresetCoolCinemaHint: "Cool shadows with a teal-blue cast",
+  styleExtractAction: "Extract style",
+  styleExtractTitle: "Extract style from samples",
+  styleSampleCount: "{n} sample photos selected",
+  styleName: "Preset name",
+  styleNameHint: "Leave empty to use the AI suggestion",
+  styleNameAiPlaceholder: "AI names it",
+  styleUseAi: "Let AI analyze the samples",
+  styleAiHint: "Sends one contact sheet of 1\u20135 samples to the current project image model; one call only.",
+  styleLocalHint: "No model call; uses local luminance and RGB statistics only.",
+  styleExtracting: "Extracting\u2026",
+  styleExtracted: "Saved style preset \u201C{name}\u201D",
+  styleSourceAi: "AI analysis",
+  styleSourceLocal: "Local statistics",
+  deleteTemplate: "Delete",
   editRecipeCropReadonly: "Crop",
   cropEdit: "Crop image",
   cropTitle: "Crop",
@@ -556,6 +666,8 @@ var en = {
   editSharpen: "Sharpen",
   editExport: "Apply edit recipes (JPEG copies)",
   editExportHint: "Applying edits forces copy mode; source files are never modified. Photos without a recipe are copied unchanged.",
+  subject: "Subject",
+  caption: "Caption",
   reason: "Reason",
   scoreLabel: "Score",
   backToWall: "Back to wall",
@@ -1577,6 +1689,59 @@ var STYLES = `
 .pp-export-progress .pp-progress-track { height: 7px; }
 .pp-export-progress .pp-progress-fill { transition: width .12s linear; }
 
+.pp-curve-section { display: grid; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.pp-curve-editor { display: grid; gap: 7px; }
+.pp-curve-head { display: flex; align-items: center; gap: 8px; }
+.pp-curve-reset-row { display: flex; justify-content: flex-end; gap: 2px; margin-top: -4px; }
+.pp-curve-graph { width: min(100%, 220px); max-width: 220px; margin: 0 auto; aspect-ratio: 1 / 1; height: auto; display: block; touch-action: none; cursor: crosshair; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; touch-action: none; }
+.pp-curve-bg { fill: transparent; }
+.pp-curve-grid { stroke: var(--dsw-alias-label-secondary); stroke-opacity: .45; stroke-width: .45; stroke-dasharray: 2.2 2.2; }
+.pp-curve-diagonal { stroke: var(--dsw-alias-border-l2); stroke-width: .35; }
+.pp-curve-line { fill: none; stroke: var(--pp-curve-accent, var(--dsw-alias-brand-primary)); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.pp-curve-point { fill: var(--dsw-alias-bg-layer-1); stroke: var(--pp-curve-accent, var(--dsw-alias-brand-primary)); stroke-width: 1.4; vector-effect: non-scaling-stroke; cursor: grab; }
+.pp-curve-point:active { cursor: grabbing; }
+.pp-curve-hint { font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.pp-curve-preset-block { display: grid; gap: 5px; }
+.pp-chip-button { cursor: pointer; }
+.pp-style-preset-list { display: grid; gap: 4px; }
+.pp-style-preset-row { display: flex; align-items: center; gap: 6px; }
+.pp-style-preset-apply { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 7px; padding: 6px 8px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); text-align: left; cursor: pointer; }
+.pp-style-preset-apply:hover { border-color: var(--dsw-alias-brand-primary); }
+.pp-style-preset-apply strong { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-style-preset-apply span { margin-left: auto; font-size: 10px; color: var(--dsw-alias-label-secondary); white-space: nowrap; }
+.pp-style-dialog { display: grid; gap: 10px; }
+.pp-check-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dsw-alias-label-primary); cursor: pointer; }
+.pp-check-line input { accent-color: var(--dsw-alias-brand-primary); }
+.pp-preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.pp-preset-card { display: grid; gap: 3px; min-width: 0; padding: 4px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); text-align: left; cursor: pointer; }
+.pp-preset-card:hover { border-color: var(--dsw-alias-brand-primary); }
+.pp-preset-thumb { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 4px; background: var(--dsw-alias-bg-layer-2); }
+.pp-preset-thumb-empty { background: linear-gradient(135deg, var(--dsw-alias-bg-layer-2), var(--dsw-alias-bg-layer-3)); }
+.pp-preset-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 1.4; }
+.pp-preset-badge { font-size: 9px; color: var(--dsw-alias-label-secondary); }
+.pp-preset-card-wrap { display: grid; gap: 2px; }
+.pp-preset-card-wrap .pp-button { min-height: 0; padding: 2px 4px; font-size: 10px; }
+.pp-single-panel { align-content: start; }
+.pp-edit-group { display: grid; gap: 12px; min-height: 0; }
+.pp-edit-group .pp-recipe-editor-grid { margin-top: 0; }
+.pp-edit-group .pp-curve-section { margin-top: 0; padding-top: 0; border-top: 0; }
+.pp-edit-footer { position: sticky; bottom: -16px; z-index: 2; display: grid; gap: 8px; margin: 4px -16px -16px; padding: 10px 16px 16px; background: var(--dsw-alias-bg-overlay); border-top: 1px solid var(--dsw-alias-border-l1); }
+.pp-edit-footer .pp-recipe-actions { margin-top: 0; }
+.pp-curve-channels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 3px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 9px; background: var(--dsw-alias-bg-layer-2); }
+.pp-curve-channel { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 7px 3px; border: 0; border-radius: 7px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 11px; line-height: 1.2; white-space: nowrap; cursor: pointer; }
+.pp-curve-channel:hover { color: var(--dsw-alias-label-primary); }
+.pp-curve-channel[aria-selected="true"] { background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.pp-channel-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-border-l2) 65%, transparent); }
+.pp-channel-dot-rgb { background: conic-gradient(var(--pp-status-reject), var(--dsw-alias-brand-primary), var(--pp-status-keep), var(--pp-status-reject)); }
+.pp-channel-dot-red { background: var(--pp-status-reject); }
+.pp-channel-dot-green { background: var(--pp-status-keep); }
+.pp-channel-dot-blue { background: var(--dsw-alias-brand-primary); }
+.pp-channel-dot-luma { background: linear-gradient(135deg, var(--dsw-alias-label-primary), var(--dsw-alias-label-secondary)); }
+.pp-score-notice { padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--pp-status-keep) 9%, var(--dsw-alias-bg-layer-1)); color: var(--dsw-alias-label-primary); font-size: 12px; }
+.pp-subject { font-size: 15px; font-weight: 650; line-height: 1.4; color: var(--dsw-alias-label-primary); }
+.pp-caption { font-size: 12px; line-height: 1.65; color: var(--dsw-alias-label-secondary); }
+
 @media (prefers-reduced-motion: reduce) {
   .pp-page *, .pp-page *::before, .pp-page *::after {
     animation: none !important; transition: none !important;
@@ -1646,6 +1811,15 @@ function normalizeSize(crop) {
 }
 function normalizeCrop(crop) {
   return normalizeSize(crop ?? { left: 0, top: 0, width: 1, height: 1 });
+}
+function isRotatedOrientation(orientation) {
+  if (typeof orientation === "number") return orientation >= 5 && orientation <= 8;
+  if (typeof orientation === "string") return /rotate\s*(90|270)(?!\d)/i.test(orientation);
+  return false;
+}
+function frameAspectOf(width, height, orientation) {
+  if (!(width > 0) || !(height > 0)) return 1;
+  return isRotatedOrientation(orientation) ? height / width : width / height;
 }
 function orientedAspect(longShort, frameAspect, swapped = false) {
   let aspect = frameAspect >= 1 ? longShort : 1 / longShort;
@@ -1758,6 +1932,171 @@ function resizeCrop(crop, handle, dx, dy, frameAspect, aspect) {
   if (handle.includes("s")) bottom = clamp(bottom + dy, top + MIN_SIZE, 1);
   return normalizeCrop({ left, top, width: right - left, height: bottom - top });
 }
+
+// plugin/src/shared/curves.js
+var CURVE_CHANNELS = ["master", "r", "g", "b", "luma"];
+var MAX_CURVE_POINTS = 16;
+var DEFAULT_CURVE_POINTS = [[0, 0], [1, 1]];
+var clamp01 = (value) => Math.min(1, Math.max(0, value));
+var round4 = (value) => Math.round(value * 1e4) / 1e4;
+var pointOf = (point) => {
+  if (Array.isArray(point)) return { x: Number(point[0]), y: Number(point[1]) };
+  if (point && typeof point === "object") return { x: Number(point.x), y: Number(point.y) };
+  return { x: NaN, y: NaN };
+};
+var identity = () => DEFAULT_CURVE_POINTS.map((point) => [...point]);
+function evenlyTrim(points, maxPoints) {
+  if (points.length <= maxPoints) return points;
+  const picked = [];
+  for (let index = 0; index < maxPoints; index++) {
+    const at = Math.round(index * (points.length - 1) / (maxPoints - 1));
+    picked.push(points[at]);
+  }
+  return picked;
+}
+function normalizeCurve(input, { maxPoints = MAX_CURVE_POINTS } = {}) {
+  if (!Array.isArray(input)) return identity();
+  const points = input.map(pointOf).filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y)).map((point) => ({ x: round4(clamp01(point.x)), y: round4(clamp01(point.y)) })).sort((a, b) => a.x - b.x);
+  const deduped = [];
+  for (const point of points) {
+    const last = deduped[deduped.length - 1];
+    if (last !== void 0 && Math.abs(last.x - point.x) < 1e-6) deduped[deduped.length - 1] = point;
+    else deduped.push(point);
+  }
+  const withEndpoints = deduped.filter((point) => point.x > 1e-6 && point.x < 1 - 1e-6).map((point) => [point.x, point.y]);
+  return evenlyTrim([[0, 0], ...withEndpoints, [1, 1]], maxPoints);
+}
+function isIdentityCurve(input) {
+  const points = normalizeCurve(input);
+  return points.length === 2 && Math.abs(points[0][0]) < 1e-6 && Math.abs(points[0][1]) < 1e-6 && Math.abs(points[1][0] - 1) < 1e-6 && Math.abs(points[1][1] - 1) < 1e-6;
+}
+function normalizeCurves(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const curves = {};
+  for (const channel of CURVE_CHANNELS) curves[channel] = normalizeCurve(source[channel]);
+  return curves;
+}
+function isIdentityCurves(input) {
+  if (input === null || input === void 0) return true;
+  if (typeof input !== "object") return true;
+  return CURVE_CHANNELS.every((channel) => isIdentityCurve(input[channel]));
+}
+function slopesFor(points) {
+  const delta = [];
+  const slope = [];
+  for (let index = 0; index < points.length - 1; index++) {
+    const dx = points[index + 1][0] - points[index][0];
+    delta.push(dx === 0 ? 0 : (points[index + 1][1] - points[index][1]) / dx);
+  }
+  slope[0] = delta[0] ?? 0;
+  for (let index = 1; index < points.length - 1; index++) {
+    const before = delta[index - 1];
+    const after = delta[index];
+    if (before * after <= 0) slope[index] = 0;
+    else slope[index] = (before + after) / 2;
+  }
+  slope[points.length - 1] = delta[delta.length - 1] ?? 0;
+  for (let index = 0; index < delta.length; index++) {
+    if (delta[index] === 0) {
+      slope[index] = 0;
+      slope[index + 1] = 0;
+      continue;
+    }
+    const a = slope[index] / delta[index];
+    const b = slope[index + 1] / delta[index];
+    const magnitude = Math.hypot(a, b);
+    if (magnitude > 3) {
+      slope[index] = 3 * a / magnitude * delta[index];
+      slope[index + 1] = 3 * b / magnitude * delta[index];
+    }
+  }
+  return { delta, slope };
+}
+function sampleCurve(input, x) {
+  const points = normalizeCurve(input);
+  const at = clamp01(Number.isFinite(x) ? x : 0);
+  if (at <= 0) return 0;
+  if (at >= 1) return 1;
+  let index = 0;
+  while (index < points.length - 2 && at > points[index + 1][0]) index += 1;
+  const [x0, y0] = points[index];
+  const [x1, y1] = points[index + 1];
+  const { slope } = slopesFor(points);
+  const width = x1 - x0;
+  if (width <= 0) return y1;
+  const t = (at - x0) / width;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return round4((2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * width * slope[index] + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * width * slope[index + 1]);
+}
+function curvePath(input) {
+  const points = normalizeCurve(input);
+  const commands = [];
+  for (let index = 0; index <= 100; index++) {
+    const x = index / 100;
+    const y = sampleCurve(points, x);
+    commands.push(`${index === 0 ? "M" : "L"}${round4(x * 100)},${round4((1 - y) * 100)}`);
+  }
+  return commands.join(" ");
+}
+
+// plugin/src/client/curve-presets.js
+var identity2 = [[0, 0], [1, 1]];
+var make = (master, r = identity2, g = identity2, b = identity2) => normalizeCurves({ master, r, g, b });
+var BUILTIN_CURVE_PRESETS = [
+  {
+    id: "soft-contrast",
+    nameKey: "curvePresetSoftContrast",
+    descriptionKey: "curvePresetSoftContrastHint",
+    curves: make([[0, 0], [0.25, 0.22], [0.5, 0.5], [0.75, 0.78], [1, 1]])
+  },
+  {
+    id: "strong-contrast",
+    nameKey: "curvePresetStrongContrast",
+    descriptionKey: "curvePresetStrongContrastHint",
+    curves: make([[0, 0], [0.25, 0.16], [0.5, 0.5], [0.75, 0.84], [1, 1]])
+  },
+  {
+    id: "shadow-lift",
+    nameKey: "curvePresetShadowLift",
+    descriptionKey: "curvePresetShadowLiftHint",
+    curves: make([[0, 0], [0.15, 0.26], [0.5, 0.56], [1, 1]])
+  },
+  {
+    id: "highlight-rolloff",
+    nameKey: "curvePresetHighlightRolloff",
+    descriptionKey: "curvePresetHighlightRolloffHint",
+    curves: make([[0, 0], [0.5, 0.52], [0.8, 0.72], [1, 1]])
+  },
+  {
+    id: "matte-fade",
+    nameKey: "curvePresetMatteFade",
+    descriptionKey: "curvePresetMatteFadeHint",
+    curves: make([[0, 0], [0.12, 0.18], [0.5, 0.5], [0.88, 0.82], [1, 1]])
+  },
+  {
+    id: "warm-film",
+    nameKey: "curvePresetWarmFilm",
+    descriptionKey: "curvePresetWarmFilmHint",
+    curves: make(
+      [[0, 0], [1, 1]],
+      [[0, 0], [0.5, 0.54], [1, 1]],
+      [[0, 0], [1, 1]],
+      [[0, 0], [0.5, 0.47], [1, 1]]
+    )
+  },
+  {
+    id: "cool-cinema",
+    nameKey: "curvePresetCoolCinema",
+    descriptionKey: "curvePresetCoolCinemaHint",
+    curves: make(
+      [[0, 0], [1, 1]],
+      [[0, 0], [0.5, 0.46], [1, 1]],
+      [[0, 0], [1, 1]],
+      [[0, 0], [0.5, 0.54], [1, 1]]
+    )
+  }
+];
 
 // plugin/src/client/ui.tsx
 var import_react = __toESM(require("react"), 1);
@@ -2130,6 +2469,8 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
   const [single, setSingle] = (0, import_react2.useState)(null);
   const [groupView, setGroupView] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
+  const [extractingStyle, setExtractingStyle] = (0, import_react2.useState)(false);
+  const [styleNotice, setStyleNotice] = (0, import_react2.useState)(null);
   const itemsRef = (0, import_react2.useRef)([]);
   const requestRef = (0, import_react2.useRef)(0);
   const wallRef = (0, import_react2.useRef)(null);
@@ -2140,6 +2481,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
   const lastFilterKey = (0, import_react2.useRef)("");
   const photoListScrollRef = (0, import_react2.useRef)(0);
   const restorePhotoListScrollRef = (0, import_react2.useRef)(false);
+  const loadingMoreRef = (0, import_react2.useRef)(false);
   const rememberPhotoListScroll = () => {
     const root = wallRef.current?.closest(".pp-page");
     if (root !== null) photoListScrollRef.current = root.scrollTop;
@@ -2176,6 +2518,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
   const fetchPage = async (offset) => {
     const params = new URLSearchParams({ scope: "review", sort, limit: String(PAGE_SIZE), offset: String(offset) });
     if (filter !== "all") params.set("verdict", filter);
+    if (filter === "reject") params.set("includeAiRejected", "1");
     if (scene !== "all") params.set("scene", scene);
     return api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`);
   };
@@ -2250,8 +2593,13 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
     }
   };
   const loadMore = async () => {
-    if (!hasMore || loading || loadingMore) return itemsRef.current;
-    await loadPage(nextOffset, true);
+    if (!hasMore || loading || loadingMoreRef.current) return itemsRef.current;
+    loadingMoreRef.current = true;
+    try {
+      await loadPage(nextOffset, true);
+    } finally {
+      loadingMoreRef.current = false;
+    }
     return itemsRef.current;
   };
   (0, import_react2.useEffect)(() => {
@@ -2274,6 +2622,24 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, [hasMore, loading, loadingMore, items.length, nextOffset, filter, scene, sort, wallWidth]);
+  (0, import_react2.useEffect)(() => {
+    if (!hasMore || loading || loadingMore || items.length === 0) return;
+    const root = wallRef.current?.closest(".pp-page");
+    const target = root ?? window;
+    const check = () => {
+      const sentinel = sentinelRef.current;
+      if (sentinel === null) return;
+      const bottom = root === null ? window.innerHeight : root.getBoundingClientRect().bottom;
+      if (sentinel.getBoundingClientRect().top <= bottom + 500) void loadMore();
+    };
+    target.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    check();
+    return () => {
+      target.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [hasMore, loading, loadingMore, nextOffset, items.length, filter, scene, sort, wallWidth]);
   (0, import_react2.useEffect)(() => {
     const el = wallRef.current;
     if (el === null) return;
@@ -2414,6 +2780,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
     ["maybe", verdictLabel(t, "maybe")],
     ["reject", verdictLabel(t, "reject")]
   ];
+  const selectedPhotos = items.filter((item) => selected.includes(item.id));
   return /* @__PURE__ */ h2("section", { className: "pp-review" }, /* @__PURE__ */ h2("div", { className: "pp-toolbar" }, /* @__PURE__ */ h2("div", { className: "pp-toolbar-group" }, /* @__PURE__ */ h2("span", { className: "pp-section-title" }, t("review")), /* @__PURE__ */ h2(
     Segmented,
     {
@@ -2480,7 +2847,21 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }) {
         ));
       })
     );
-  })), hasMore && wallWidth > 0 && /* @__PURE__ */ h2("div", { className: "pp-load-more", ref: sentinelRef }, loadingMore ? t("loading") : t("loadMore"))), selected.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-batch" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h2(Button, { variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection"))));
+  })), hasMore && wallWidth > 0 && /* @__PURE__ */ h2("div", { className: "pp-load-more", ref: sentinelRef }, /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", disabled: loadingMore, onClick: () => {
+    void loadMore();
+  } }, loadingMore ? t("loading") : t("loadMore")))), selected.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-batch" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("selectedCount"), " ", selected.length), selected.length >= 1 && selected.length <= 5 && /* @__PURE__ */ h2(Button, { onClick: () => setExtractingStyle(true) }, t("styleExtractAction")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "keep") }, t("keep")), /* @__PURE__ */ h2(Button, { onClick: () => decide(selected, "maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", onClick: () => decide(selected, "reject") }, t("reject")), /* @__PURE__ */ h2(Button, { variant: "ghost", onClick: () => setSelected([]) }, t("clearSelection"))), extractingStyle && /* @__PURE__ */ h2(
+    StyleExtractDialog,
+    {
+      t,
+      items: selectedPhotos.map((item) => ({ ...item, projectId })),
+      onClose: () => setExtractingStyle(false),
+      onDone: (result) => {
+        setExtractingStyle(false);
+        const warning = result?.warning !== null && result?.warning !== void 0 ? ` \xB7 ${result.warning}` : "";
+        setStyleNotice(`${t("styleExtracted").replace("{name}", String(result?.preset?.name ?? ""))}${warning}`);
+      }
+    }
+  ), styleNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": "done", "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, styleNotice), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setStyleNotice(null) }, t("close"))));
 }
 function storedGuide(key) {
   try {
@@ -2566,12 +2947,13 @@ function defaultRecipe() {
     exposureEv: 0,
     contrast: 0,
     saturation: 0,
-    sharpen: 0
+    sharpen: 0,
+    curves: normalizeCurves({})
   };
 }
 function isIdentityDraft(recipe) {
   const crop = recipe?.crop ?? { left: 0, top: 0, width: 1, height: 1 };
-  return Math.abs(crop.left) < 1e-6 && Math.abs(crop.top) < 1e-6 && Math.abs(crop.width - 1) < 1e-6 && Math.abs(crop.height - 1) < 1e-6 && Math.abs(recipe?.rotate ?? 0) < 1e-6 && Math.abs(recipe?.exposureEv ?? 0) < 1e-6 && Math.abs(recipe?.contrast ?? 0) < 1e-6 && Math.abs(recipe?.saturation ?? 0) < 1e-6 && Math.abs(recipe?.sharpen ?? 0) < 1e-6;
+  return Math.abs(crop.left) < 1e-6 && Math.abs(crop.top) < 1e-6 && Math.abs(crop.width - 1) < 1e-6 && Math.abs(crop.height - 1) < 1e-6 && Math.abs(recipe?.rotate ?? 0) < 1e-6 && Math.abs(recipe?.exposureEv ?? 0) < 1e-6 && Math.abs(recipe?.contrast ?? 0) < 1e-6 && Math.abs(recipe?.saturation ?? 0) < 1e-6 && Math.abs(recipe?.sharpen ?? 0) < 1e-6 && isIdentityCurves(recipe?.curves);
 }
 var CROP_HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 var CROP_HANDLE_KEYS = {
@@ -2684,6 +3066,169 @@ function CropOverlay({ t, crop, frameAspect, aspect, onChange }) {
     )
   );
 }
+function PresetCard({ name, title, thumb, badge, onClick }) {
+  return /* @__PURE__ */ h2("button", { type: "button", className: "pp-preset-card", title, onClick }, thumb === void 0 ? /* @__PURE__ */ h2("span", { className: "pp-preset-thumb pp-preset-thumb-empty", "aria-hidden": "true" }) : /* @__PURE__ */ h2("img", { className: "pp-preset-thumb", src: thumb, alt: "" }), /* @__PURE__ */ h2("span", { className: "pp-preset-name" }, name), badge !== void 0 && /* @__PURE__ */ h2("span", { className: "pp-preset-badge" }, badge));
+}
+var CURVE_TABS = [
+  { value: "master", labelKey: "curveMaster", dot: "rgb" },
+  { value: "r", labelKey: "curveRed", dot: "red" },
+  { value: "g", labelKey: "curveGreen", dot: "green" },
+  { value: "b", labelKey: "curveBlue", dot: "blue" },
+  { value: "luma", labelKey: "curveLuma", dot: "luma" }
+];
+var CURVE_ACCENTS = {
+  master: "var(--dsw-alias-brand-primary)",
+  r: "var(--pp-status-reject)",
+  g: "var(--pp-status-keep)",
+  b: "var(--dsw-alias-brand-primary)",
+  luma: "var(--dsw-alias-label-secondary)"
+};
+function CurveEditor({ t, curves, onChange }) {
+  const [channel, setChannel] = (0, import_react2.useState)("master");
+  const [dragging, setDragging] = (0, import_react2.useState)(null);
+  const normalized = normalizeCurves(curves);
+  const points = normalized[channel] ?? [];
+  const setPoints = (next) => {
+    onChange({ ...normalized, [channel]: normalizeCurve(next) });
+  };
+  const pointFrom = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
+      y: Math.min(1, Math.max(0, 1 - (event.clientY - rect.top) / rect.height))
+    };
+  };
+  const startOnGraph = (event) => {
+    if (event.button !== 0) return;
+    const point = pointFrom(event);
+    const next = normalizeCurve([...points, [point.x, point.y]]);
+    const index = next.findIndex(([x, y]) => Math.abs(x - point.x) < 1e-4 && Math.abs(y - point.y) < 1e-4);
+    onChange({ ...normalized, [channel]: next });
+    if (index >= 0) {
+      setDragging(index);
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    }
+  };
+  const startPoint = (index, event) => {
+    event.stopPropagation();
+    if (index === 0 || index === points.length - 1) return;
+    event.preventDefault();
+    const svg = event.currentTarget.ownerSVGElement;
+    svg?.setPointerCapture?.(event.pointerId);
+    setDragging(index);
+  };
+  const movePoint = (event) => {
+    if (dragging === null) return;
+    const point = pointFrom(event);
+    const lower = points[dragging - 1][0] + 2e-3;
+    const upper = points[dragging + 1][0] - 2e-3;
+    setPoints(points.map((current, index) => index === dragging ? [Math.min(upper, Math.max(lower, point.x)), point.y] : current));
+  };
+  const endPoint = (event) => {
+    if (dragging === null) return;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    setDragging(null);
+  };
+  const removePoint = (index) => {
+    if (index === 0 || index === points.length - 1) return;
+    setPoints(points.filter((_, at) => at !== index));
+  };
+  return /* @__PURE__ */ h2("div", { className: "pp-curve-editor" }, /* @__PURE__ */ h2("div", { className: "pp-curve-head" }, /* @__PURE__ */ h2("div", { className: "pp-curve-channels", role: "tablist", "aria-label": t("curveChannels") }, CURVE_TABS.map((tab) => /* @__PURE__ */ h2(
+    "button",
+    {
+      key: tab.value,
+      type: "button",
+      role: "tab",
+      "aria-selected": channel === tab.value,
+      className: "pp-curve-channel",
+      onClick: () => setChannel(tab.value)
+    },
+    /* @__PURE__ */ h2("span", { className: `pp-channel-dot pp-channel-dot-${tab.dot}`, "aria-hidden": "true" }),
+    /* @__PURE__ */ h2("span", null, t(tab.labelKey))
+  )))), /* @__PURE__ */ h2("div", { className: "pp-curve-reset-row" }, /* @__PURE__ */ h2(
+    Button,
+    {
+      size: "sm",
+      variant: "ghost",
+      disabled: isIdentityCurve(points),
+      onClick: () => setPoints([[0, 0], [1, 1]])
+    },
+    t("curveResetChannel")
+  ), /* @__PURE__ */ h2(
+    Button,
+    {
+      size: "sm",
+      variant: "ghost",
+      disabled: isIdentityCurves(normalized),
+      onClick: () => onChange(normalizeCurves({}))
+    },
+    t("curveResetAll")
+  )), /* @__PURE__ */ h2(
+    "svg",
+    {
+      className: "pp-curve-graph",
+      viewBox: "0 0 100 100",
+      preserveAspectRatio: "xMidYMid meet",
+      role: "img",
+      "aria-label": t("curveGraphLabel"),
+      style: { "--pp-curve-accent": CURVE_ACCENTS[channel] },
+      onPointerDown: startOnGraph,
+      onPointerMove: movePoint,
+      onPointerUp: endPoint,
+      onPointerCancel: endPoint
+    },
+    /* @__PURE__ */ h2("rect", { x: "0", y: "0", width: "100", height: "100", className: "pp-curve-bg" }),
+    dragging !== null && [25, 50, 75].map((value) => /* @__PURE__ */ h2(import_react2.default.Fragment, { key: value }, /* @__PURE__ */ h2("line", { x1: value, y1: "0", x2: value, y2: "100", className: "pp-curve-grid" }), /* @__PURE__ */ h2("line", { x1: "0", y1: value, x2: "100", y2: value, className: "pp-curve-grid" }))),
+    /* @__PURE__ */ h2("line", { x1: "0", y1: "100", x2: "100", y2: "0", className: "pp-curve-diagonal" }),
+    /* @__PURE__ */ h2("path", { d: curvePath(points), className: "pp-curve-line" }),
+    points.map((point, index) => /* @__PURE__ */ h2(
+      "circle",
+      {
+        key: index,
+        cx: point[0] * 100,
+        cy: (1 - point[1]) * 100,
+        r: index === 0 || index === points.length - 1 ? 2.2 : 3.2,
+        className: "pp-curve-point",
+        onPointerDown: (event) => startPoint(index, event),
+        onDoubleClick: (event) => {
+          event.stopPropagation();
+          removePoint(index);
+        },
+        onClick: (event) => event.stopPropagation()
+      }
+    ))
+  ), /* @__PURE__ */ h2("div", { className: "pp-curve-hint" }, t("curveEditHint")));
+}
+function StyleExtractDialog({ t, items, onClose, onDone }) {
+  const [name, setName] = (0, import_react2.useState)("");
+  const [useAi, setUseAi] = (0, import_react2.useState)(true);
+  const [busy, setBusy] = (0, import_react2.useState)(false);
+  const [error, setError] = (0, import_react2.useState)(null);
+  const submit = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await api("/photo-picker/api/style-presets", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          useAi,
+          items: items.map((item) => ({ projectId: item.projectId, photoId: item.id }))
+        })
+      });
+      onDone(result);
+      onClose();
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return /* @__PURE__ */ h2(ModalShell, { title: t("styleExtractTitle"), closeLabel: t("close"), onClose }, /* @__PURE__ */ h2("div", { className: "pp-style-dialog" }, /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("styleSampleCount").replace("{n}", String(items.length))), /* @__PURE__ */ h2(Field, { label: t("styleName"), help: t("styleNameHint") }, /* @__PURE__ */ h2(Input, { value: name, maxLength: 80, placeholder: useAi ? t("styleNameAiPlaceholder") : "", onChange: (event) => setName(event.target.value) })), /* @__PURE__ */ h2("label", { className: "pp-check-line" }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: useAi, onChange: (event) => setUseAi(event.target.checked) }), /* @__PURE__ */ h2("span", null, t("styleUseAi"))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, useAi ? t("styleAiHint") : t("styleLocalHint")), error !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: error }), /* @__PURE__ */ h2(ActionBar, { end: true }, /* @__PURE__ */ h2(Button, { disabled: busy, onClick: onClose }, t("cancel")), /* @__PURE__ */ h2(Button, { variant: "primary", disabled: busy, onClick: () => {
+    void submit();
+  } }, busy ? t("styleExtracting") : t("styleExtractAction")))));
+}
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }) {
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [error, setError] = (0, import_react2.useState)(null);
@@ -2692,6 +3237,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [showGrid, setShowGrid] = (0, import_react2.useState)(() => storedGuide("photoPicker.gridGuide"));
   const [showCross, setShowCross] = (0, import_react2.useState)(() => storedGuide("photoPicker.crossGuide"));
   const [deciding, setDeciding] = (0, import_react2.useState)(false);
+  const [scoring, setScoring] = (0, import_react2.useState)(false);
+  const [scoreError, setScoreError] = (0, import_react2.useState)(null);
+  const [scoreNotice, setScoreNotice] = (0, import_react2.useState)(null);
   const [sceneEditorOpen, setSceneEditorOpen] = (0, import_react2.useState)(false);
   const [draftRecipe, setDraftRecipe] = (0, import_react2.useState)(() => defaultRecipe());
   const [draftPreviewUrl, setDraftPreviewUrl] = (0, import_react2.useState)(null);
@@ -2703,6 +3251,11 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [cropSwapped, setCropSwapped] = (0, import_react2.useState)(false);
   const [recipeBusy, setRecipeBusy] = (0, import_react2.useState)(false);
   const [recipeError, setRecipeError] = (0, import_react2.useState)(null);
+  const [stylePresets, setStylePresets] = (0, import_react2.useState)([]);
+  const [styleError, setStyleError] = (0, import_react2.useState)(null);
+  const [editGroup, setEditGroup] = (0, import_react2.useState)("info");
+  const [presetThumbs, setPresetThumbs] = (0, import_react2.useState)({});
+  const presetThumbsRef = (0, import_react2.useRef)({});
   const draftPreviewUrlRef = (0, import_react2.useRef)(null);
   const cropFrameUrlRef = (0, import_react2.useRef)(null);
   const cropPanelRef = (0, import_react2.useRef)(null);
@@ -2710,12 +3263,23 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const draftCrop = normalizeCrop(draftRecipe?.crop);
   const savedCrop = normalizeCrop(detail?.editRecipe?.crop);
   const cropDirty = JSON.stringify(draftCrop) !== JSON.stringify(savedCrop);
-  const draftDirty = detail === null ? false : cropDirty || RECIPE_CONTROLS.some((control) => Number(draftRecipe?.[control.key] ?? 0) !== Number(detail?.editRecipe?.[control.key] ?? 0));
-  const frameAspect = cropFrame !== null ? cropFrame.width / cropFrame.height : detail?.width && detail?.height ? detail.width / detail.height : 1;
+  const curvesDirty = JSON.stringify(normalizeCurves(draftRecipe?.curves)) !== JSON.stringify(normalizeCurves(detail?.editRecipe?.curves));
+  const draftDirty = detail === null ? false : cropDirty || curvesDirty || RECIPE_CONTROLS.some((control) => Number(draftRecipe?.[control.key] ?? 0) !== Number(detail?.editRecipe?.[control.key] ?? 0));
+  const detailAspect = frameAspectOf(detail?.width, detail?.height, detail?.orientation);
+  const frameAspect = cropFrame !== null ? cropFrame.width / cropFrame.height : detailAspect;
   const selectedRatio = CROP_RATIOS.find((item) => item.id === cropRatio);
   const cropAspect = selectedRatio?.value ? orientedAspect(selectedRatio.value, frameAspect, cropSwapped) : null;
   const cropBaseIdentity = isIdentityDraft({ ...draftRecipe, crop: { left: 0, top: 0, width: 1, height: 1 } });
-  const cropBaseKey = RECIPE_CONTROLS.map((control) => Number(draftRecipe?.[control.key] ?? 0)).join("|");
+  const curveKey = JSON.stringify(normalizeCurves(draftRecipe?.curves));
+  const cropBaseKey = RECIPE_CONTROLS.map((control) => Number(draftRecipe?.[control.key] ?? 0)).join("|") + `|${curveKey}`;
+  const presetBaseKey = JSON.stringify({
+    crop: draftCrop,
+    rotate: draftRecipe?.rotate,
+    exposureEv: draftRecipe?.exposureEv,
+    contrast: draftRecipe?.contrast,
+    saturation: draftRecipe?.saturation,
+    sharpen: draftRecipe?.sharpen
+  });
   const needMoreRef = (0, import_react2.useRef)(onNeedMore);
   (0, import_react2.useEffect)(() => {
     needMoreRef.current = onNeedMore;
@@ -2725,6 +3289,83 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setDetail(next);
     setError(null);
   };
+  const loadStylePresets = async () => {
+    try {
+      const data = await api("/photo-picker/api/style-presets");
+      setStylePresets(Array.isArray(data) ? data : []);
+      setStyleError(null);
+    } catch (cause) {
+      setStyleError(String(cause));
+    }
+  };
+  const applyCurves = (curves, saturation) => {
+    setShowEdited(true);
+    setDraftRecipe((current) => ({
+      ...current,
+      curves: normalizeCurves(curves),
+      ...saturation === void 0 ? {} : { saturation }
+    }));
+  };
+  const removeStylePreset = async (id) => {
+    try {
+      await api(`/photo-picker/api/style-presets/${encodeURIComponent(id)}`, { method: "DELETE" });
+      await loadStylePresets();
+    } catch (cause) {
+      setStyleError(String(cause));
+    }
+  };
+  (0, import_react2.useEffect)(() => {
+    void loadStylePresets();
+  }, []);
+  (0, import_react2.useEffect)(() => {
+    if (!detail) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      const entries = [
+        ...BUILTIN_CURVE_PRESETS.map((preset) => ({ key: preset.id, curves: preset.curves })),
+        ...stylePresets.map((preset) => ({
+          key: `style:${preset.id}`,
+          curves: preset.curves,
+          saturation: preset.saturation
+        }))
+      ];
+      const next = {};
+      await Promise.all(entries.map(async (entry) => {
+        try {
+          const recipe2 = {
+            ...draftRecipe,
+            curves: normalizeCurves(entry.curves),
+            ...entry.saturation === void 0 ? {} : { saturation: entry.saturation }
+          };
+          const response = await fetch(`/photo-picker/api/projects/${projectId}/photos/${photoId}/edit-thumb`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ recipe: recipe2 }),
+            signal: controller.signal
+          });
+          if (!response.ok) return;
+          const blob = await response.blob();
+          if (!controller.signal.aborted) next[entry.key] = URL.createObjectURL(blob);
+        } catch {
+        }
+      }));
+      if (controller.signal.aborted) {
+        Object.values(next).forEach((url) => URL.revokeObjectURL(url));
+        return;
+      }
+      Object.values(presetThumbsRef.current).forEach((url) => URL.revokeObjectURL(url));
+      presetThumbsRef.current = next;
+      setPresetThumbs(next);
+    }, 280);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [detail?.editSignature, photoId, presetBaseKey, stylePresets]);
+  (0, import_react2.useEffect)(() => () => {
+    Object.values(presetThumbsRef.current).forEach((url) => URL.revokeObjectURL(url));
+    presetThumbsRef.current = {};
+  }, []);
   (0, import_react2.useEffect)(() => {
     setDetail(null);
     setShowEdited(false);
@@ -2732,6 +3373,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setCropEditing(false);
     setCropFrame(null);
     setCropEntry(null);
+    setEditGroup("info");
     loadDetail().catch((cause) => setError(String(cause)));
   }, [photoId]);
   (0, import_react2.useEffect)(() => {
@@ -2750,11 +3392,47 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       setDeciding(false);
     }
   };
+  const runScore = async () => {
+    if (scoring || deciding || cropEditing || draftDirty) return;
+    setScoring(true);
+    setScoreError(null);
+    setScoreNotice(null);
+    try {
+      const data = await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/score`, { method: "POST" });
+      await loadDetail();
+      setEditGroup("info");
+      const result = data?.result;
+      if (result?.scored > 0) {
+        const score = data?.detail?.score;
+        const verdict = data?.detail?.verdict;
+        setScoreNotice(t("scoreDone").replace("{score}", score === null || score === void 0 ? "\u2014" : Number(score).toFixed(1)).replace("{verdict}", verdictLabel(t, verdict)));
+      } else {
+        setScoreError(t("scoreFailed"));
+      }
+      await onScenesUpdated?.();
+    } catch (cause) {
+      setScoreError(String(cause));
+    } finally {
+      setScoring(false);
+    }
+  };
   const setRecipeField = (key, value) => {
     setShowEdited(true);
     setDraftRecipe((current) => ({ ...current, [key]: value }));
   };
+  const measureBasePreview = () => {
+    if (!detail?.previewUrl) return;
+    const image = new Image();
+    image.onload = () => {
+      if (image.naturalWidth && image.naturalHeight) {
+        setCropFrame({ width: image.naturalWidth, height: image.naturalHeight });
+      }
+    };
+    image.src = `${detail.previewUrl}?v=${version}`;
+  };
   const enterCrop = () => {
+    setEditGroup("basic");
+    measureBasePreview();
     setCropEntry({ ...normalizeCrop(draftRecipe.crop) });
     setCropRatio("free");
     setCropSwapped(false);
@@ -3074,10 +3752,31 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     },
     /* @__PURE__ */ h2(CropRatioIcon, { id: preset.id }),
     /* @__PURE__ */ h2("span", null, preset.id === "free" ? t("cropFree") : preset.id === "original" ? t("cropOriginal") : cropRatioLabel(preset.id, frameAspect, cropSwapped))
-  ))), /* @__PURE__ */ h2("div", { className: "pp-crop-actions" }, /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", onClick: cancelCrop }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m4 4 8 8M12 4l-8 8", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round" })), /* @__PURE__ */ h2("span", null, t("cropCancel"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", disabled: cropRatio === "free" || cropRatio === "original" || cropRatio === "1:1", onClick: swapCropAspect }, /* @__PURE__ */ h2("span", { className: "pp-crop-action-glyph" }, "\u21C4"), /* @__PURE__ */ h2("span", null, t("cropSwap"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action pp-crop-action-primary", onClick: completeCrop }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m3.2 8.4 3 3 6.6-7", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round" })), /* @__PURE__ */ h2("span", null, t("cropFinish")))))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
-    const value = dimensions[key];
-    return /* @__PURE__ */ h2("div", { key, className: "pp-meter" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h2("div", { className: "pp-meter-track" }, /* @__PURE__ */ h2("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h2("span", null, value === null || value === void 0 ? "\u2014" : value));
-  })), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, postProcessingLabel(t, code))))), /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-recipe-card-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("editRecipe")), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi"))), recipe === null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe")), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.filter((control) => !(cropEditing && control.key === "rotate")).map((control) => {
+  ))), /* @__PURE__ */ h2("div", { className: "pp-crop-actions" }, /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", onClick: cancelCrop }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m4 4 8 8M12 4l-8 8", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round" })), /* @__PURE__ */ h2("span", null, t("cropCancel"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action", disabled: cropRatio === "free" || cropRatio === "original" || cropRatio === "1:1", onClick: swapCropAspect }, /* @__PURE__ */ h2("span", { className: "pp-crop-action-glyph" }, "\u21C4"), /* @__PURE__ */ h2("span", null, t("cropSwap"))), /* @__PURE__ */ h2("button", { type: "button", className: "pp-crop-action pp-crop-action-primary", onClick: completeCrop }, /* @__PURE__ */ h2("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" }, /* @__PURE__ */ h2("path", { d: "m3.2 8.4 3 3 6.6-7", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round" })), /* @__PURE__ */ h2("span", null, t("cropFinish")))))), /* @__PURE__ */ h2("aside", { className: "pp-card pp-panel pp-single-panel" }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding || scoring, onClick: () => decide("keep") }, t("keep")), /* @__PURE__ */ h2(Button, { style: { flex: 1 }, disabled: deciding || scoring, onClick: () => decide("maybe") }, t("maybe")), /* @__PURE__ */ h2(Button, { variant: "danger", style: { flex: 1 }, disabled: deciding || scoring, onClick: () => decide("reject") }, t("reject"))), /* @__PURE__ */ h2("div", { className: "pp-row", style: { justifyContent: "space-between" } }, /* @__PURE__ */ h2("div", { className: "pp-row", style: { gap: 6 } }, /* @__PURE__ */ h2(Button, { size: "sm", onClick: () => setSceneEditorOpen(true) }, t("editScenes")), /* @__PURE__ */ h2(
+    Button,
+    {
+      size: "sm",
+      disabled: scoring || deciding || cropEditing || draftDirty,
+      title: draftDirty ? t("scoreSaveFirst") : void 0,
+      onClick: () => {
+        void runScore();
+      }
+    },
+    scoring ? t("aiScoring") : detail.score === null || detail.score === void 0 ? t("aiScore") : t("aiRescore")
+  )), recipe !== null && /* @__PURE__ */ h2("span", { className: "pp-chip" }, detail.editSource === "human" ? t("editRecipeHuman") : t("editRecipeAi"))), scoreNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-score-notice", role: "status" }, scoreNotice), scoreError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: scoreError }), /* @__PURE__ */ h2(
+    Tabs,
+    {
+      label: t("editTools"),
+      items: [
+        { value: "info", label: t("editToolInfo"), disabled: cropEditing },
+        { value: "basic", label: t("editToolBasic") },
+        { value: "curves", label: t("editToolCurves"), disabled: cropEditing },
+        { value: "presets", label: t("editToolPresets"), disabled: cropEditing }
+      ],
+      value: editGroup,
+      onChange: setEditGroup
+    }
+  ), /* @__PURE__ */ h2("div", { className: "pp-edit-group" }, editGroup === "basic" && /* @__PURE__ */ h2(Fragment2, null, recipe === null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editNoRecipe")), /* @__PURE__ */ h2("div", { className: "pp-recipe-editor-grid" }, RECIPE_CONTROLS.filter((control) => !(cropEditing && control.key === "rotate")).map((control) => {
     const value = Number(draftRecipe?.[control.key] ?? 0);
     const display = `${control.signed && value > 0 ? "+" : ""}${value.toFixed(control.digits)}${control.unit}`;
     return /* @__PURE__ */ h2("label", { className: "pp-recipe-control", key: control.key }, /* @__PURE__ */ h2("span", { className: "pp-recipe-control-head" }, /* @__PURE__ */ h2("span", null, t(control.label)), /* @__PURE__ */ h2("span", { className: "pp-recipe-value" }, display)), /* @__PURE__ */ h2(
@@ -3092,7 +3791,30 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
         onChange: (event) => setRecipeField(control.key, Number(event.target.value))
       }
     ));
-  })), /* @__PURE__ */ h2("div", { className: "pp-crop-summary" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", draftCrop.width === 1 && draftCrop.height === 1 ? t("editCropNone") : `${Math.round(draftCrop.width * 100)}% \xD7 ${Math.round(draftCrop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(draftCrop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(draftCrop.top * 100)}%`), !cropEditing && /* @__PURE__ */ h2(Button, { size: "sm", onClick: enterCrop }, t("cropEdit"))), recipeError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: recipeError }), /* @__PURE__ */ h2("div", { className: "pp-recipe-actions" }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: recipeBusy, onClick: () => {
+  })), /* @__PURE__ */ h2("div", { className: "pp-crop-summary" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("editRecipeCropReadonly"), "\uFF1A", draftCrop.width === 1 && draftCrop.height === 1 ? t("editCropNone") : `${Math.round(draftCrop.width * 100)}% \xD7 ${Math.round(draftCrop.height * 100)}% \xB7 ${t("editCropLeft")} ${Math.round(draftCrop.left * 100)}% \xB7 ${t("editCropTop")} ${Math.round(draftCrop.top * 100)}%`), !cropEditing && /* @__PURE__ */ h2(Button, { size: "sm", onClick: enterCrop }, t("cropEdit")))), editGroup === "curves" && /* @__PURE__ */ h2("div", { className: "pp-curve-section" }, /* @__PURE__ */ h2("div", { className: "pp-section-head" }, /* @__PURE__ */ h2("div", { className: "pp-section-title" }, t("curveTitle")), /* @__PURE__ */ h2("span", { className: "pp-muted" }, t("curveHint"))), /* @__PURE__ */ h2(CurveEditor, { t, curves: draftRecipe?.curves, onChange: applyCurves })), editGroup === "presets" && /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("div", { className: "pp-curve-preset-block" }, /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("curveBuiltinPresets")), /* @__PURE__ */ h2("div", { className: "pp-preset-grid" }, BUILTIN_CURVE_PRESETS.map((preset) => /* @__PURE__ */ h2(
+    PresetCard,
+    {
+      key: preset.id,
+      name: t(preset.nameKey),
+      title: t(preset.descriptionKey),
+      thumb: presetThumbs[preset.id],
+      onClick: () => applyCurves(preset.curves)
+    }
+  )))), stylePresets.length > 0 && /* @__PURE__ */ h2("div", { className: "pp-curve-preset-block" }, /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("curveMyPresets")), /* @__PURE__ */ h2("div", { className: "pp-preset-grid" }, stylePresets.map((preset) => /* @__PURE__ */ h2("div", { className: "pp-preset-card-wrap", key: preset.id }, /* @__PURE__ */ h2(
+    PresetCard,
+    {
+      name: preset.name,
+      title: preset.description || preset.name,
+      thumb: presetThumbs[`style:${preset.id}`],
+      badge: preset.analysis?.source === "ai" ? t("styleSourceAi") : t("styleSourceLocal"),
+      onClick: () => applyCurves(preset.curves, preset.saturation)
+    }
+  ), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => {
+    void removeStylePreset(preset.id);
+  } }, t("deleteTemplate")))))), styleError !== null && /* @__PURE__ */ h2("div", { className: "pp-muted" }, styleError), /* @__PURE__ */ h2("div", { className: "pp-muted" }, t("editPresetsHint"))), editGroup === "info" && /* @__PURE__ */ h2(Fragment2, null, /* @__PURE__ */ h2("div", { className: "pp-meters" }, Object.keys(DIMENSION_LABELS).map((key) => {
+    const value = dimensions[key];
+    return /* @__PURE__ */ h2("div", { key, className: "pp-meter" }, /* @__PURE__ */ h2("span", { className: "pp-muted" }, t(DIMENSION_LABELS[key])), /* @__PURE__ */ h2("div", { className: "pp-meter-track" }, /* @__PURE__ */ h2("div", { className: "pp-meter-fill", style: { width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` } })), /* @__PURE__ */ h2("span", null, value === null || value === void 0 ? "\u2014" : value));
+  })), detail.subject !== null && detail.subject !== void 0 && detail.subject !== "" && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("subject")), /* @__PURE__ */ h2("div", { className: "pp-subject" }, detail.subject)), detail.caption !== null && detail.caption !== void 0 && detail.caption !== "" && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("caption")), /* @__PURE__ */ h2("div", { className: "pp-caption" }, detail.caption)), detail.reason !== null && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 4 } }, t("reason")), /* @__PURE__ */ h2("div", { className: "pp-reason" }, detail.reason)), (detail.postProcessing ?? []).length > 0 && /* @__PURE__ */ h2("div", null, /* @__PURE__ */ h2("div", { className: "pp-section-title", style: { marginBottom: 6 } }, t("postProcessing")), /* @__PURE__ */ h2("div", { className: "pp-chips" }, detail.postProcessing.map((code) => /* @__PURE__ */ h2("span", { key: code, className: "pp-chip" }, postProcessingLabel(t, code))))), /* @__PURE__ */ h2("div", { className: "pp-kbd" }, t("keyboardHint")), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))), /* @__PURE__ */ h2("div", { className: "pp-edit-footer" }, recipeError !== null && /* @__PURE__ */ h2(StateCard, { kind: "error", title: t("errorTitle"), message: recipeError }), /* @__PURE__ */ h2("div", { className: "pp-recipe-actions" }, detail.editSource === "human" && /* @__PURE__ */ h2(Button, { variant: "ghost", disabled: recipeBusy, onClick: () => {
     void resetRecipe();
   } }, t("editRecipeReset")), !cropEditing && /* @__PURE__ */ h2(
     Button,
@@ -3105,7 +3827,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
       }
     },
     t("editRecipeSave")
-  ))), /* @__PURE__ */ h2("div", { className: "pp-muted" }, detail.width, " \xD7 ", detail.height, detail.group !== void 0 ? ` \xB7 ${t("groupRank").replace("{rank}", String(detail.group.rank)).replace("{size}", String(detail.group.size))}` : ""))), sceneEditorOpen && /* @__PURE__ */ h2(
+  ))))), sceneEditorOpen && /* @__PURE__ */ h2(
     SceneEditor,
     {
       t,
@@ -3812,6 +4534,8 @@ function GlobalPhotoWall({ t, projects }) {
   const [active, setActive] = (0, import_react2.useState)(null);
   const [exporting, setExporting] = (0, import_react2.useState)(false);
   const [exportNotice, setExportNotice] = (0, import_react2.useState)(null);
+  const [extractingStyle, setExtractingStyle] = (0, import_react2.useState)(false);
+  const [styleNotice, setStyleNotice] = (0, import_react2.useState)(null);
   const requestRef = (0, import_react2.useRef)(0);
   const filterKey = JSON.stringify({ projectIds, scenes, verdicts, sort });
   const fetchPage = async (offset) => {
@@ -3819,6 +4543,7 @@ function GlobalPhotoWall({ t, projects }) {
     if (projectIds.length > 0) params.set("projects", projectIds.join(","));
     if (scenes.length > 0) params.set("scenes", scenes.join(","));
     if (verdicts.length > 0) params.set("verdicts", verdicts.join(","));
+    if (verdicts.includes("reject")) params.set("includeAiRejected", "1");
     return api(`/photo-picker/api/photos?${params.toString()}`);
   };
   const load = async (offset, append) => {
@@ -3867,7 +4592,7 @@ function GlobalPhotoWall({ t, projects }) {
   const toggleScene = (id) => setScenes((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
   const toggleVerdict = (id) => setVerdicts((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
   const projectSummary = projectIds.length === 0 ? t("allProjects") : t("selectedProjects").replace("{n}", String(projectIds.length));
-  return /* @__PURE__ */ h2("section", { className: "pp-global-wall" }, /* @__PURE__ */ h2("div", { className: "pp-global-toolbar" }, /* @__PURE__ */ h2("div", { className: "pp-toolbar-group" }, /* @__PURE__ */ h2("span", { className: "pp-section-title" }, t("allPhotosTab")), /* @__PURE__ */ h2("details", { className: "pp-project-picker" }, /* @__PURE__ */ h2("summary", null, projectSummary), /* @__PURE__ */ h2("div", { className: "pp-project-picker-menu" }, /* @__PURE__ */ h2("label", { className: "pp-project-picker-all" }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: projectIds.length === 0, onChange: () => setProjectIds([]) }), t("allProjects")), (projects ?? []).map((project) => /* @__PURE__ */ h2("label", { key: project.id, title: project.name }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: projectIds.includes(project.id), onChange: () => toggleProject(project.id) }), /* @__PURE__ */ h2("span", { className: "pp-project-option" }, project.name))))), /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sortLabel")), /* @__PURE__ */ h2("select", { className: "pp-select pp-select-sm", value: sort, onChange: (event) => setSort(event.target.value) }, /* @__PURE__ */ h2("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h2("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h2("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h2("option", { value: "project" }, t("sortProject")))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, total, " ", t("photos"))), /* @__PURE__ */ h2("div", { className: "pp-toolbar-group pp-toolbar-end" }, /* @__PURE__ */ h2(Button, { disabled: total === 0, onClick: () => setExporting(true) }, selected.length > 0 ? t("exportSelected").replace("{n}", String(selected.length)) : t("exportFiltered")))), /* @__PURE__ */ h2("div", { className: "pp-filter-chips" }, /* @__PURE__ */ h2("span", { className: "pp-filter-label" }, t("sceneFilter")), /* @__PURE__ */ h2("button", { type: "button", className: `pp-filter-chip${scenes.length === 0 ? " active" : ""}`, onClick: () => setScenes([]) }, t("filterAll")), Object.keys(SCENE_KEYS).map((scene) => /* @__PURE__ */ h2(
+  return /* @__PURE__ */ h2("section", { className: "pp-global-wall" }, /* @__PURE__ */ h2("div", { className: "pp-global-toolbar" }, /* @__PURE__ */ h2("div", { className: "pp-toolbar-group" }, /* @__PURE__ */ h2("span", { className: "pp-section-title" }, t("allPhotosTab")), /* @__PURE__ */ h2("details", { className: "pp-project-picker" }, /* @__PURE__ */ h2("summary", null, projectSummary), /* @__PURE__ */ h2("div", { className: "pp-project-picker-menu" }, /* @__PURE__ */ h2("label", { className: "pp-project-picker-all" }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: projectIds.length === 0, onChange: () => setProjectIds([]) }), t("allProjects")), (projects ?? []).map((project) => /* @__PURE__ */ h2("label", { key: project.id, title: project.name }, /* @__PURE__ */ h2("input", { type: "checkbox", checked: projectIds.includes(project.id), onChange: () => toggleProject(project.id) }), /* @__PURE__ */ h2("span", { className: "pp-project-option" }, project.name))))), /* @__PURE__ */ h2("label", { className: "pp-toolbar-field" }, /* @__PURE__ */ h2("span", null, t("sortLabel")), /* @__PURE__ */ h2("select", { className: "pp-select pp-select-sm", value: sort, onChange: (event) => setSort(event.target.value) }, /* @__PURE__ */ h2("option", { value: "score" }, t("sortScore")), /* @__PURE__ */ h2("option", { value: "score_asc" }, t("sortScoreAsc")), /* @__PURE__ */ h2("option", { value: "taken_at" }, t("sortTaken")), /* @__PURE__ */ h2("option", { value: "project" }, t("sortProject")))), /* @__PURE__ */ h2("span", { className: "pp-muted" }, total, " ", t("photos"))), /* @__PURE__ */ h2("div", { className: "pp-toolbar-group pp-toolbar-end" }, selected.length >= 1 && selected.length <= 5 && /* @__PURE__ */ h2(Button, { onClick: () => setExtractingStyle(true) }, t("styleExtractAction")), /* @__PURE__ */ h2(Button, { disabled: total === 0, onClick: () => setExporting(true) }, selected.length > 0 ? t("exportSelected").replace("{n}", String(selected.length)) : t("exportFiltered")))), /* @__PURE__ */ h2("div", { className: "pp-filter-chips" }, /* @__PURE__ */ h2("span", { className: "pp-filter-label" }, t("sceneFilter")), /* @__PURE__ */ h2("button", { type: "button", className: `pp-filter-chip${scenes.length === 0 ? " active" : ""}`, onClick: () => setScenes([]) }, t("filterAll")), Object.keys(SCENE_KEYS).map((scene) => /* @__PURE__ */ h2(
     "button",
     {
       type: "button",
@@ -3931,7 +4656,19 @@ function GlobalPhotoWall({ t, projects }) {
         setExportNotice(t("exportDoneToast").replace("{count}", String(result.total ?? 0)));
       }
     }
-  ), exportNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": "done", "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, exportNotice), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setExportNotice(null) }, t("close"))));
+  ), extractingStyle && /* @__PURE__ */ h2(
+    StyleExtractDialog,
+    {
+      t,
+      items: selectedItems,
+      onClose: () => setExtractingStyle(false),
+      onDone: (result) => {
+        setExtractingStyle(false);
+        const warning = result?.warning !== null && result?.warning !== void 0 ? ` \xB7 ${result.warning}` : "";
+        setStyleNotice(`${t("styleExtracted").replace("{name}", String(result?.preset?.name ?? ""))}${warning}`);
+      }
+    }
+  ), exportNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": "done", "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, exportNotice), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setExportNotice(null) }, t("close"))), styleNotice !== null && /* @__PURE__ */ h2("div", { className: "pp-toast", "data-kind": "done", "aria-live": "polite" }, /* @__PURE__ */ h2("span", { style: { flex: 1 } }, styleNotice), /* @__PURE__ */ h2(Button, { size: "sm", variant: "ghost", onClick: () => setStyleNotice(null) }, t("close"))));
 }
 function Workbench({ t }) {
   (0, import_react2.useSyncExternalStore)(subscribeLanguage, getLanguage);

@@ -10,7 +10,11 @@ const PANEL_ID = 'photo-picker'
 import { getLanguage, postProcessingLabel, setLanguage, subscribeLanguage, translate, zh, en } from './locales.js'
 import { installStyles } from './theme.js'
 import { computeColumns, computeRowHeight, computeVisibleRows, TILE_GAP, TILE_MIN, TILE_MIN_NARROW } from './virtual.js'
-import { CROP_RATIOS, fitAspect, moveCrop, normalizeCrop, orientedAspect, resizeCrop } from './crop.js'
+import { CROP_RATIOS, fitAspect, frameAspectOf, moveCrop, normalizeCrop, orientedAspect, resizeCrop } from './crop.js'
+import { BUILTIN_CURVE_PRESETS } from './curve-presets.js'
+import {
+  curvePath, isIdentityCurve, isIdentityCurves, normalizeCurve, normalizeCurves,
+} from '../shared/curves.js'
 import { ActionBar, BackButton, Button, Card, CloseButton, DrawerShell, Field, Input, ModalShell, Segmented, StateCard, Tabs } from './ui'
 
 
@@ -384,6 +388,8 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
   const [single, setSingle] = useState<string | null>(null)
   const [groupView, setGroupView] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [extractingStyle, setExtractingStyle] = useState(false)
+  const [styleNotice, setStyleNotice] = useState<string | null>(null)
   const itemsRef = useRef<any[]>([])
   const requestRef = useRef(0)
   const wallRef = useRef<HTMLDivElement | null>(null)
@@ -394,6 +400,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
   const lastFilterKey = useRef('')
   const photoListScrollRef = useRef(0)
   const restorePhotoListScrollRef = useRef(false)
+  const loadingMoreRef = useRef(false)
 
   const rememberPhotoListScroll = () => {
     const root = wallRef.current?.closest(".pp-page") as HTMLElement | null
@@ -434,6 +441,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
   const fetchPage = async (offset: number) => {
     const params = new URLSearchParams({ scope: 'review', sort, limit: String(PAGE_SIZE), offset: String(offset) })
     if (filter !== 'all') params.set('verdict', filter)
+    if (filter === 'reject') params.set('includeAiRejected', '1')
     if (scene !== 'all') params.set('scene', scene)
     return api(`/photo-picker/api/projects/${projectId}/photos?${params.toString()}`)
   }
@@ -512,8 +520,13 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
   }
 
   const loadMore = async () => {
-    if (!hasMore || loading || loadingMore) return itemsRef.current
-    await loadPage(nextOffset, true)
+    if (!hasMore || loading || loadingMoreRef.current) return itemsRef.current
+    loadingMoreRef.current = true
+    try {
+      await loadPage(nextOffset, true)
+    } finally {
+      loadingMoreRef.current = false
+    }
     return itemsRef.current
   }
 
@@ -538,6 +551,25 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
   }, [hasMore, loading, loadingMore, items.length, nextOffset, filter, scene, sort, wallWidth])
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore || items.length === 0) return
+    const root = wallRef.current?.closest(".pp-page") as HTMLElement | null
+    const target: HTMLElement | Window = root ?? window
+    const check = () => {
+      const sentinel = sentinelRef.current
+      if (sentinel === null) return
+      const bottom = root === null ? window.innerHeight : root.getBoundingClientRect().bottom
+      if (sentinel.getBoundingClientRect().top <= bottom + 500) void loadMore()
+    }
+    target.addEventListener('scroll', check, { passive: true })
+    window.addEventListener('resize', check)
+    check()
+    return () => {
+      target.removeEventListener('scroll', check)
+      window.removeEventListener('resize', check)
+    }
+  }, [hasMore, loading, loadingMore, nextOffset, items.length, filter, scene, sort, wallWidth])
 
   useEffect(() => {
     const el = wallRef.current
@@ -681,6 +713,7 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
     ['maybe', verdictLabel(t, 'maybe')],
     ['reject', verdictLabel(t, 'reject')],
   ]
+  const selectedPhotos = items.filter(item => selected.includes(item.id))
 
   return (
     <section className="pp-review">
@@ -787,7 +820,9 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
         </div>
         {hasMore && wallWidth > 0 && (
           <div className="pp-load-more" ref={sentinelRef}>
-            {loadingMore ? t('loading') : t('loadMore')}
+            <Button size="sm" variant="ghost" disabled={loadingMore} onClick={() => { void loadMore() }}>
+              {loadingMore ? t('loading') : t('loadMore')}
+            </Button>
           </div>
         )}
         </>
@@ -796,10 +831,33 @@ function ReviewSection({ t, projectId, version, onChanged, onFocusChange }: {
       {selected.length > 0 && (
         <div className="pp-batch">
           <span className="pp-muted">{t('selectedCount')} {selected.length}</span>
+          {selected.length >= 1 && selected.length <= 5 && (
+            <Button onClick={() => setExtractingStyle(true)}>{t('styleExtractAction')}</Button>
+          )}
           <Button onClick={() => decide(selected, 'keep')}>{t('keep')}</Button>
           <Button onClick={() => decide(selected, 'maybe')}>{t('maybe')}</Button>
           <Button variant="danger" onClick={() => decide(selected, 'reject')}>{t('reject')}</Button>
           <Button variant="ghost" onClick={() => setSelected([])}>{t('clearSelection')}</Button>
+        </div>
+      )}
+
+      {extractingStyle && (
+        <StyleExtractDialog
+          t={t}
+          items={selectedPhotos.map((item: any) => ({ ...item, projectId }))}
+          onClose={() => setExtractingStyle(false)}
+          onDone={(result: any) => {
+            setExtractingStyle(false)
+            const warning = result?.warning !== null && result?.warning !== undefined ? ` · ${result.warning}` : ''
+            setStyleNotice(`${t('styleExtracted').replace('{name}', String(result?.preset?.name ?? ''))}${warning}`)
+          }}
+        />
+      )}
+
+      {styleNotice !== null && (
+        <div className="pp-toast" data-kind="done" aria-live="polite">
+          <span style={{ flex: 1 }}>{styleNotice}</span>
+          <Button size="sm" variant="ghost" onClick={() => setStyleNotice(null)}>{t('close')}</Button>
         </div>
       )}
     </section>
@@ -932,6 +990,7 @@ function defaultRecipe() {
     contrast: 0,
     saturation: 0,
     sharpen: 0,
+    curves: normalizeCurves({}),
   }
 }
 
@@ -946,6 +1005,7 @@ function isIdentityDraft(recipe: any): boolean {
     && Math.abs(recipe?.contrast ?? 0) < 1e-6
     && Math.abs(recipe?.saturation ?? 0) < 1e-6
     && Math.abs(recipe?.sharpen ?? 0) < 1e-6
+    && isIdentityCurves(recipe?.curves)
 }
 
 const CROP_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
@@ -1066,6 +1126,223 @@ function CropOverlay({ t, crop, frameAspect, aspect, onChange }: any) {
   )
 }
 
+
+function PresetCard({ name, title, thumb, badge, onClick }: any) {
+  return (
+    <button type="button" className="pp-preset-card" title={title} onClick={onClick}>
+      {thumb === undefined
+        ? <span className="pp-preset-thumb pp-preset-thumb-empty" aria-hidden="true" />
+        : <img className="pp-preset-thumb" src={thumb} alt="" />}
+      <span className="pp-preset-name">{name}</span>
+      {badge !== undefined && <span className="pp-preset-badge">{badge}</span>}
+    </button>
+  )
+}
+
+const CURVE_TABS = [
+  { value: 'master', labelKey: 'curveMaster', dot: 'rgb' },
+  { value: 'r', labelKey: 'curveRed', dot: 'red' },
+  { value: 'g', labelKey: 'curveGreen', dot: 'green' },
+  { value: 'b', labelKey: 'curveBlue', dot: 'blue' },
+  { value: 'luma', labelKey: 'curveLuma', dot: 'luma' },
+]
+const CURVE_ACCENTS: Record<string, string> = {
+  master: 'var(--dsw-alias-brand-primary)',
+  r: 'var(--pp-status-reject)',
+  g: 'var(--pp-status-keep)',
+  b: 'var(--dsw-alias-brand-primary)',
+  luma: 'var(--dsw-alias-label-secondary)',
+}
+
+function CurveEditor({ t, curves, onChange }: any) {
+  const [channel, setChannel] = useState('master')
+  const [dragging, setDragging] = useState<number | null>(null)
+  const normalized: any = normalizeCurves(curves)
+  const points: any[] = normalized[channel] ?? []
+
+  const setPoints = (next: any[]) => {
+    onChange({ ...normalized, [channel]: normalizeCurve(next) })
+  }
+
+  const pointFrom = (event: React.PointerEvent<SVGSVGElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    return {
+      x: Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
+      y: Math.min(1, Math.max(0, 1 - (event.clientY - rect.top) / rect.height)),
+    }
+  }
+
+  // 空白处按下时直接创建控制点，并在同一次手势里继续拖动。
+  const startOnGraph = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (event.button !== 0) return
+    const point = pointFrom(event)
+    const next = normalizeCurve([...points, [point.x, point.y]])
+    const index = next.findIndex(([x, y]: any) => Math.abs(x - point.x) < 1e-4 && Math.abs(y - point.y) < 1e-4)
+    onChange({ ...normalized, [channel]: next })
+    if (index >= 0) {
+      setDragging(index)
+      event.currentTarget.setPointerCapture?.(event.pointerId)
+    }
+  }
+
+  const startPoint = (index: number, event: React.PointerEvent<SVGCircleElement>) => {
+    event.stopPropagation()
+    if (index === 0 || index === points.length - 1) return
+    event.preventDefault()
+    const svg = event.currentTarget.ownerSVGElement
+    svg?.setPointerCapture?.(event.pointerId)
+    setDragging(index)
+  }
+
+  const movePoint = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (dragging === null) return
+    const point = pointFrom(event)
+    const lower = points[dragging - 1][0] + 0.002
+    const upper = points[dragging + 1][0] - 0.002
+    setPoints(points.map((current: any, index: number) => index === dragging
+      ? [Math.min(upper, Math.max(lower, point.x)), point.y]
+      : current))
+  }
+
+  const endPoint = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (dragging === null) return
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+    setDragging(null)
+  }
+
+  const removePoint = (index: number) => {
+    if (index === 0 || index === points.length - 1) return
+    setPoints(points.filter((_: any, at: number) => at !== index))
+  }
+
+  return (
+    <div className="pp-curve-editor">
+      <div className="pp-curve-head">
+        <div className="pp-curve-channels" role="tablist" aria-label={t('curveChannels')}>
+          {CURVE_TABS.map(tab => (
+            <button
+              key={tab.value}
+              type="button"
+              role="tab"
+              aria-selected={channel === tab.value}
+              className="pp-curve-channel"
+              onClick={() => setChannel(tab.value)}
+            >
+              <span className={`pp-channel-dot pp-channel-dot-${tab.dot}`} aria-hidden="true" />
+              <span>{t(tab.labelKey)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="pp-curve-reset-row">
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={isIdentityCurve(points)}
+          onClick={() => setPoints([[0, 0], [1, 1]])}
+        >
+          {t('curveResetChannel')}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={isIdentityCurves(normalized)}
+          onClick={() => onChange(normalizeCurves({}))}
+        >
+          {t('curveResetAll')}
+        </Button>
+      </div>
+      <svg
+        className="pp-curve-graph"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={t('curveGraphLabel')}
+        style={{ '--pp-curve-accent': CURVE_ACCENTS[channel] } as any}
+        onPointerDown={startOnGraph}
+        onPointerMove={movePoint}
+        onPointerUp={endPoint}
+        onPointerCancel={endPoint}
+      >
+        <rect x="0" y="0" width="100" height="100" className="pp-curve-bg" />
+        {dragging !== null && [25, 50, 75].map(value => (
+          <React.Fragment key={value}>
+            <line x1={value} y1="0" x2={value} y2="100" className="pp-curve-grid" />
+            <line x1="0" y1={value} x2="100" y2={value} className="pp-curve-grid" />
+          </React.Fragment>
+        ))}
+        <line x1="0" y1="100" x2="100" y2="0" className="pp-curve-diagonal" />
+        <path d={curvePath(points)} className="pp-curve-line" />
+        {points.map((point: any, index: number) => (
+          <circle
+            key={index}
+            cx={point[0] * 100}
+            cy={(1 - point[1]) * 100}
+            r={index === 0 || index === points.length - 1 ? 2.2 : 3.2}
+            className="pp-curve-point"
+            onPointerDown={event => startPoint(index, event)}
+            onDoubleClick={event => { event.stopPropagation(); removePoint(index) }}
+            onClick={event => event.stopPropagation()}
+          />
+        ))}
+      </svg>
+      <div className="pp-curve-hint">{t('curveEditHint')}</div>
+    </div>
+  )
+}
+
+function StyleExtractDialog({ t, items, onClose, onDone }: any) {
+  const [name, setName] = useState('')
+  const [useAi, setUseAi] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const submit = async () => {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await api('/photo-picker/api/style-presets', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: name.trim(),
+          useAi,
+          items: items.map((item: any) => ({ projectId: item.projectId, photoId: item.id })),
+        }),
+      })
+      onDone(result)
+      onClose()
+    } catch (cause) {
+      setError(String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <ModalShell title={t('styleExtractTitle')} closeLabel={t('close')} onClose={onClose}>
+      <div className="pp-style-dialog">
+        <div className="pp-muted">{t('styleSampleCount').replace('{n}', String(items.length))}</div>
+        <Field label={t('styleName')} help={t('styleNameHint')}>
+          <Input value={name} maxLength={80} placeholder={useAi ? t('styleNameAiPlaceholder') : ''} onChange={event => setName(event.target.value)} />
+        </Field>
+        <label className="pp-check-line">
+          <input type="checkbox" checked={useAi} onChange={event => setUseAi(event.target.checked)} />
+          <span>{t('styleUseAi')}</span>
+        </label>
+        <div className="pp-muted">{useAi ? t('styleAiHint') : t('styleLocalHint')}</div>
+        {error !== null && <StateCard kind="error" title={t('errorTitle')} message={error} />}
+        <ActionBar end>
+          <Button disabled={busy} onClick={onClose}>{t('cancel')}</Button>
+          <Button variant="primary" disabled={busy} onClick={() => { void submit() }}>
+            {busy ? t('styleExtracting') : t('styleExtractAction')}
+          </Button>
+        </ActionBar>
+      </div>
+    </ModalShell>
+  )
+}
+
 function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeedMore, onOpenGroup, onDecide, onClose, onScenesUpdated }: any) {
   const [detail, setDetail] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -1074,6 +1351,9 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [showGrid, setShowGrid] = useState(() => storedGuide('photoPicker.gridGuide'))
   const [showCross, setShowCross] = useState(() => storedGuide('photoPicker.crossGuide'))
   const [deciding, setDeciding] = useState(false)
+  const [scoring, setScoring] = useState(false)
+  const [scoreError, setScoreError] = useState<string | null>(null)
+  const [scoreNotice, setScoreNotice] = useState<string | null>(null)
   const [sceneEditorOpen, setSceneEditorOpen] = useState(false)
   const [draftRecipe, setDraftRecipe] = useState<any>(() => defaultRecipe())
   const [draftPreviewUrl, setDraftPreviewUrl] = useState<string | null>(null)
@@ -1085,6 +1365,11 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const [cropSwapped, setCropSwapped] = useState(false)
   const [recipeBusy, setRecipeBusy] = useState(false)
   const [recipeError, setRecipeError] = useState<string | null>(null)
+  const [stylePresets, setStylePresets] = useState<any[]>([])
+  const [styleError, setStyleError] = useState<string | null>(null)
+  const [editGroup, setEditGroup] = useState('info')
+  const [presetThumbs, setPresetThumbs] = useState<Record<string, string>>({})
+  const presetThumbsRef = useRef<Record<string, string>>({})
   const draftPreviewUrlRef = useRef<string | null>(null)
   const cropFrameUrlRef = useRef<string | null>(null)
   const cropPanelRef = useRef<HTMLDivElement | null>(null)
@@ -1092,16 +1377,28 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
   const draftCrop = normalizeCrop(draftRecipe?.crop)
   const savedCrop = normalizeCrop(detail?.editRecipe?.crop)
   const cropDirty = JSON.stringify(draftCrop) !== JSON.stringify(savedCrop)
-  const draftDirty = detail === null ? false : cropDirty || RECIPE_CONTROLS.some(control => (
+  const curvesDirty = JSON.stringify(normalizeCurves(draftRecipe?.curves))
+    !== JSON.stringify(normalizeCurves(detail?.editRecipe?.curves))
+  const draftDirty = detail === null ? false : cropDirty || curvesDirty || RECIPE_CONTROLS.some(control => (
     Number(draftRecipe?.[control.key] ?? 0) !== Number(detail?.editRecipe?.[control.key] ?? 0)
   ))
+  const detailAspect = frameAspectOf(detail?.width, detail?.height, detail?.orientation)
   const frameAspect = cropFrame !== null
     ? cropFrame.width / cropFrame.height
-    : (detail?.width && detail?.height ? detail.width / detail.height : 1)
+    : detailAspect
   const selectedRatio = CROP_RATIOS.find(item => item.id === cropRatio)
   const cropAspect = selectedRatio?.value ? orientedAspect(selectedRatio.value, frameAspect, cropSwapped) : null
   const cropBaseIdentity = isIdentityDraft({ ...draftRecipe, crop: { left: 0, top: 0, width: 1, height: 1 } })
-  const cropBaseKey = RECIPE_CONTROLS.map(control => Number(draftRecipe?.[control.key] ?? 0)).join('|')
+  const curveKey = JSON.stringify(normalizeCurves(draftRecipe?.curves))
+  const cropBaseKey = RECIPE_CONTROLS.map(control => Number(draftRecipe?.[control.key] ?? 0)).join('|') + `|${curveKey}`
+  const presetBaseKey = JSON.stringify({
+    crop: draftCrop,
+    rotate: draftRecipe?.rotate,
+    exposureEv: draftRecipe?.exposureEv,
+    contrast: draftRecipe?.contrast,
+    saturation: draftRecipe?.saturation,
+    sharpen: draftRecipe?.sharpen,
+  })
 
   const needMoreRef = useRef(onNeedMore)
   useEffect(() => { needMoreRef.current = onNeedMore }, [onNeedMore])
@@ -1112,6 +1409,88 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setError(null)
   }
 
+  const loadStylePresets = async () => {
+    try {
+      const data = await api('/photo-picker/api/style-presets')
+      setStylePresets(Array.isArray(data) ? data : [])
+      setStyleError(null)
+    } catch (cause) {
+      setStyleError(String(cause))
+    }
+  }
+
+  const applyCurves = (curves: any, saturation?: number) => {
+    setShowEdited(true)
+    setDraftRecipe((current: any) => ({
+      ...current,
+      curves: normalizeCurves(curves),
+      ...(saturation === undefined ? {} : { saturation }),
+    }))
+  }
+
+  const removeStylePreset = async (id: string) => {
+    try {
+      await api(`/photo-picker/api/style-presets/${encodeURIComponent(id)}`, { method: 'DELETE' })
+      await loadStylePresets()
+    } catch (cause) {
+      setStyleError(String(cause))
+    }
+  }
+
+  useEffect(() => { void loadStylePresets() }, [])
+
+  useEffect(() => {
+    if (!detail) return
+    const controller = new AbortController()
+    const timer = window.setTimeout(async () => {
+      const entries: any[] = [
+        ...BUILTIN_CURVE_PRESETS.map(preset => ({ key: preset.id, curves: preset.curves })),
+        ...stylePresets.map(preset => ({
+          key: `style:${preset.id}`,
+          curves: preset.curves,
+          saturation: preset.saturation,
+        })),
+      ]
+      const next: Record<string, string> = {}
+      await Promise.all(entries.map(async entry => {
+        try {
+          const recipe = {
+            ...draftRecipe,
+            curves: normalizeCurves(entry.curves),
+            ...(entry.saturation === undefined ? {} : { saturation: entry.saturation }),
+          }
+          const response = await fetch(`/photo-picker/api/projects/${projectId}/photos/${photoId}/edit-thumb`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ recipe }),
+            signal: controller.signal,
+          })
+          if (!response.ok) return
+          const blob = await response.blob()
+          if (!controller.signal.aborted) next[entry.key] = URL.createObjectURL(blob)
+        } catch {
+          // A failed preset thumbnail should not block the editor.
+        }
+      }))
+      if (controller.signal.aborted) {
+        Object.values(next).forEach(url => URL.revokeObjectURL(url))
+        return
+      }
+      Object.values(presetThumbsRef.current).forEach(url => URL.revokeObjectURL(url))
+      presetThumbsRef.current = next
+      setPresetThumbs(next)
+    }, 280)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [detail?.editSignature, photoId, presetBaseKey, stylePresets])
+
+  useEffect(() => () => {
+    Object.values(presetThumbsRef.current).forEach(url => URL.revokeObjectURL(url))
+    presetThumbsRef.current = {}
+  }, [])
+
   useEffect(() => {
     setDetail(null)
     setShowEdited(false)
@@ -1119,6 +1498,7 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     setCropEditing(false)
     setCropFrame(null)
     setCropEntry(null)
+    setEditGroup('info')
     loadDetail().catch(cause => setError(String(cause)))
   }, [photoId])
 
@@ -1140,12 +1520,52 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
     }
   }
 
+  const runScore = async () => {
+    if (scoring || deciding || cropEditing || draftDirty) return
+    setScoring(true)
+    setScoreError(null)
+    setScoreNotice(null)
+    try {
+      const data = await api(`/photo-picker/api/projects/${projectId}/photos/${photoId}/score`, { method: 'POST' })
+      await loadDetail()
+      setEditGroup('info')
+      const result = data?.result
+      if (result?.scored > 0) {
+        const score = data?.detail?.score
+        const verdict = data?.detail?.verdict
+        setScoreNotice(t('scoreDone')
+          .replace('{score}', score === null || score === undefined ? '—' : Number(score).toFixed(1))
+          .replace('{verdict}', verdictLabel(t, verdict)))
+      } else {
+        setScoreError(t('scoreFailed'))
+      }
+      await onScenesUpdated?.()
+    } catch (cause) {
+      setScoreError(String(cause))
+    } finally {
+      setScoring(false)
+    }
+  }
+
   const setRecipeField = (key: string, value: number) => {
     setShowEdited(true)
     setDraftRecipe((current: any) => ({ ...current, [key]: value }))
   }
 
+  const measureBasePreview = () => {
+    if (!detail?.previewUrl) return
+    const image = new Image()
+    image.onload = () => {
+      if (image.naturalWidth && image.naturalHeight) {
+        setCropFrame({ width: image.naturalWidth, height: image.naturalHeight })
+      }
+    }
+    image.src = `${detail.previewUrl}?v=${version}`
+  }
+
   const enterCrop = () => {
+    setEditGroup('basic')
+    measureBasePreview()
     setCropEntry({ ...normalizeCrop(draftRecipe.crop) })
     setCropRatio('free')
     setCropSwapped(false)
@@ -1551,81 +1971,183 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
           </div>
         )}
         </div>
-        <aside className="pp-card pp-panel">
+        <aside className="pp-card pp-panel pp-single-panel">
           <div className="pp-row" style={{ gap: 6 }}>
-            <Button style={{ flex: 1 }} disabled={deciding} onClick={() => decide('keep')}>{t('keep')}</Button>
-            <Button style={{ flex: 1 }} disabled={deciding} onClick={() => decide('maybe')}>{t('maybe')}</Button>
-            <Button variant="danger" style={{ flex: 1 }} disabled={deciding} onClick={() => decide('reject')}>{t('reject')}</Button>
+            <Button style={{ flex: 1 }} disabled={deciding || scoring} onClick={() => decide('keep')}>{t('keep')}</Button>
+            <Button style={{ flex: 1 }} disabled={deciding || scoring} onClick={() => decide('maybe')}>{t('maybe')}</Button>
+            <Button variant="danger" style={{ flex: 1 }} disabled={deciding || scoring} onClick={() => decide('reject')}>{t('reject')}</Button>
           </div>
-          <Button size="sm" onClick={() => setSceneEditorOpen(true)}>{t('editScenes')}</Button>
-          <div className="pp-kbd">{t('keyboardHint')}</div>
-          <div className="pp-meters">
-            {Object.keys(DIMENSION_LABELS).map(key => {
-              const value = dimensions[key]
-              return (
-                <div key={key} className="pp-meter">
-                  <span className="pp-muted">{t(DIMENSION_LABELS[key])}</span>
-                  <div className="pp-meter-track">
-                    <div className="pp-meter-fill" style={{ width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` }} />
-                  </div>
-                  <span>{value === null || value === undefined ? '—' : value}</span>
+          <div className="pp-row" style={{ justifyContent: 'space-between' }}>
+            <div className="pp-row" style={{ gap: 6 }}>
+              <Button size="sm" onClick={() => setSceneEditorOpen(true)}>{t('editScenes')}</Button>
+              <Button
+                size="sm"
+                disabled={scoring || deciding || cropEditing || draftDirty}
+                title={draftDirty ? t('scoreSaveFirst') : undefined}
+                onClick={() => { void runScore() }}
+              >
+                {scoring ? t('aiScoring') : detail.score === null || detail.score === undefined ? t('aiScore') : t('aiRescore')}
+              </Button>
+            </div>
+            {recipe !== null && (
+              <span className="pp-chip">{detail.editSource === 'human' ? t('editRecipeHuman') : t('editRecipeAi')}</span>
+            )}
+          </div>
+          {scoreNotice !== null && <div className="pp-score-notice" role="status">{scoreNotice}</div>}
+          {scoreError !== null && <StateCard kind="error" title={t('errorTitle')} message={scoreError} />}
+
+          <Tabs
+            label={t('editTools')}
+            items={[
+              { value: 'info', label: t('editToolInfo'), disabled: cropEditing },
+              { value: 'basic', label: t('editToolBasic') },
+              { value: 'curves', label: t('editToolCurves'), disabled: cropEditing },
+              { value: 'presets', label: t('editToolPresets'), disabled: cropEditing },
+            ]}
+            value={editGroup}
+            onChange={setEditGroup}
+          />
+
+          <div className="pp-edit-group">
+            {editGroup === 'basic' && (
+              <>
+                {recipe === null && <div className="pp-muted">{t('editNoRecipe')}</div>}
+                <div className="pp-recipe-editor-grid">
+                  {RECIPE_CONTROLS.filter(control => !(cropEditing && control.key === 'rotate')).map(control => {
+                    const value = Number(draftRecipe?.[control.key] ?? 0)
+                    const display = `${control.signed && value > 0 ? '+' : ''}${value.toFixed(control.digits)}${control.unit}`
+                    return (
+                      <label className="pp-recipe-control" key={control.key}>
+                        <span className="pp-recipe-control-head">
+                          <span>{t(control.label)}</span>
+                          <span className="pp-recipe-value">{display}</span>
+                        </span>
+                        <input
+                          className="pp-range"
+                          type="range"
+                          min={control.min}
+                          max={control.max}
+                          step={control.step}
+                          value={value}
+                          onChange={event => setRecipeField(control.key, Number(event.target.value))}
+                        />
+                      </label>
+                    )
+                  })}
                 </div>
-              )
-            })}
-          </div>
-          {detail.reason !== null && (
-            <div>
-              <div className="pp-section-title" style={{ marginBottom: 4 }}>{t('reason')}</div>
-              <div className="pp-reason">{detail.reason}</div>
-            </div>
-          )}
-          {(detail.postProcessing ?? []).length > 0 && (
-            <div>
-              <div className="pp-section-title" style={{ marginBottom: 6 }}>{t('postProcessing')}</div>
-              <div className="pp-chips">
-                {detail.postProcessing.map((code: string) => <span key={code} className="pp-chip">{postProcessingLabel(t, code)}</span>)}
+                <div className="pp-crop-summary">
+                  <span className="pp-muted">
+                    {t('editRecipeCropReadonly')}：{draftCrop.width === 1 && draftCrop.height === 1
+                      ? t('editCropNone')
+                      : `${Math.round(draftCrop.width * 100)}% × ${Math.round(draftCrop.height * 100)}% · ${t('editCropLeft')} ${Math.round(draftCrop.left * 100)}% · ${t('editCropTop')} ${Math.round(draftCrop.top * 100)}%`}
+                  </span>
+                  {!cropEditing && <Button size="sm" onClick={enterCrop}>{t('cropEdit')}</Button>}
+                </div>
+              </>
+            )}
+
+            {editGroup === 'curves' && (
+              <div className="pp-curve-section">
+                <div className="pp-section-head">
+                  <div className="pp-section-title">{t('curveTitle')}</div>
+                  <span className="pp-muted">{t('curveHint')}</span>
+                </div>
+                <CurveEditor t={t} curves={draftRecipe?.curves} onChange={applyCurves} />
               </div>
-            </div>
-          )}
-          <div>
-            <div className="pp-recipe-card-head">
-              <div className="pp-section-title">{t('editRecipe')}</div>
-              {recipe !== null && (
-                <span className="pp-chip">{detail.editSource === 'human' ? t('editRecipeHuman') : t('editRecipeAi')}</span>
-              )}
-            </div>
-            {recipe === null && <div className="pp-muted">{t('editNoRecipe')}</div>}
-            <div className="pp-recipe-editor-grid">
-              {RECIPE_CONTROLS.filter(control => !(cropEditing && control.key === 'rotate')).map(control => {
-                const value = Number(draftRecipe?.[control.key] ?? 0)
-                const display = `${control.signed && value > 0 ? '+' : ''}${value.toFixed(control.digits)}${control.unit}`
-                return (
-                  <label className="pp-recipe-control" key={control.key}>
-                    <span className="pp-recipe-control-head">
-                      <span>{t(control.label)}</span>
-                      <span className="pp-recipe-value">{display}</span>
-                    </span>
-                    <input
-                      className="pp-range"
-                      type="range"
-                      min={control.min}
-                      max={control.max}
-                      step={control.step}
-                      value={value}
-                      onChange={event => setRecipeField(control.key, Number(event.target.value))}
-                    />
-                  </label>
-                )
-              })}
-            </div>
-            <div className="pp-crop-summary">
-              <span className="pp-muted">
-                {t('editRecipeCropReadonly')}：{draftCrop.width === 1 && draftCrop.height === 1
-                  ? t('editCropNone')
-                  : `${Math.round(draftCrop.width * 100)}% × ${Math.round(draftCrop.height * 100)}% · ${t('editCropLeft')} ${Math.round(draftCrop.left * 100)}% · ${t('editCropTop')} ${Math.round(draftCrop.top * 100)}%`}
-              </span>
-              {!cropEditing && <Button size="sm" onClick={enterCrop}>{t('cropEdit')}</Button>}
-            </div>
+            )}
+
+            {editGroup === 'presets' && (
+              <>
+                <div className="pp-curve-preset-block">
+                  <div className="pp-muted">{t('curveBuiltinPresets')}</div>
+                  <div className="pp-preset-grid">
+                    {BUILTIN_CURVE_PRESETS.map(preset => (
+                      <PresetCard
+                        key={preset.id}
+                        name={t(preset.nameKey)}
+                        title={t(preset.descriptionKey)}
+                        thumb={presetThumbs[preset.id]}
+                        onClick={() => applyCurves(preset.curves)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {stylePresets.length > 0 && (
+                  <div className="pp-curve-preset-block">
+                    <div className="pp-muted">{t('curveMyPresets')}</div>
+                    <div className="pp-preset-grid">
+                      {stylePresets.map((preset: any) => (
+                        <div className="pp-preset-card-wrap" key={preset.id}>
+                          <PresetCard
+                            name={preset.name}
+                            title={preset.description || preset.name}
+                            thumb={presetThumbs[`style:${preset.id}`]}
+                            badge={preset.analysis?.source === 'ai' ? t('styleSourceAi') : t('styleSourceLocal')}
+                            onClick={() => applyCurves(preset.curves, preset.saturation)}
+                          />
+                          <Button size="sm" variant="ghost" onClick={() => { void removeStylePreset(preset.id) }}>{t('deleteTemplate')}</Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {styleError !== null && <div className="pp-muted">{styleError}</div>}
+                <div className="pp-muted">{t('editPresetsHint')}</div>
+              </>
+            )}
+
+            {editGroup === 'info' && (
+              <>
+                <div className="pp-meters">
+                  {Object.keys(DIMENSION_LABELS).map(key => {
+                    const value = dimensions[key]
+                    return (
+                      <div key={key} className="pp-meter">
+                        <span className="pp-muted">{t(DIMENSION_LABELS[key])}</span>
+                        <div className="pp-meter-track">
+                          <div className="pp-meter-fill" style={{ width: `${Math.max(0, Math.min(10, value ?? 0)) * 10}%` }} />
+                        </div>
+                        <span>{value === null || value === undefined ? '—' : value}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                {detail.subject !== null && detail.subject !== undefined && detail.subject !== '' && (
+                  <div>
+                    <div className="pp-section-title" style={{ marginBottom: 4 }}>{t('subject')}</div>
+                    <div className="pp-subject">{detail.subject}</div>
+                  </div>
+                )}
+                {detail.caption !== null && detail.caption !== undefined && detail.caption !== '' && (
+                  <div>
+                    <div className="pp-section-title" style={{ marginBottom: 4 }}>{t('caption')}</div>
+                    <div className="pp-caption">{detail.caption}</div>
+                  </div>
+                )}
+                {detail.reason !== null && (
+                  <div>
+                    <div className="pp-section-title" style={{ marginBottom: 4 }}>{t('reason')}</div>
+                    <div className="pp-reason">{detail.reason}</div>
+                  </div>
+                )}
+                {(detail.postProcessing ?? []).length > 0 && (
+                  <div>
+                    <div className="pp-section-title" style={{ marginBottom: 6 }}>{t('postProcessing')}</div>
+                    <div className="pp-chips">
+                      {detail.postProcessing.map((code: string) => <span key={code} className="pp-chip">{postProcessingLabel(t, code)}</span>)}
+                    </div>
+                  </div>
+                )}
+                <div className="pp-kbd">{t('keyboardHint')}</div>
+                <div className="pp-muted">
+                  {detail.width} × {detail.height}
+                  {detail.group !== undefined ? ` · ${t('groupRank').replace('{rank}', String(detail.group.rank)).replace('{size}', String(detail.group.size))}` : ''}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="pp-edit-footer">
             {recipeError !== null && <StateCard kind="error" title={t('errorTitle')} message={recipeError} />}
             <div className="pp-recipe-actions">
               {detail.editSource === 'human' && (
@@ -1642,10 +2164,6 @@ function PhotoSingle({ t, projectId, items, photoId, version, onNavigate, onNeed
                 </Button>
               )}
             </div>
-          </div>
-          <div className="pp-muted">
-            {detail.width} × {detail.height}
-            {detail.group !== undefined ? ` · ${t('groupRank').replace('{rank}', String(detail.group.rank)).replace('{size}', String(detail.group.size))}` : ''}
           </div>
         </aside>
       </div>
@@ -2942,6 +3460,8 @@ function GlobalPhotoWall({ t, projects }: any) {
   const [active, setActive] = useState<any>(null)
   const [exporting, setExporting] = useState(false)
   const [exportNotice, setExportNotice] = useState<string | null>(null)
+  const [extractingStyle, setExtractingStyle] = useState(false)
+  const [styleNotice, setStyleNotice] = useState<string | null>(null)
   const requestRef = useRef(0)
   const filterKey = JSON.stringify({ projectIds, scenes, verdicts, sort })
 
@@ -2950,6 +3470,7 @@ function GlobalPhotoWall({ t, projects }: any) {
     if (projectIds.length > 0) params.set('projects', projectIds.join(','))
     if (scenes.length > 0) params.set('scenes', scenes.join(','))
     if (verdicts.length > 0) params.set('verdicts', verdicts.join(','))
+    if (verdicts.includes('reject')) params.set('includeAiRejected', '1')
     return api(`/photo-picker/api/photos?${params.toString()}`)
   }
 
@@ -3034,6 +3555,9 @@ function GlobalPhotoWall({ t, projects }: any) {
           <span className="pp-muted">{total} {t('photos')}</span>
         </div>
         <div className="pp-toolbar-group pp-toolbar-end">
+          {selected.length >= 1 && selected.length <= 5 && (
+            <Button onClick={() => setExtractingStyle(true)}>{t('styleExtractAction')}</Button>
+          )}
           <Button disabled={total === 0} onClick={() => setExporting(true)}>
             {selected.length > 0 ? t('exportSelected').replace('{n}', String(selected.length)) : t('exportFiltered')}
           </Button>
@@ -3153,10 +3677,30 @@ function GlobalPhotoWall({ t, projects }: any) {
         />
       )}
 
+      {extractingStyle && (
+        <StyleExtractDialog
+          t={t}
+          items={selectedItems}
+          onClose={() => setExtractingStyle(false)}
+          onDone={(result: any) => {
+            setExtractingStyle(false)
+            const warning = result?.warning !== null && result?.warning !== undefined ? ` · ${result.warning}` : ''
+            setStyleNotice(`${t('styleExtracted').replace('{name}', String(result?.preset?.name ?? ''))}${warning}`)
+          }}
+        />
+      )}
+
       {exportNotice !== null && (
         <div className="pp-toast" data-kind="done" aria-live="polite">
           <span style={{ flex: 1 }}>{exportNotice}</span>
           <Button size="sm" variant="ghost" onClick={() => setExportNotice(null)}>{t('close')}</Button>
+        </div>
+      )}
+
+      {styleNotice !== null && (
+        <div className="pp-toast" data-kind="done" aria-live="polite">
+          <span style={{ flex: 1 }}>{styleNotice}</span>
+          <Button size="sm" variant="ghost" onClick={() => setStyleNotice(null)}>{t('close')}</Button>
         </div>
       )}
     </section>
