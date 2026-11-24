@@ -1,5 +1,5 @@
 /** 提示词版本；改动提示词时同步 bump，assessments 幂等键依赖它。 */
-export const PROMPT_VERSION = 'v7'
+export const PROMPT_VERSION = 'v8'
 
 export const GRID_SYSTEM = '你是一位有经验的摄影编辑，只输出 JSON，不输出任何解释。'
 
@@ -54,6 +54,12 @@ export function scoreUserPrompt() {
     '允许一张照片有多个标签，例如活动中的单人瞬间可以是 ["portrait","event"]；',
     '但不要为了凑标签而强行添加，混合内容按主要主体判断。',
     '',
+    '还要输出两个开放词汇字段：',
+    'subject：最具体的短主体名称，不超过 30 个汉字；例如“黄玫瑰”“海警船 21527”“玻璃花雕塑”。',
+    'caption：一句事实性画面描述，不超过 100 个汉字；写主体、动作/状态、环境或最显著的视觉特征。',
+    'caption 不要推断人物身份、地点、事件背景，不要写评分、建议或营销词。',
+    '没有把握时 subject 和 caption 可以返回空字符串，但仍然必须包含这两个字段。',
+    '',
     '评分时以 primary_scene 相应的标准为主，但仍要兼顾六维完整评分：',
     '- portrait：眼神、表情、皮肤、姿态；背景虚化可接受。',
     '- landscape：构图层次、光线时刻、地平线、清晰度。',
@@ -87,7 +93,7 @@ export function scoreUserPrompt() {
   lines.push(
     '',
     '只返回如下结构的 JSON（不要围栏、不要解释）；示例中的 crop 是全画幅，数字只是字段格式，不要照抄：',
-    '{"scenes":["architecture","street"],"primary_scene":"architecture","score":8.2,"dimensions":{"composition":8,"light":7,"color":8,"technique":9,"post_potential":7,"moment":6},"verdict":"keep","post_processing":["crop_right"],"edit_recipe":{"version":1,"crop":{"left":0,"top":0,"width":1,"height":1},"rotate":0,"exposureEv":0,"contrast":0,"saturation":0,"sharpen":0},"reason":"线条清晰，侧光有层次"}',
+    '{"scenes":["architecture","street"],"primary_scene":"architecture","score":8.2,"dimensions":{"composition":8,"light":7,"color":8,"technique":9,"post_potential":7,"moment":6},"verdict":"keep","post_processing":["crop_right"],"edit_recipe":{"version":1,"crop":{"left":0,"top":0,"width":1,"height":1},"rotate":0,"exposureEv":0,"contrast":0,"saturation":0,"sharpen":0},"subject":"海警船 21527","caption":"两艘海警船停靠在城市建筑前的港湾，水面平静。","reason":"线条清晰，侧光有层次"}',
   )
   return lines.join('\n')
 }

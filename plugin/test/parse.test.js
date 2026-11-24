@@ -39,6 +39,8 @@ test('parseScore normalizes dimensions, whitelist and reason length', () => {
     dimensions: { composition: 8, light: 7, color: 8, technique: 9, post_potential: 7, moment: 6 },
     verdict: 'keep',
     post_processing: ['crop_right', 'not_a_real_code'],
+    subject: '黄玫瑰',
+    caption: '深绿色背景中的一朵黄玫瑰，中心花蕊清晰。',
     reason: '主'.repeat(200),
   }
   const parsed = parseScore('```json\n' + JSON.stringify(payload) + '\n```')
@@ -46,6 +48,8 @@ test('parseScore normalizes dimensions, whitelist and reason length', () => {
   assert.equal(parsed.verdict, 'keep')
   for (const key of DIMENSIONS) assert.equal(typeof parsed.dimensions[key], 'number')
   assert.deepEqual(parsed.postProcessing, ['crop_right'])
+  assert.equal(parsed.subject, '黄玫瑰')
+  assert.equal(parsed.caption, '深绿色背景中的一朵黄玫瑰，中心花蕊清晰。')
   assert.equal(parsed.reason.length, 120)
 })
 
@@ -53,6 +57,23 @@ test('parseScore fills missing dimensions with null', () => {
   const parsed = parseScore(JSON.stringify({ score: 6.5, verdict: 'maybe', dimensions: { light: 6 }, reason: 'ok' }))
   assert.equal(parsed.dimensions.composition, null)
   assert.equal(parsed.dimensions.light, 6)
+})
+
+test('parseScore accepts Chinese subject/caption aliases and trims lengths', () => {
+  const parsed = parseScore(JSON.stringify({
+    score: 7,
+    verdict: 'maybe',
+    subject: '主'.repeat(100),
+    caption: '描'.repeat(300),
+  }))
+  assert.equal(parsed.subject.length, 60)
+  assert.equal(parsed.caption.length, 200)
+})
+
+test('parseScore tolerates missing subject and caption', () => {
+  const parsed = parseScore(JSON.stringify({ score: 6.5, verdict: 'maybe' }))
+  assert.equal(parsed.subject, null)
+  assert.equal(parsed.caption, null)
 })
 
 test('parseScore rejects unparseable or invalid payloads', () => {
@@ -76,7 +97,7 @@ test('parseRank validates order and best against the given labels', () => {
 })
 
 test('post processing whitelist, prompt version and scene-aware prompts are current', () => {
-  assert.equal(PROMPT_VERSION, 'v7')
+  assert.equal(PROMPT_VERSION, 'v8')
   assert.ok(POST_PROCESSING_CODES.has('crop_right'))
   assert.ok(isPostProcessingCode('straighten_+1.5'))
   assert.ok(isPostProcessingCode('exposure_-0.3'))
@@ -93,6 +114,8 @@ test('post processing whitelist, prompt version and scene-aware prompts are curr
   assert.match(score, /flower/)
   assert.match(score, /wildlife/)
   assert.match(score, /sculpture/)
+  assert.match(score, /subject/)
+  assert.match(score, /caption/)
 })
 
 test('parseScore accepts Chinese keys and flat dimensions', () => {

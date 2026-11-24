@@ -196,6 +196,8 @@ test('runScoreStage writes verdicts and never overwrites a human decision', asyn
       text: JSON.stringify({
         scenes: ['portrait'],
         primary_scene: 'portrait',
+        subject: '人物肖像',
+        caption: '人物站在浅色背景前，面部受光。',
         score: 8.2,
         verdict: 'keep',
         dimensions: { composition: 8 },
@@ -226,12 +228,42 @@ test('runScoreStage writes verdicts and never overwrites a human decision', asyn
   assert.deepEqual({ verdict: decisions.p1.verdict, source: decisions.p1.source }, { verdict: 'keep', source: 'human' })
   assert.deepEqual({ verdict: decisions.p0.verdict, source: decisions.p0.source }, { verdict: 'keep', source: 'ai' })
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM assessments WHERE stage = 'single'").get().n, 2)
-  const row = db.prepare("SELECT recipe_json, scenes_json, primary_scene FROM assessments WHERE stage = 'single' LIMIT 1").get()
+  const row = db.prepare("SELECT recipe_json, scenes_json, primary_scene, subject, caption FROM assessments WHERE stage = 'single' LIMIT 1").get()
   assert.ok(row.recipe_json)
   assert.equal(JSON.parse(row.recipe_json).crop.left, 0.2)
   assert.equal(row.primary_scene, 'portrait')
+  assert.equal(row.subject, '人物肖像')
+  assert.equal(row.caption, '人物站在浅色背景前，面部受光。')
   assert.deepEqual(JSON.parse(row.scenes_json), ['portrait'])
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM photos WHERE state = 'scored'").get().n, 2)
+  db.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('runScoreStage targeted can score a grid_rejected photo and force a new assessment', async () => {
+  const { db, dir } = setup()
+  addPhotos(db, 1, { state: 'grid_rejected' })
+  db.prepare(`INSERT INTO decisions (photo_id, project_id, verdict, source, updated_at)
+              VALUES ('p0', 'p1', 'reject', 'ai', 0)`).run()
+  const project = projectOf(db)
+  const llm = fakeLlm([
+    { text: JSON.stringify({ score: 8.6, verdict: 'keep', dimensions: {}, post_processing: [], reason: '好' }) },
+    { text: JSON.stringify({ score: 8.7, verdict: 'keep', dimensions: {}, post_processing: [], reason: '更好' }) },
+  ])
+  const run = () => runScoreStage({
+    db, projectId: 'p1', project, llm, attachments,
+    loadPhoto: async () => solidThumb(), now: OFF_PEAK,
+    targetPhotoIds: ['p0'], force: true,
+  })
+  const first = await run()
+  assert.equal(first.scored, 1)
+  assert.equal(db.prepare("SELECT state FROM photos WHERE id = 'p0'").get().state, 'scored')
+  assert.equal(db.prepare("SELECT verdict, source FROM decisions WHERE photo_id = 'p0'").get().verdict, 'keep')
+  const second = await run()
+  assert.equal(second.scored, 1)
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM assessments WHERE target_id = 'p0' AND stage = 'single'").get().n, 2)
+  const stage = db.prepare("SELECT stats_json FROM stage_runs WHERE stage = 'score' ORDER BY started_at DESC LIMIT 1").get()
+  assert.equal(JSON.parse(stage.stats_json).singlePhotoId, 'p0')
   db.close()
   rmSync(dir, { recursive: true, force: true })
 })

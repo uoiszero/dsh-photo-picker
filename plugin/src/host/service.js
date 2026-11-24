@@ -5,12 +5,13 @@ import os from 'node:os'
 import path from 'node:path'
 import { createHttpHandler } from './http.js'
 import { dshHome } from './paths.js'
-import { isPeakHour } from './cost.js'
+import { costOfUsage, isPeakHour } from './cost.js'
 import { renderEditedBuffer, renderEditedFile } from './edit.js'
 import { previewExport, runExport } from './export.js'
 import { listGlobalPhotos } from './global-wall.js'
 import { previewGlobalExport, runGlobalExport } from './global-export.js'
 import { renderPreview } from './images.js'
+import { completeText } from './llm.js'
 import { fromPortablePath, platform } from './platform.js'
 import { connectSmb as connectSmbHost, defaultListVolumes } from './network.js'
 import { runPipeline } from './orchestrator.js'
@@ -29,6 +30,11 @@ import {
 } from './prompts.js'
 import { normalizeRecipe, recipeSignature } from './recipe.js'
 import { scanProject } from './scan.js'
+import {
+  MAX_STYLE_SAMPLES, STYLE_SYSTEM, analyzeStyleSamples, applyStyleTone,
+  buildStyleContactSheet, parseStyleAnalysis, styleUserPrompt,
+} from './style-extract.js'
+import { deleteStylePreset, listStylePresets, saveStylePreset } from './style-presets.js'
 import { sourceFor } from './source.js'
 import { createPhotoPickerExportTool, createPhotoPickerTool } from './tools.js'
 
@@ -518,6 +524,65 @@ export class PhotoPickerService extends Service {
     return getPhotoDetail(db, id, photoId)
   }
 
+  /** 单张精评：允许网格落选/已弃用照片，重新调用一次模型并新增 assessment。 */
+  async scorePhoto(id, photoId) {
+    if (this.running.has(id)) {
+      throw stageError('a stage is already running for this project', 'PROJECT_RUNNING', 409)
+    }
+    let db
+    try {
+      ({ db } = await this.store.open(id))
+    } catch {
+      throw stageError(`unknown project: ${id}`, 'NOT_FOUND', 404)
+    }
+    const row = db.prepare('SELECT id, state FROM photos WHERE id = ? AND project_id = ?').get(photoId, id)
+    if (row === undefined) throw stageError(`unknown photo: ${photoId}`, 'NOT_FOUND', 404)
+    if (row.state === 'unreadable' || String(row.state).startsWith('filtered_')) {
+      throw stageError(`photo state ${row.state} cannot be scored`, 'BAD_STATE', 400)
+    }
+
+    const project = await this.freshProject(id)
+    if (!(await this.imageCapable(project))) {
+      throw stageError(`model ${project.modelId} does not accept image input`, 'MODEL_NO_IMAGE_INPUT', 400)
+    }
+    if (project.offpeakOnly === true && isPeakHour(new Date())) {
+      throw stageError('off-peak only is enabled; retry after 18:00', 'OFFPEAK_BLOCKED', 409)
+    }
+    const spent = db.prepare('SELECT COALESCE(SUM(cost_cny), 0) AS spent FROM stage_runs WHERE project_id = ?').get(id).spent
+    if (project.budgetCny !== undefined && project.budgetCny > 0 && spent >= project.budgetCny) {
+      throw stageError('project budget is exhausted; raise the budget before scoring', 'BUDGET_EXHAUSTED', 409)
+    }
+
+    const source = sourceFor(project)
+    if (project.sourceKind !== 'local' && !(await source.health())) {
+      throw stageError('network source is not available; reconnect the share first', 'NETWORK_LOST', 409)
+    }
+
+    const controller = new AbortController()
+    this.running.set(id, { stage: 'score', controller })
+    try {
+      const result = await runScoreStage({
+        db,
+        projectId: id,
+        project,
+        llm: this.ctx.llm,
+        attachments: this.ctx.attachments,
+        loadPhoto: photo => source.absolute(photo.rel_path),
+        targetPhotoIds: [photoId],
+        force: true,
+        signal: controller.signal,
+        onEvent: progress => this.events.emit('event', { projectId: id, ...progress }),
+        budgetCny: project.budgetCny,
+      })
+      return { result, detail: await this.photoDetail(id, photoId) }
+    } catch (error) {
+      await this.markStageFailed(db, id, 'score', error).catch(() => {})
+      throw error
+    } finally {
+      if (this.running.get(id)?.controller === controller) this.running.delete(id)
+    }
+  }
+
   async setPhotoScenes(id, photoId, { scenes, primaryScene } = {}) {
     const { db } = await this.store.open(id)
     return setSceneOverride(db, id, photoId, scenes, primaryScene)
@@ -638,8 +703,7 @@ export class PhotoPickerService extends Service {
     }
   }
 
-  /** 草稿配方渲染为临时 JPEG（不写数据库、不落缓存），供拖动滑杆时预览。 */
-  async renderRecipePreview(id, photoId, recipeInput) {
+  async renderDraftRecipe(id, photoId, recipeInput, maxWidth) {
     const { db, project } = await this.store.open(id)
     const row = db.prepare('SELECT rel_path FROM photos WHERE id = ? AND project_id = ?').get(photoId, id)
     if (row === undefined) {
@@ -648,7 +712,17 @@ export class PhotoPickerService extends Service {
     const recipe = normalizeRecipe(recipeInput, { allowMicroCrop: true })
     if (recipe === null) throw stageError('draft recipe is empty', 'BAD_RECIPE', 400)
     const sourcePath = fromPortablePath(project.sourcePath, row.rel_path)
-    return renderEditedBuffer({ sourcePath, recipe, maxWidth: 1200 })
+    return renderEditedBuffer({ sourcePath, recipe, maxWidth })
+  }
+
+  /** 草稿配方渲染为临时 JPEG（不写数据库、不落缓存），供拖动滑杆时预览。 */
+  async renderRecipePreview(id, photoId, recipeInput) {
+    return this.renderDraftRecipe(id, photoId, recipeInput, 1200)
+  }
+
+  /** 预设卡片使用的小图；同样走当前草稿的裁剪/色调，只换曲线。 */
+  async renderRecipeThumbnail(id, photoId, recipeInput) {
+    return this.renderDraftRecipe(id, photoId, recipeInput, 160)
   }
 
   /** 最新 single assessment 的配方渲染成 JPEG 缓存；无配方或坏配方返回 undefined。 */
@@ -712,6 +786,106 @@ export class PhotoPickerService extends Service {
         scoreUser: scoreUserPrompt(),
       },
     }
+  }
+
+  async stylePresets() {
+    return listStylePresets()
+  }
+
+  async createStylePreset({ name, useAi = true, items } = {}) {
+    if (!Array.isArray(items) || items.length === 0) {
+      throw stageError('style extraction needs 1–5 sample photos', 'BAD_STYLE_SAMPLE', 400)
+    }
+    if (items.length > MAX_STYLE_SAMPLES) {
+      throw stageError(`style extraction accepts at most ${MAX_STYLE_SAMPLES} samples`, 'BAD_STYLE_SAMPLE', 400)
+    }
+
+    const samples = []
+    for (const item of items) {
+      if (item === null || typeof item !== 'object' || item.projectId === undefined || item.photoId === undefined) {
+        throw stageError('each style sample needs projectId and photoId', 'BAD_STYLE_SAMPLE', 400)
+      }
+      let opened
+      try {
+        opened = await this.store.open(item.projectId)
+      } catch {
+        throw stageError(`unknown project: ${item.projectId}`, 'STYLE_PROJECT_NOT_FOUND', 404)
+      }
+      const row = opened.db.prepare('SELECT id, rel_path FROM photos WHERE id = ? AND project_id = ?')
+        .get(item.photoId, item.projectId)
+      if (row === undefined) {
+        throw stageError(`sample photo not found: ${item.photoId}`, 'STYLE_PHOTO_NOT_FOUND', 404)
+      }
+      samples.push({
+        projectId: item.projectId,
+        project: opened.project,
+        filePath: sourceFor(opened.project).absolute(row.rel_path),
+      })
+    }
+
+    const local = await analyzeStyleSamples(samples.map(sample => sample.filePath))
+    let parsed = null
+    let warning = null
+    let usage = null
+    let modelProject = null
+
+    if (useAi === true) {
+      try {
+        modelProject = await this.freshProject(samples[0].projectId)
+        if (await this.imageCapable(modelProject)) {
+          const contactSheet = await buildStyleContactSheet(samples.map(sample => sample.filePath))
+          const image = await this.ctx.attachments.saveImage({ data: contactSheet, mediaType: 'image/jpeg' })
+          const result = await completeText({
+            llm: this.ctx.llm,
+            provider: modelProject.modelRoute,
+            model: modelProject.modelId,
+            system: STYLE_SYSTEM,
+            prompt: styleUserPrompt,
+            image,
+            reasoningEffort: 'off',
+            temperature: 0.2,
+            maxTokens: 700,
+            maxAttempts: 2,
+          })
+          parsed = parseStyleAnalysis(result.text)
+          usage = result.usage
+          if (parsed === null) warning = 'AI returned an invalid style description; saved a local-only template'
+        } else {
+          warning = 'The project model does not accept images; saved a local-only template'
+        }
+      } catch (error) {
+        warning = `AI style analysis failed; saved a local-only template: ${String(error?.message ?? error)}`
+      }
+    }
+
+    const curves = parsed === null ? local.curves : applyStyleTone(local.curves, parsed.tone)
+    const saturation = parsed === null ? local.saturation : Math.max(-1, Math.min(1, parsed.tone.saturation ?? 0))
+    const nameValue = typeof name === 'string' ? name.trim() : ''
+    const presetName = (nameValue || parsed?.name || '自定义风格').slice(0, 80)
+    const costCny = usage === null ? 0 : costOfUsage(usage, { peak: isPeakHour(new Date()) })
+    const preset = saveStylePreset({
+      name: presetName,
+      description: parsed?.description ?? '',
+      sampleCount: samples.length,
+      curves,
+      saturation,
+      analysis: {
+        source: parsed === null ? 'local' : 'ai',
+        modelRoute: parsed === null ? null : modelProject?.modelRoute,
+        modelId: parsed === null ? null : modelProject?.modelId,
+        tags: parsed?.tags ?? [],
+        confidence: parsed?.confidence ?? 0,
+        tokensIn: usage?.inputTokens ?? 0,
+        tokensOut: usage?.outputTokens ?? 0,
+        costCny,
+        warning,
+      },
+    })
+    return { preset, warning }
+  }
+
+  async removeStylePreset(id) {
+    return { removed: deleteStylePreset(id) }
   }
 
   async modelRoutes() {

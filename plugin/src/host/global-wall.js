@@ -60,6 +60,7 @@ export async function listGlobalPhotos({ store, filters = {} }) {
       const page = listReviewPhotos(db, entry.id, {
         scenes: filters.scenes,
         verdicts: filters.verdicts,
+        includeAiRejected: filters.includeAiRejected === true,
         sort: filters.sort || 'score',
         limit: perProjectLimit,
         offset: 0,

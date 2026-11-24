@@ -27,6 +27,20 @@ export function normalizeCrop(crop) {
   return normalizeSize(crop ?? { left: 0, top: 0, width: 1, height: 1 })
 }
 
+
+/** EXIF orientation 可能是数字，也可能是 exifr 的 "Rotate 270 CW" 文案。 */
+export function isRotatedOrientation(orientation) {
+  if (typeof orientation === 'number') return orientation >= 5 && orientation <= 8
+  if (typeof orientation === 'string') return /rotate\s*(90|270)(?!\d)/i.test(orientation)
+  return false
+}
+
+/** 原图尺寸在 EXIF 旋转后得到的显示宽高比。 */
+export function frameAspectOf(width, height, orientation) {
+  if (!(width > 0) || !(height > 0)) return 1
+  return isRotatedOrientation(orientation) ? height / width : width / height
+}
+
 /** 把长:短比例按画面横竖转成实际像素宽高比。 */
 export function orientedAspect(longShort, frameAspect, swapped = false) {
   let aspect = frameAspect >= 1 ? longShort : 1 / longShort

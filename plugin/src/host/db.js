@@ -121,6 +121,8 @@ CREATE TABLE IF NOT EXISTS assessments (
   recipe_json TEXT,
   scenes_json TEXT,
   primary_scene TEXT,
+  subject TEXT,
+  caption TEXT,
   reason TEXT,
   raw_json TEXT,
   tokens_in INTEGER NOT NULL DEFAULT 0,
@@ -222,6 +224,14 @@ export function ensureAssessmentSceneColumns(db) {
   }
 }
 
+/** 精评新增开放词汇 subject/caption；旧库显式补列。 */
+export function ensureAssessmentTextColumns(db) {
+  const columns = db.prepare('PRAGMA table_info(assessments)').all().map(row => row.name)
+  for (const name of ['subject', 'caption']) {
+    if (!columns.includes(name)) db.exec(`ALTER TABLE assessments ADD COLUMN ${name} TEXT`)
+  }
+}
+
 /** v0.7 新增 AI 阶段记录字段；旧库显式补列。 */
 export function ensureStageRunColumns(db) {
   const columns = db.prepare('PRAGMA table_info(stage_runs)').all().map(row => row.name)
@@ -244,6 +254,7 @@ export function openDb(workspaceDir) {
   db.exec(SCHEMA)
   ensureAssessmentRecipeColumn(db)
   ensureAssessmentSceneColumns(db)
+  ensureAssessmentTextColumns(db)
   ensureStageRunColumns(db)
   return db
 }

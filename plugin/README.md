@@ -38,6 +38,9 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 - **Project management**: delete a project and its local workspace without touching source photos.
 - **Review workbench**: filterable wall with AI scene tags and scene filters, 1600px single view, group compare, bulk decisions, undo.
 - **Cross-project wall**: filter reviewable photos from multiple projects by scene label, verdict and project; sort by score/time/project; export the filtered set or a selection with a single manifest.
+- **Curves**: per-photo RGB master curve, independent red/green/blue channel curves, and a brightness curve that adjusts luminance while preserving hue. Click to add, drag, double-click to remove; curves render locally through a 256-step LUT.
+- **Built-in curve presets**: soft/strong contrast, shadow lift, highlight rolloff, matte fade, warm film and cool cinema, available without a custom template.
+- **Style presets**: select 1–5 existing project photos on the all-photos or project wall, optionally let one image-model call analyze a contact sheet, and save a global tone/color preset. Applying a preset never calls the model; failures fall back to local histogram statistics.
 - **AI run history**: per-project stage-level model/token/cost/call/error history for grid, rank and score, with a unified checkpoint/AI-history card.
 - **Portable edit recipes**: manual crop with freeform, 4:3 / 5:4 / 1:1 / 16:9 / 16:10 / 3:2 presets, orientation swap, and draggable handles. Tune exposure/contrast/saturation/sharpen/rotate, save a per-photo human recipe, or restore the AI recipe. The plugin renders previews with the bundled sharp engine and exports JPEG copies while keeping sources untouched.
 - **No black corners**: straightening auto-crops the largest inscribed rectangle.
@@ -47,6 +50,7 @@ All state lives in a local SQLite project database. Stages can pause, resume fro
 - **Scene-aware review**: per-photo scene tags (portrait / landscape / architecture / street / event / flower / wildlife / sculpture / other), manual tag correction, scene filters, and a virtualized page-200 review wall that can reach every photo.
 - **Export progress and persistence**: estimated virtual export progress, a completion toast, and in-memory project/photo-wall scroll restoration.
 - **Node compatibility**: Node 22.23+ is the baseline; the scan path is also verified on Node 26 (avoids the exifr FileHandle leak).
+- **Style preset storage**: global templates live in `$DSH_HOME/storages/photo-picker/style-presets.json`; no source paths or images are stored in the preset file.
 
 ## Requirements
 

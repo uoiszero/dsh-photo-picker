@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  CROP_RATIOS, fitAspect, moveCrop, normalizeCrop, orientedAspect, resizeCrop,
+  CROP_RATIOS, fitAspect, frameAspectOf, moveCrop, normalizeCrop, orientedAspect, resizeCrop,
 } from '../src/client/crop.js'
 
 test('orientedAspect follows frame orientation and swap', () => {
@@ -64,4 +64,19 @@ test('resizeCrop keeps the aspect ratio when clamped at the frame edge', () => {
   assert.ok(Math.abs(corner.width - corner.height) < 1e-9)
   assert.ok(corner.left + corner.width <= 1.0000001)
   assert.ok(corner.top + corner.height <= 1.0000001)
+})
+
+test('fitAspect produces a physical square on a portrait frame', () => {
+  const frameAspect = 2 / 3
+  const crop = fitAspect({ left: 0, top: 0, width: 1, height: 1 }, frameAspect, 1)
+  assert.ok(Math.abs((crop.width * frameAspect) / crop.height - 1) < 1e-9)
+  assert.ok(Math.abs(crop.width - 1) < 1e-9)
+})
+
+test('frameAspectOf honors numeric and string EXIF orientation', () => {
+  assert.equal(frameAspectOf(6000, 4000, 6), 2 / 3)
+  assert.equal(frameAspectOf(6000, 4000, 'Rotate 270 CW'), 2 / 3)
+  assert.equal(frameAspectOf(6000, 4000, 'Rotate 90 CW'), 2 / 3)
+  assert.equal(frameAspectOf(6000, 4000, 'Horizontal (normal)'), 1.5)
+  assert.equal(frameAspectOf(4000, 6000, 1), 2 / 3)
 })

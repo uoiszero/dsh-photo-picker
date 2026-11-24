@@ -80,13 +80,13 @@ function hasAssessment(db, targetKind, targetId, stage, modelId) {
     .get(targetKind, targetId, stage, modelId ?? null, PROMPT_VERSION) !== undefined
 }
 
-function insertAssessment(db, projectId, { targetKind, targetId, stage, modelId, modelRoute, score, verdict, dimensions, postProcessing, recipe, scenes, primaryScene, reason, raw, tokensIn, tokensOut, costCny }) {
-  if (hasAssessment(db, targetKind, targetId, stage, modelId)) return false
+function insertAssessment(db, projectId, { targetKind, targetId, stage, modelId, modelRoute, score, verdict, dimensions, postProcessing, recipe, scenes, primaryScene, subject, caption, reason, raw, tokensIn, tokensOut, costCny }, { dedupe = true } = {}) {
+  if (dedupe && hasAssessment(db, targetKind, targetId, stage, modelId)) return false
   db.prepare(`
     INSERT INTO assessments (id, project_id, target_kind, target_id, stage, model_route, model_id,
       prompt_version, score, verdict, dimensions_json, post_processing_json, recipe_json,
-      scenes_json, primary_scene, reason, raw_json, tokens_in, tokens_out, cost_cny, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      scenes_json, primary_scene, subject, caption, reason, raw_json, tokens_in, tokens_out, cost_cny, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     nanoid(), projectId, targetKind, targetId, stage, modelRoute ?? null, modelId ?? null, PROMPT_VERSION,
     score ?? null, verdict ?? null,
@@ -95,6 +95,7 @@ function insertAssessment(db, projectId, { targetKind, targetId, stage, modelId,
     recipe === undefined || recipe === null ? null : JSON.stringify(recipe),
     scenes === undefined || scenes === null ? null : JSON.stringify(scenes),
     primaryScene ?? null,
+    subject ?? null, caption ?? null,
     reason ?? null, raw === undefined ? null : JSON.stringify(raw),
     tokensIn ?? 0, tokensOut ?? 0, costCny ?? 0, Date.now(),
   )
@@ -387,35 +388,54 @@ async function rankOnce({ llm, project, items, signal }) {
 export async function runScoreStage({
   db, projectId, project, llm, attachments, loadPhoto,
   onEvent = () => {}, signal, now = () => new Date(), budgetCny = project.budgetCny,
+  targetPhotoIds = null, force = false,
 }) {
   const stageRunId = startStageRun(db, projectId, 'score', project)
   const startedAt = Date.now()
   const peak = isPeakHour(now())
   const concurrency = Math.max(1, project.concurrency ?? 8)
 
-  const targets = db.prepare(`
-    SELECT p.id, p.rel_path, p.state FROM photos p
-    WHERE p.project_id = ?
-      AND p.thumb_path IS NOT NULL
-      AND (
-        p.state IN ('grid_selected', 'grid_error', 'score_failed')
-        OR (p.state = 'scored' AND NOT EXISTS (
-          SELECT 1 FROM assessments a2
-          WHERE a2.target_kind = 'photo' AND a2.target_id = p.id
-            AND a2.stage = 'single' AND a2.model_id = ? AND a2.prompt_version = ?
-        ))
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM decisions d
-        WHERE d.photo_id = p.id AND d.source = 'ai' AND d.verdict = 'reject'
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM assessments a
-        WHERE a.target_kind = 'photo' AND a.target_id = p.id
-          AND a.stage = 'single' AND a.model_id = ? AND a.prompt_version = ?
-      )
-    ORDER BY COALESCE(p.taken_at, p.mtime_ms), p.rel_path
-  `).all(projectId, project.modelId, PROMPT_VERSION, project.modelId, PROMPT_VERSION)
+  const targetIds = Array.isArray(targetPhotoIds)
+    ? [...new Set(targetPhotoIds.filter(id => typeof id === 'string' && id !== ''))]
+    : []
+  let targets
+  if (targetIds.length > 0) {
+    // 单图精评：绕过批量评分的 AI reject / 已有 assessment 过滤，
+    // 但技术过滤和不可读照片仍然不能评分。
+    const placeholders = targetIds.map(() => '?').join(', ')
+    targets = db.prepare(`
+      SELECT p.id, p.rel_path, p.state FROM photos p
+      WHERE p.project_id = ?
+        AND p.id IN (${placeholders})
+        AND p.thumb_path IS NOT NULL
+        AND p.state NOT IN ('unreadable', 'filtered_dup', 'filtered_blur', 'filtered_exposure', 'filtered_small')
+      ORDER BY COALESCE(p.taken_at, p.mtime_ms), p.rel_path
+    `).all(projectId, ...targetIds)
+  } else {
+    targets = db.prepare(`
+      SELECT p.id, p.rel_path, p.state FROM photos p
+      WHERE p.project_id = ?
+        AND p.thumb_path IS NOT NULL
+        AND (
+          p.state IN ('grid_selected', 'grid_error', 'score_failed')
+          OR (p.state = 'scored' AND NOT EXISTS (
+            SELECT 1 FROM assessments a2
+            WHERE a2.target_kind = 'photo' AND a2.target_id = p.id
+              AND a2.stage = 'single' AND a2.model_id = ? AND a2.prompt_version = ?
+          ))
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM decisions d
+          WHERE d.photo_id = p.id AND d.source = 'ai' AND d.verdict = 'reject'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM assessments a
+          WHERE a.target_kind = 'photo' AND a.target_id = p.id
+            AND a.stage = 'single' AND a.model_id = ? AND a.prompt_version = ?
+        )
+      ORDER BY COALESCE(p.taken_at, p.mtime_ms), p.rel_path
+    `).all(projectId, project.modelId, PROMPT_VERSION, project.modelId, PROMPT_VERSION)
+  }
 
   let spentCny = 0
   let totalUsage = { inputTokens: 0, outputTokens: 0 }
@@ -489,9 +509,10 @@ export async function runScoreStage({
         modelId: project.modelId, modelRoute: project.modelRoute,
         score: result.score, verdict, dimensions: result.dimensions,
         postProcessing: result.postProcessing, recipe: result.editRecipe,
-        scenes: result.scenes, primaryScene: result.primaryScene, reason: result.reason,
+        scenes: result.scenes, primaryScene: result.primaryScene,
+        subject: result.subject, caption: result.caption, reason: result.reason,
         raw: result, tokensIn: usage.inputTokens, tokensOut: usage.outputTokens, costCny: cost,
-      })
+      }, { dedupe: !force })
       upsertAiDecision(db, projectId, photo.id, verdict)
       db.prepare("UPDATE photos SET state = 'scored' WHERE id = ?").run(photo.id)
     }
@@ -504,7 +525,10 @@ export async function runScoreStage({
   })
 
   const stopped = paused || signal?.aborted === true
-  const stats = { done, total: targets.length, scored, failed, durationMs: Date.now() - startedAt }
+  const stats = {
+    done, total: targets.length, scored, failed, durationMs: Date.now() - startedAt,
+    ...(targetIds.length === 1 ? { singlePhotoId: targetIds[0] } : {}),
+  }
   finishStageRun(db, projectId, stageRunId, {
     status: stopped ? 'paused' : 'done',
     stats,
